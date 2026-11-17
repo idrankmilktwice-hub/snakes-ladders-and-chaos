@@ -9,15 +9,15 @@ const ul = list => "<ul>" + list.map(x => `<li>${x}</li>`).join("") + "</ul>";
 // k(text): highlights a key word (cream colour).
 const k = t => `<span class="k">${t}</span>`;
 
-// Who gets another turn after rolling a 6: [class, yes/no, note]
+// Who gets another turn after rolling a 6: [character, yes/no, note]
 const BONUS_ROLL = [
   ["Bully", 1, "on a 6"], ["Struggler", 1, "on a 6"], ["Oracle", 1, "on a 6, right call or wrong"],
   ["Cat owner", 1, "for her own roll; the CAT also rolls again on its own 6"],
   ["Gambler", 0, "only on double 6s"], ["Snake Charmer", 0, "never, not even on a 6"]
 ];
 
-// The detailed rules of every class, in the same order as CLASSES in config.js.
-const CLASS_RULES = {
+// The detailed rules of every character, in the same order as CHARACTERS in config.js.
+const CHARACTER_RULES = {
   bully: [
     "Before rolling: if another player is within 6 squares ahead, choose " + k("PUSH or PULL") + ". If nobody is, you are not asked.",
     k("Passing over") + " a player: for each one, nudge them forward 1 or back 1 (never below square 1).",
@@ -72,26 +72,26 @@ const ITEM_RULES = [
 const RULES_HTML = () => `<div class="rb">
 <p>Throw the die (or press ROLL / Space), then drag your piece to the glowing square. First to land exactly on square 100 wins.</p>
 <h2>The basics</h2>${ul([
-  `${CONFIG.MIN_PLAYERS} to ${CONFIG.MAX_PLAYERS} players. Every player picks a different class. If two pick the same one they roll a die: the higher roll keeps it and the other picks again.`,
+  `${CONFIG.MIN_PLAYERS} to ${CONFIG.MAX_PLAYERS} players. Every player picks a different character. If two pick the same one they roll a die: the higher roll keeps it and the other picks again.`,
   "100 squares, numbered in a zig-zag (1 bottom-left, 100 top-left). Everyone starts on square 1.",
   `Every game has a random board: ${k(CONFIG.SNAKES + " snakes")} (one is the long cobra) and ${k(CONFIG.LADDERS + " ladders")}.`,
   "Land on the BOTTOM of a ladder to climb to its top. Land on a snake's HEAD to slide down to its tail.",
   "A turn: " + k("1)") + " use items if you want, " + k("2)") + " roll, " + k("3)") + " drag your pawn to the glowing target square (or press \"Move for me\" / Space). Throw the die by grabbing it, or use ROLL / Space.",
   "You win by landing on 100 " + k("EXACTLY") + ". If your roll would take you past 100 you stay where you are (the Gambler is the exception).",
-  "Rolling a " + k("6") + " gives another turn, except where a class says otherwise.",
+  "Rolling a " + k("6") + " gives another turn, except where a character says otherwise.",
   "Turn order: the Snake Charmer first, the cat owner last, everyone else in the order they were added.",
   k("BUFF") + " and " + k("DEBUFF") + " counters under each panel show a bonus (+) or penalty (-) added to the player's NEXT roll and then cleared. They add together, and a move is never less than 0 squares.",
-  "Anyone the game moves (pushed, pulled, nudged, knocked down, slid down a snake, climbed a ladder) takes snakes and ladders on the square they land on, just like a normal move - unless a class says otherwise."
+  "Anyone the game moves (pushed, pulled, nudged, knocked down, slid down a snake, climbed a ladder) takes snakes and ladders on the square they land on, just like a normal move - unless a character says otherwise."
 ])}
 <h2>Bonus roll on a 6</h2>
 <table>${BONUS_ROLL.map(r => `<tr><td>${r[0]}</td><td class="${r[1] ? "yes" : "no"}">${r[1] ? "Yes" : "No"}</td><td>${r[2]}</td></tr>`).join("")}</table>
-<h2>The classes</h2>${CLASSES.map(c => `<h3>${c.name}</h3>${ul(CLASS_RULES[c.id] || [c.text])}`).join("")}
+<h2>The characters</h2>${CHARACTERS.map(c => `<h3>${c.name}</h3>${ul(CHARACTER_RULES[c.id] || [c.text])}`).join("")}
 <h2>Items</h2>${ul([
   `The game starts with ${ITEM_START} random items on empty squares, and a new one appears every ${ITEM_EVERY} turns. Items never appear on square 1 or 100, under a pawn, the cat or another item, or on a snake head or the bottom of a ladder.`,
   `Step on an item to pick it up. You can hold ${ITEM_MAX}; with full hands you may swap one of yours for the one on the ground, or leave it.`,
   "If an item and a snake head share a tile, you pick the item up before the snake bites.",
   "Use items only BEFORE rolling: click a glowing item, or press Roll / Space to go on without. You can use several. When an item asks for a target, Cancel / Space backs out without spending it.",
-  "Items work on every class (they never trigger the Struggler's dodge) and never affect the cat."
+  "Items work on every character (they never trigger the Struggler's dodge) and never affect the cat."
 ])}${ITEM_RULES.map(i => `<h3>${i[0]}</h3><p>${i[1]}</p>`).join("")}
 <h2>Helpful controls</h2>${ul([
   k("Space bar") + ": roll the dice, or press the helper button on the rolling board (\"Move for me\", \"Just roll\", \"Roll\", \"Cancel\").",

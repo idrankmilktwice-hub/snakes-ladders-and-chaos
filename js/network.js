@@ -875,10 +875,10 @@ function handleNetData(msg, fromConn) {
         NET.connections.push(fromConn);
       }
       if (!S.rows[pIdx]) {
-        S.rows[pIdx] = { name: `Player ${pIdx + 1}`, cls: "", locked: false };
+        S.rows[pIdx] = { name: `Player ${pIdx + 1}`, character: "", locked: false };
       } else {
         S.rows[pIdx].name = `Player ${pIdx + 1}`;
-        S.rows[pIdx].cls = "";
+        S.rows[pIdx].character = "";
         S.rows[pIdx].locked = false;
       }
       fromConn.send({ type: "JOIN_ACK", yourIndex: pIdx, rows: S.rows, n: S.n, roomCode: NET.roomCode });
@@ -928,7 +928,7 @@ function handleNetData(msg, fromConn) {
         const idx = msg.index != null ? msg.index : fromConn.playerIndex;
         if (idx != null && S.rows[idx]) {
           if (msg.name !== undefined && msg.name !== null) S.rows[idx].name = msg.name;
-          if (msg.cls !== undefined && msg.cls !== null) S.rows[idx].cls = msg.cls;
+          if (msg.character !== undefined && msg.character !== null) S.rows[idx].character = msg.character;
           broadcastLobby();
           if (NET.onLobbyUpdate) NET.onLobbyUpdate();
         }
@@ -1244,18 +1244,18 @@ function broadcastLobby() {
   }
 }
 
-function sendLobbyUpdate(name, cls) {
+function sendLobbyUpdate(name, character) {
   initRows();
   const idx = NET.myPlayerIndex;
   if (NET.isHost) {
     if (name !== undefined && name !== null) S.rows[0].name = name;
-    if (cls !== undefined && cls !== null) S.rows[0].cls = cls;
+    if (character !== undefined && character !== null) S.rows[0].character = character;
     broadcastLobby();
     if (NET.onLobbyUpdate) NET.onLobbyUpdate();
   } else if (NET.hostConn && NET.hostConn.open) {
     const payload = { type: "LOBBY_ROW_UPDATE", index: idx };
     if (name !== undefined && name !== null) payload.name = name;
-    if (cls !== undefined && cls !== null) payload.cls = cls;
+    if (character !== undefined && character !== null) payload.character = character;
     NET.hostConn.send(payload);
   }
 }
@@ -1320,9 +1320,9 @@ function applyRemoteGameStart(msg) {
   delete G.snkKey;
   delete G.numKey;
   delete G.itemKey;
-  const rk = p => p.cls === "charmer" ? -1 : p.cls === "cat" ? 1 : 0;
+  const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0;
   G.order = [...G.players].sort((a, b) => rk(a) - rk(b));
-  const co = G.players.find(p => p.cls === "cat");
+  const co = G.players.find(p => p.character === "cat");
   if (co) G.catOwner = co;
 
   $("setup").style.display = "none";

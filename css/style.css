@@ -87,13 +87,13 @@ b, strong { font-weight: normal; }
 #setup input, #setup select { font-family: MC, monospace; font-size: 34px; color: #2f2504; background: #c3f73a; border: 0; border-radius: 8px; padding: 0 16px; height: 76px; box-sizing: border-box; }
 #setup select { height: 64px; } #setup input { width: 520px; }
 #setup input:disabled, #setup .cls:disabled { opacity: .6; }
-/* the class "dropdown" button on each row: head picture + class name */
+/* the character "dropdown" button on each row: head picture + character name */
 #setup .cls { flex: 1; height: 92px; display: flex; align-items: center; gap: 20px; padding: 0 22px; font-family: MC, monospace; font-size: 38px; color: #2f2504; background: #c3f73a; border: 0; border-bottom: 6px solid #7fa21a; border-radius: 10px; cursor: pointer; text-align: left; }
 #setup .cls img { height: 84px; width: 84px; object-fit: contain; } #setup .cls small { margin-left: auto; font-size: 22px; opacity: .6; }
 #setup .go { --s: 2.6; width: 400px; margin-top: 14px; }   /* the big Start game button */
 #setup .card:hover { filter: brightness(1.12); }
 #smsg { color: #ff9a62; font-size: 26px; min-height: 34px; margin: 4px 0; }
-/* the class chooser that opens over the start screen: one card per class (head, big name, small description) */
+/* the character chooser that opens over the start screen: one card per character (head, big name, small description) */
 #chooser { position: absolute; inset: 0; background: rgba(20, 14, 2, .8); display: flex; align-items: center; justify-content: center; z-index: 5; }
 #chooser .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 1740px; }
 #chooser .card { display: flex; align-items: center; gap: 24px; padding: 14px 24px; height: 290px; box-sizing: border-box; background: #c3f73a; color: #2f2504; border: 0; border-bottom: 8px solid #7fa21a; border-radius: 14px; cursor: pointer; text-align: left; font-family: MC, monospace; }
@@ -349,7 +349,7 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 .obtn:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 6px; }
 
 /* ============================================================================================================
-   LOCAL SCREEN + CLASS PICK PANELS (js/local.js). Orange / blue alternate like the player panels.
+   LOCAL SCREEN + CHARACTER PICK PANELS (js/local.js). Orange / blue alternate like the player panels.
    ============================================================================================================ */
 html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 #tLocal { display: none; position: absolute; inset: 0; pointer-events: none; } #tLocal > * { pointer-events: auto; }
@@ -398,7 +398,7 @@ html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 .tf-card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1000px, 92vw); height: min(820px, 88vh); box-sizing: border-box; padding: 34px 48px; overflow: auto; background: #2f2504; border: 5px solid #c3f73a; border-radius: 18px; color: #f6f1d8; font-family: MC, monospace; font-size: 26px; line-height: 1.4; }
 .tf-card h2 { margin: 0 0 14px; font-family: LM, MC, monospace; font-weight: normal; font-size: 60px; color: #c3f73a; } .tf-card ul { margin: 0; padding-left: 28px; } .tf-card li { margin-bottom: 12px; } .tf-card .k, .tf-card b { color: #ffa42c; font-weight: normal; }
 
-/* Start pressed with a missing class: that player's badge + Pick a Class button shine and a chevron points at them */
+/* Start pressed with a missing character: that player's badge + Pick a Character button shine and a chevron points at them */
 .lbadge { position: absolute; overflow: hidden; }
 .lbadge .lb-t { position: relative; }
 .lchev { position: absolute; left: -62px; top: 36px; width: 24px; height: 24px; box-sizing: border-box; border-top: 9px solid var(--tt-ink); border-right: 9px solid var(--tt-ink); transform: rotate(45deg); opacity: 0; pointer-events: none; }

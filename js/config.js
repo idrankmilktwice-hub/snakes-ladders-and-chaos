@@ -1,6 +1,6 @@
 // =====================================================================================
 //  config.js  -  THE FILE TO EDIT FOR SMALL CHANGES
-//  Rules numbers, class descriptions, colours and screen positions all live here.
+//  Rules numbers, character descriptions, colours and screen positions all live here.
 //  (Every .js file is loaded by index.html in this order: config, board, art, render, input, rules, main.)
 // =====================================================================================
 
@@ -26,8 +26,8 @@ const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). M
 
 const LIME = "#c3f73a";   // the bright lime used by the art (taken from tile_dark.svg). Used for the active-turn ring and tile highlights.
 
-// ---- The six classes. "id" is used by the code, "name" is shown on screen, "text" is shown on the setup screen and in the Rulebook ----
-const CLASSES = [
+// ---- The six characters. "id" is used by the code, "name" is shown on screen, "text" is shown on the setup screen and in the Rulebook ----
+const CHARACTERS = [
   { id: "bully",     name: "Bully",         text: "Land exactly on a player with your own roll: roll a die and push or pull them that many squares (choose before rolling). Pass over a player: nudge them 1 square forward or back. A 6 gives another turn." },
   { id: "gambler",   name: "Gambler",       text: "Rolls 2 dice and moves the total. A 1 on either die sends him back by the other die (double 1s: stay put). Only double 6s give another turn. Past 100 he bounces back; from 97-99 either die must show the exact number needed." },
   { id: "cat",       name: "The One with the Cat", text: "Goes last, then rolls for the cat, which wraps around the board and ignores snakes, ladders and items. Players the cat jumps over: -1 on their next roll. Players it lands on are knocked down 10 squares and give her +3 on her next roll each (an overshoot loses it)." },
@@ -36,11 +36,11 @@ const CLASSES = [
   { id: "charmer",   name: "Snake Charmer", text: "Always goes first. Before rolling, may move the head of a snake on her row, or the row above or below, to another free square on that row, then must recharge for a turn. Players already on that square are safe. Never gets an extra turn, even on a 6." }
 ];
 
-// Which portrait file belongs to which class (files live in assets/). These are also the pawns on the board.
+// Which portrait file belongs to which character (files live in assets/). These are also the pawns on the board.
 const PORT = { bully: "head_bully", gambler: "head_gambler", cat: "head_catlady", struggler: "head_struggler", oracle: "head_oracle", charmer: "head_charmer" };
 
-// Short info shown on the class pick panels (most important first). <b>..</b> highlights the key words. Full rules: CLASS_RULES in rulebook.js.
-const CLASS_BRIEF = {
+// Short info shown on the character pick panels (most important first). <b>..</b> highlights the key words. Full rules: CHARACTER_RULES in rulebook.js.
+const CHARACTER_BRIEF = {
   bully: { tag: "Push, pull, nudge", pts: ["<b>Land on a player:</b> roll a die and push or pull them that many squares (choose before rolling).", "<b>Pass over a player:</b> nudge them 1 square forward or back.", "Works on your own roll, before snakes and ladders.", "A 6 gives another turn."] },
   gambler: { tag: "Two dice, big risks", pts: ["Rolls <b>2 dice</b> and moves the total.", "A <b>1</b> on either die sends you back by the other die. Double 1s: stay put.", "Extra turn only on <b>double 6s</b>.", "Past 100 you <b>bounce back</b>. From 97-99 either die must show the exact number."] },
   cat: { tag: "A cat on the loose", pts: ["Goes <b>last</b>, then rolls for the <b>cat</b>, which wraps around the board.", "Players the cat jumps over: <b>-1</b> on their next roll.", "A player it lands on is knocked down <b>10 squares</b>; you get <b>+3</b> on your next roll for each.", "The cat ignores snakes, ladders and items."] },

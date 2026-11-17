@@ -1,15 +1,15 @@
 // =====================================================================================
-//  local.js  -  the LOCAL screen (one line per player) and the CLASS PICK panels. Loaded after title.js.
-//  Player names / classes / count are stored in the same S object the old setup screen uses (S.rows, S.n), so start() works unchanged.
-//  Colours: css/style.css, section "LOCAL SCREEN". Class info shown on the panels: CLASS_BRIEF in config.js. Full text: CLASS_RULES in rulebook.js.
+//  local.js  -  the LOCAL screen (one line per player) and the CHARACTER PICK panels. Loaded after title.js.
+//  Player names / characters / count are stored in the same S object the old setup screen uses (S.rows, S.n), so start() works unchanged.
+//  Colours: css/style.css, section "LOCAL SCREEN". Character info shown on the panels: CHARACTER_BRIEF in config.js. Full text: CHARACTER_RULES in rulebook.js.
 // =====================================================================================
 
 // Player lines. Geometry is taken from docs/Local_Screen.jpg (6 players). With fewer players the lines are scaled up: 2 players = height of the Local button (165px), 6 = 99px.
 const LROW = { x: 237, y: 248, pitch: 123.4, h: 99, hMax: 165 };
 const lrowScale = n => (LROW.hMax - (n - 2) * (LROW.hMax - LROW.h) / 4) / LROW.h;
-const LBASE = 49.9;   // font size (px) of "Pick a Class"; long class names shrink to fit
+const LBASE = 49.9;   // font size (px) of "Pick a Character"; long character names shrink to fit
 
-// Class pick panels: 6 panels (art 264 x 806) side by side. The head is centred on the panel's circle (128,128); width/height ratio of each head's art is in HEAD_RATIO.
+// Character pick panels: 6 panels (art 264 x 806) side by side. The head is centred on the panel's circle (128,128); width/height ratio of each head's art is in HEAD_RATIO.
 const PK = { w: 264, h: 806, gap: 28, off: 1100 };
 const pkLeft = k => k * (PK.w + PK.gap);   // left edge of panel k inside the panel row, which is centred on the window and sits on the window's bottom edge (css #pkPanels)
 const HEAD_RATIO = { bully: .926, gambler: 1.269, cat: .965, struggler: .832, oracle: 1.078, charmer: .836 };
@@ -42,25 +42,25 @@ function buildLocal() {
     const online = S.mode === "online";
     if (online && !NET.isHost) return;
     if (online && S.n < CONFIG.MIN_PLAYERS) return toast($("tStart"), "Need 2 players!", false, "above");
-    const missing = [...L.querySelectorAll(".lrow")].slice(0, S.n).filter((el, i) => !S.rows[i].cls);
+    const missing = [...L.querySelectorAll(".lrow")].slice(0, S.n).filter((el, i) => !S.rows[i].character);
     if (missing.length) { missing.forEach(el => el.classList.add("need")); setTimeout(() => missing.forEach(el => el.classList.remove("need")), 1500); return; }   // shine + chevron on whoever has not picked yet
-    leaveTitle(); online ? startOnlineGame() : start();   // the game's own Start (handles two players picking the same class)
+    leaveTitle(); online ? startOnlineGame() : start();   // the game's own Start (handles two players picking the same character)
   };
   $("hGen").onclick = hostGenerate; $("hCopy").onclick = copyLink; $("jBtn").onclick = joinPressed;
   $("jCode").onkeydown = e => { if (e.key === "Enter") joinPressed(); };
   // the pick overlay: dark layer, X button, the six panels, and the full-rules popup
   const P = document.createElement("div"); P.id = "tPick";
-  P.innerHTML = `<div class="pk-dim"></div><button class="pk-x" aria-label="Close"></button><div id="pkPanels">` + CLASSES.map((c, k) => {
+  P.innerHTML = `<div class="pk-dim"></div><button class="pk-x" aria-label="Close"></button><div id="pkPanels">` + CHARACTERS.map((c, k) => {
     const hh = Math.min(HEAD_BOX.h, (c.id === "gambler" ? HEAD_BOX.wideW : HEAD_BOX.w) / HEAD_RATIO[c.id]);
     return `<div class="pk-slot"><div class="pk-panel" data-k="${k}"><img class="pk-art" src="${A("panel_pick_" + (k % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="pk-head" src="${A(PORT[c.id] + ".svg")}" alt="" style="height:${hh}px">` +
       `<div class="pk-name${c.name.length > 14 ? " long" : ""}">${c.name}</div>` +
-      `<div class="pk-desc"><div class="pk-scroll"><ul>${CLASS_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="pk-more" aria-label="Full description"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>` +
+      `<div class="pk-desc"><div class="pk-scroll"><ul>${CHARACTER_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="pk-more" aria-label="Full description"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>` +
       `<button class="pk-pick" aria-label="Pick ${c.name}"><span class="tb-shine"></span></button><span class="pk-shine"></span></div></div>`;
   }).join("") + `</div><div id="tFull"><div class="tf-card"></div></div>`;
   document.body.appendChild(P);   // lives outside the scaled stage so the dark layer covers the whole window and the panels can sit on the window's bottom edge
   TT.pkPanels = [...P.querySelectorAll(".pk-panel")];
   addEventListener("resize", () => { if (TT.pickOpen) layoutPanels(); });
-  TT.pkPanels.forEach((p, k) => { p.querySelector(".pk-pick").onclick = () => pickClass(k); p.querySelector(".pk-more").onclick = () => openFull(k); });
+  TT.pkPanels.forEach((p, k) => { p.querySelector(".pk-pick").onclick = () => pickCharacter(k); p.querySelector(".pk-more").onclick = () => openFull(k); });
   P.querySelector(".pk-x").onclick = closePick;
   P.addEventListener("click", e => { if (!e.target.closest(".pk-panel, .pk-x, .tf-card")) { if ($("tFull").style.display === "block") closeFull(); else closePick(); } });   // click anywhere else = back
 }
@@ -76,14 +76,14 @@ function layoutRows() {
   });
   $("tCntNum").textContent = S.n; $("tCntMenu").classList.remove("open");
 }
-// refreshRow(i): show the row's current class (head + name) or "Pick a Class". Online, only your own line can be changed.
+// refreshRow(i): show the row's current character (head + name) or "Pick a Character". Online, only your own line can be changed.
 function refreshRow(i) {
-  const r = S.rows[i], b = $("tLocal").querySelector(`.lcls[data-i="${i}"]`), c = r && CLASSES.find(c => c.id === r.cls);
+  const r = S.rows[i], b = $("tLocal").querySelector(`.lcls[data-i="${i}"]`), c = r && CHARACTERS.find(c => c.id === r.character);
   if (!r) return;
   b.disabled = S.mode === "online" && i !== NET.myPlayerIndex;
-  b.innerHTML = `<span class="tb-shine"></span>` + (c ? `<img src="${A(PORT[c.id] + ".svg")}" alt=""><span class="lt" style="font-size:${fitFont(c.name)}px">${c.name}</span>` : `<span class="lt">Pick a Class</span>`);
+  b.innerHTML = `<span class="tb-shine"></span>` + (c ? `<img src="${A(PORT[c.id] + ".svg")}" alt=""><span class="lt" style="font-size:${fitFont(c.name)}px">${c.name}</span>` : `<span class="lt">Pick a Character</span>`);
 }
-// syncRows(): copy names / classes from S into the lines (used when the lobby changes online)
+// syncRows(): copy names / characters from S into the lines (used when the lobby changes online)
 function syncRows() {
   const online = S.mode === "online";
   $("tLocal").querySelectorAll(".lname").forEach((el, i) => {
@@ -179,7 +179,7 @@ function autoJoin(code) { $("jCode").value = code.toUpperCase().slice(0, 6); joi
 // leaveTitle(): the game itself is starting - remove the title screen completely.
 function leaveTitle() { $("title").classList.remove("on"); document.body.classList.remove("on-title"); document.documentElement.classList.remove("on-title"); }
 
-// ---- class pick panels ----
+// ---- character pick panels ----
 // layoutPanels(): make the panels as big as the window allows - as wide as fits, never taller than the window (a little room is kept on top for the X button) -
 // with the same space between panels and at the far left and right, whatever the window shape. Panels sit on the window's bottom edge.
 function layoutPanels() {
@@ -187,7 +187,7 @@ function layoutPanels() {
   TT.pkScale = p; TT.pkGap = gap;
   TT.pkPanels.forEach((pn, k) => { const s = pn.parentElement; s.style.left = (gap + k * (PK.w * p + gap)) + "px"; s.style.transform = `scale(${p})`; });
 }
-// openPick(i): player i pressed "Pick a Class": the screen goes dark and the panels fly up from the bottom, one by one, very quickly.
+// openPick(i): player i pressed "Pick a Character": the screen goes dark and the panels fly up from the bottom, one by one, very quickly.
 async function openPick(i) {
   if (TT.pickOpen) return;
   TT.pickOpen = true; TT.pkRow = i; TT.pkBusy = true;
@@ -202,8 +202,8 @@ async function openPick(i) {
 function exitPanels(except) { return Promise.all([5, 4, 3, 2, 1, 0].filter(k => k !== except).map((k, j) => glide(TT.pkPanels[k], { x: 0, y: PK.off }, 110, EASE_IN, j * 14))); }
 function closePickNow() { $("tPick").style.display = "none"; $("tFull").style.display = "none"; TT.pickOpen = false; TT.pkBusy = false; }
 async function closePick() { if (!TT.pickOpen || TT.pkBusy) return; TT.pkBusy = true; await exitPanels(-1); closePickNow(); }   // X button / click outside
-// pickClass(k): PICK pressed on panel k - the others leave first, the chosen one shines, slides to the centre and off the screen; the dark layer vanishes instantly.
-async function pickClass(k) {
+// pickCharacter(k): PICK pressed on panel k - the others leave first, the chosen one shines, slides to the centre and off the screen; the dark layer vanishes instantly.
+async function pickCharacter(k) {
   if (TT.pkBusy) return; TT.pkBusy = true;
   const p = TT.pkPanels[k];
   await exitPanels(k);
@@ -212,13 +212,13 @@ async function pickClass(k) {
   await glide(p, { x: cx, y: 0 }, 130, "ease-out", 0);
   await glide(p, { x: cx, y: PK.off }, 130, EASE_IN, 0);
   closePickNow();
-  S.rows[TT.pkRow].cls = CLASSES[k].id; refreshRow(TT.pkRow);
-  if (S.mode === "online" && NET.active) sendLobbyUpdate(undefined, CLASSES[k].id);   // tell the other players
+  S.rows[TT.pkRow].character = CHARACTERS[k].id; refreshRow(TT.pkRow);
+  if (S.mode === "online" && NET.active) sendLobbyUpdate(undefined, CHARACTERS[k].id);   // tell the other players
 }
-// openFull(k): the small expand button - the full description of the class from the rulebook
+// openFull(k): the small expand button - the full description of the character from the rulebook
 function openFull(k) {
-  const c = CLASSES[k];
-  $("tFull").querySelector(".tf-card").innerHTML = `<h2>${c.name}</h2>${ul(CLASS_RULES[c.id] || [c.text])}`;
+  const c = CHARACTERS[k];
+  $("tFull").querySelector(".tf-card").innerHTML = `<h2>${c.name}</h2>${ul(CHARACTER_RULES[c.id] || [c.text])}`;
   $("tFull").style.display = "block";
 }
 function closeFull() { $("tFull").style.display = "none"; }

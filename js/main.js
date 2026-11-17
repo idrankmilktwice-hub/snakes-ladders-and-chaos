@@ -3,11 +3,11 @@
 //  This file runs LAST. At the very bottom it draws the setup screen and starts loading the art.
 // =====================================================================================
 
-// initRows(): make sure there is a setup row (name + class) for every possible player.
-function initRows() { while (S.rows.length < CONFIG.MAX_PLAYERS) S.rows.push({ name: `Player ${S.rows.length + 1}`, cls: "", locked: false }); }
+// initRows(): make sure there is a setup row (name + character) for every possible player.
+function initRows() { while (S.rows.length < CONFIG.MAX_PLAYERS) S.rows.push({ name: `Player ${S.rows.length + 1}`, character: "", locked: false }); }
 
 // drawSetup(): (re)draw the start screen from S. Called at load, after any change on the screen, and when art finishes loading.
-// S.pick = number of the player row whose class chooser is open (null = closed).
+// S.pick = number of the player row whose character chooser is open (null = closed).
 function drawSetup() {
   initRows();
   const setupEl = $("setup");
@@ -39,9 +39,9 @@ function drawSetup() {
     for (let i = CONFIG.MIN_PLAYERS; i <= CONFIG.MAX_PLAYERS; i++) h += `<option ${i === S.n ? "selected" : ""}>${i}</option>`;
     h += "</select></div>";
     for (let i = 0; i < S.n; i++) {
-      const r = S.rows[i], c = CLASSES.find(c => c.id === r.cls);
+      const r = S.rows[i], c = CHARACTERS.find(c => c.id === r.character);
       h += `<div class="row"><span class="dot" style="background:${COLORS[i]}"></span><input data-player-input="${i}" value="${esc(r.name)}" ${r.locked ? "disabled" : ""} oninput="S.rows[${i}].name=this.value" onchange="S.rows[${i}].name=this.value">
-<button class="cls" ${r.locked ? "disabled" : ""} onclick="S.pick=${i};drawSetup()">${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a class"}<small>${r.locked ? "locked in" : "click to choose"}</small></button></div>`;
+<button class="cls" ${r.locked ? "disabled" : ""} onclick="S.pick=${i};drawSetup()">${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a character"}<small>${r.locked ? "locked in" : "click to choose"}</small></button></div>`;
     }
     h += `<div id="smsg">${S.msg}</div><button class="cbtn go" onclick="start()"><span>Start game</span></button>`;
   } else {
@@ -64,14 +64,14 @@ function drawSetup() {
 
       // Show connected player slots
       for (let i = 0; i < S.n; i++) {
-        const r = S.rows[i] || { name: `Player ${i + 1}`, cls: "", locked: false };
-        const c = CLASSES.find(c => c.id === r.cls);
+        const r = S.rows[i] || { name: `Player ${i + 1}`, character: "", locked: false };
+        const c = CHARACTERS.find(c => c.id === r.character);
         const isMe = (i === NET.myPlayerIndex);
         const canEdit = isMe;
         h += `<div class="row"><span class="dot" style="background:${COLORS[i]}"></span>
           <input data-player-input="${i}" value="${esc(r.name ?? `Player ${i + 1}`)}" ${canEdit ? "" : "disabled"} oninput="onPlayerNameInput(${i}, this.value)" onchange="onPlayerNameChanged(${i}, this.value)">
           <button class="cls" ${canEdit ? "" : "disabled"} onclick="${canEdit ? `S.pick=${i};drawSetup()` : ''}">
-            ${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a class"}
+            ${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a character"}
             <small>${isMe ? "(You - click to choose)" : "Player slot"}</small>
           </button>
         </div>`;
@@ -86,9 +86,9 @@ function drawSetup() {
     }
   }
 
-  if (S.pick != null) {   // the class chooser
+  if (S.pick != null) {   // the character chooser
     h += `<div id="chooser" onclick="if(event.target===this){S.pick=null;drawSetup()}"><div class="grid">` +
-      CLASSES.map(c => `<button class="card" onclick="onClassPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`).join("") + `</div></div>`;
+      CHARACTERS.map(c => `<button class="card" onclick="onCharacterPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`).join("") + `</div></div>`;
   }
   setupEl.innerHTML = h;
 
@@ -226,12 +226,12 @@ function onPlayerNameChanged(idx, val) {
   if (NET.active) sendLobbyUpdate(clean, undefined);
 }
 
-function onClassPicked(clsId) {
+function onCharacterPicked(characterId) {
   initRows();
   const idx = S.pick;
-  if (S.rows[idx]) S.rows[idx].cls = clsId;
+  if (S.rows[idx]) S.rows[idx].character = characterId;
   S.pick = null;
-  if (NET.active) sendLobbyUpdate(undefined, clsId);
+  if (NET.active) sendLobbyUpdate(undefined, characterId);
   drawSetup();
 }
 
@@ -245,15 +245,15 @@ function startOnlineGame() {
   start();
 }
 
-// start(): the Start button. Checks the setup (two players can't share a class: they roll off, the loser picks again), then builds the game and begins play().
+// start(): the Start button. Checks the setup (two players can't share a character: they roll off, the loser picks again), then builds the game and begins play().
 function start() {
   S.pick = null; const t0 = performance.now();   // (timing: see the console line after render() below)
   if (!ART.ready) { S.msg = ART.error || "The art is still loading, try again in a moment."; return drawSetup(); }
   const rows = S.rows.slice(0, S.n); S.msg = "";
-  if (rows.some(r => !r.cls)) { S.msg = "Every player needs a class."; return drawSetup(); }
+  if (rows.some(r => !r.character)) { S.msg = "Every player needs a character."; return drawSetup(); }
   let conflict = false;
-  for (const c of CLASSES) {
-    const all = rows.filter(r => r.cls === c.id);
+  for (const c of CHARACTERS) {
+    const all = rows.filter(r => r.character === c.id);
     if (all.length < 2) continue;
     conflict = true;
     let cand = all;
@@ -263,18 +263,18 @@ function start() {
       const m = Math.max(...rl); cand = cand.filter((_, i) => rl[i] === m);
     }
     S.msg += `${cand[0].name} keeps ${c.name}; the others pick again. `;
-    all.forEach(r => { if (r !== cand[0]) { r.cls = ""; r.locked = false; } });
+    all.forEach(r => { if (r !== cand[0]) { r.character = ""; r.locked = false; } });
     cand[0].locked = true;
   }
   if (conflict) {
     if (NET.active && NET.isHost) broadcastLobby();
     return drawSetup();
   }
-  // G = the new game. players: name/class/position(pos)/colour. L = ladders, S = snakes, cobra = long snake's tail.
+  // G = the new game. players: name/character/position(pos)/colour. L = ladders, S = snakes, cobra = long snake's tail.
   // cat = the cat token (or null), catSkin = which cat picture is showing, catNow = true while the cat's own turn is running.
-  G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, cls: r.cls, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, 5), catNow: false, winner: null, cur: null };
+  G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, character: r.character, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, 5), catNow: false, winner: null, cur: null };
   assignKinds();
-  const co = G.players.find(p => p.cls === "cat");
+  const co = G.players.find(p => p.character === "cat");
   if (co) { G.cat = { pos: 1 }; G.catOwner = co; }
   $("setup").style.display = "none"; $("game").style.display = "block";
   $("log").innerHTML = "";
@@ -374,7 +374,7 @@ $("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" s
 showTab("boardlog");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
-function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the class pick panels (css)
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the character pick panels (css)
   $("stage").style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; }
 addEventListener("resize", fit); fit();
 

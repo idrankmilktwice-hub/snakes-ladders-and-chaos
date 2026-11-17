@@ -51,5 +51,5 @@ addEventListener("pointerdown", e => {
   if (t.classList.contains("go")) sfx("big");                                // Start game
   else if (t.classList.contains("tbtn") || t.classList.contains("obtn") || t.classList.contains("pkbtn")) sfx("press");                      // title screen Play / Options / About
   else if (t.closest("#btns")) sfx("press");                                 // choice buttons in the board log (numbers, Push/Pull...)
-  else sfx("small");                                                         // everything else: tabs, expand, close, ROLL, Move for me, class buttons
+  else sfx("small");                                                         // everything else: tabs, expand, close, ROLL, Move for me, character buttons
 });

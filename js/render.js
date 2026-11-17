@@ -333,7 +333,7 @@ function buildBoard() {
   let pw = "";
   G.players.forEach((p, i) => {
     pw += `<g class="pw" id="pw${i}" data-k="${i}"><g class="bob"><g class="ring"><circle r="58" fill="none" stroke="${LIME}" stroke-width="7"/></g>` +
-      `<circle r="50" fill="${p.color}" stroke="#000" stroke-width="4"/><image href="${A(PORT[p.cls] + ".svg")}" x="-54" y="-56" width="108" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
+      `<circle r="50" fill="${p.color}" stroke="#000" stroke-width="4"/><image href="${A(PORT[p.character] + ".svg")}" x="-54" y="-56" width="108" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
   });
   if (G.cat) pw += `<g class="pw cat" id="pwc"><g class="bob"><g class="ring"><circle r="62" fill="none" stroke="${LIME}" stroke-width="7"/></g><image id="catimg" href="${catHref()}" x="-64" y="-54" width="128" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
   const fo = id => `<g id="${id}"><foreignObject x="${BOARD_BOX.x}" y="${BOARD_BOX.y}" width="${BOARD_BOX.w}" height="${BOARD_BOX.h}" style="pointer-events:none"></foreignObject></g>`;
@@ -382,7 +382,7 @@ function buildPanels() {
   $("panels").innerHTML = G.players.map((p, i) => {
     const [px, py] = panelPos(i), f = PANEL.field, pt = PANEL.portrait;
     const slots = PANEL.slots.map((s, j) => `<div class="slot" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
-    return `<div class="pp" id="pp${i}" style="left:${px}px;top:${py}px" title="${esc(CLASSES.find(c => c.id === p.cls).name)}"><img class="psh" src="${A("player_panel_shadow.svg")}" alt="" style="left:${PANEL_SHADOW.x}px;width:${PANEL_SHADOW.artW}px;transform-origin:0 0;transform:scale(${PANEL_SHADOW.w / PANEL_SHADOW.artW},${PANEL_SHADOW.h / PANEL_SHADOW.artH})"><div class="pbody"><img class="pbg" src="${A("player_panel_" + (i % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="port" src="${A(PORT[p.cls] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size + 16}px">
+    return `<div class="pp" id="pp${i}" style="left:${px}px;top:${py}px" title="${esc(CHARACTERS.find(c => c.id === p.character).name)}"><img class="psh" src="${A("player_panel_shadow.svg")}" alt="" style="left:${PANEL_SHADOW.x}px;width:${PANEL_SHADOW.artW}px;transform-origin:0 0;transform:scale(${PANEL_SHADOW.w / PANEL_SHADOW.artW},${PANEL_SHADOW.h / PANEL_SHADOW.artH})"><div class="pbody"><img class="pbg" src="${A("player_panel_" + (i % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size + 16}px">
 <div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - 12, 24)}px">${esc(p.name)}</div>${slots}</div>
 <div class="ctr" style="left:168px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_buff.svg")}" alt=""><span id="bf${i}">+0</span></div>
 <div class="ctr" style="left:272px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_debuff.svg")}" alt=""><span id="df${i}">-0</span></div></div>`;

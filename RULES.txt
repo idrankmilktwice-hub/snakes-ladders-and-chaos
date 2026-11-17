@@ -1,9 +1,9 @@
-SNAKES, LADDERS AND CHAOS!  -  RULES AND CLASS ABILITIES
+SNAKES, LADDERS AND CHAOS!  -  RULES AND CHARACTER ABILITIES
 =========================================================
 
 THE BASICS
 ----------
-* 2 to 6 players. Every player picks a different class. (If two players pick the same class they roll a die; the higher roll keeps it
+* 2 to 6 players. Every player picks a different character. (If two players pick the same character they roll a die; the higher roll keeps it
   and the other picks again.)
 * The board has 100 squares, numbered in a zig-zag (1 bottom-left, 100 top-left). Everyone starts on square 1.
 * Every game has a random board: 9 snakes (one of them is a long cobra snake) and 9 ladders.
@@ -12,13 +12,13 @@ THE BASICS
   of dragging if you prefer.) The roll can be thrown by grabbing the die, or with the ROLL button / Space bar.
 * You win by landing on square 100 EXACTLY. If your roll would take you past 100 you stay where you are
   (the Gambler is the one exception, see below).
-* Rolling a 6 gives you another turn - EXCEPT where a class says otherwise (see the table below).
+* Rolling a 6 gives you another turn - EXCEPT where a character says otherwise (see the table below).
 * Turn order: the Snake Charmer always goes first, the owner of the Cat always goes last, everyone else goes in the order they were
   added on the start screen.
 * BUFF and DEBUFF counters (under each player's panel) show a bonus (+) or penalty (-) that is added to the player's NEXT roll and then
   cleared. Bonuses and penalties add together. A move can never be less than 0 squares (it cannot push you backwards).
 * Anyone the game moves (pushed, pulled, nudged, knocked down, slid down a snake, climbed a ladder) takes snakes and ladders at the
-  square they land on, just like a normal move - except where a class says otherwise.
+  square they land on, just like a normal move - except where a character says otherwise.
 
 BONUS ROLL ON A 6 - WHO GETS IT
 -------------------------------
@@ -29,7 +29,7 @@ BONUS ROLL ON A 6 - WHO GETS IT
   Gambler .............. NO bonus for a single 6. He only gets another turn when BOTH dice are 6 (double 6s)
   Snake Charmer ........ NEVER gets a bonus roll, not even on a 6
 
-THE CLASSES
+THE CHARACTERS
 -----------
 
 BULLY
@@ -101,7 +101,7 @@ ITEMS
 * Items can only be used BEFORE rolling. During your turn your items pulse with a lime glow: click one to use it, or press Roll / Space to
   go on without using any. You can use several items, one after another. When an item asks for a target you can press Cancel / Space to
   back out without spending it.
-* Items work on every class, including the Struggler (they never trigger his dodge roll). Nothing can be used on the cat or against it.
+* Items work on every character, including the Struggler (they never trigger his dodge roll). Nothing can be used on the cat or against it.
 
   STICK ......... Nudge ANY snake's head 1 square left or right (onto a free square on its row, still above its tail).
   TOY BRICK ..... Place it on any free square in your own row or the row above/below (not under a pawn, the cat, or another item).

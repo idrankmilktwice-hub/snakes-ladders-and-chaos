@@ -1,6 +1,6 @@
 // =====================================================================================
 //  rules.js  -  the GAME RULES and the turn loop.
-//  Each class has one function in LOGIC (near the bottom). To change how a class plays, edit its function.
+//  Each character has one function in LOGIC (near the bottom). To change how a character plays, edit its function.
 //  Every function that has "async" in front of it can WAIT (for a player's drag, a die roll, or a short pause); they use "await" for that.
 // =====================================================================================
 
@@ -75,7 +75,7 @@ async function selfMove(p, t) {
 async function slide(p) {
   const n = p.pos, L = G.L[n], Sn = G.S[n];
   if (L) {
-    if (p.cls === "struggler") {   // Struggler picks two "failure" numbers, then rolls: hitting one means no climb
+    if (p.character === "struggler") {   // Struggler picks two "failure" numbers, then rolls: hitting one means no climb
       const nums = [1, 2, 3, 4, 5, 6].map(x => ({ label: String(x), value: x }));
       const f1_ = await ask(`${p.name}: pick your first failure number for this ladder`, nums, p);
       const f2_ = await ask(`${p.name}: pick a second failure number`, nums.filter(o => o.value !== f1_), p);
@@ -85,7 +85,7 @@ async function slide(p) {
     }
     log(FLAVOR.ladder(p.name, n, L)); await set(p, L);
   } else if (Sn) {
-    if (p.cls === "struggler") {   // Struggler rolls: even = dodge the snake
+    if (p.character === "struggler") {   // Struggler rolls: even = dodge the snake
       const r = d6(); log(`${p.name} rolls ${r} against the snake.`);
       if (r % 2 === 0) { log("Even! " + p.name + " wriggles out of the snake\u2019s jaws."); return; }
     }
@@ -103,7 +103,7 @@ async function go(p, t) {
 // hit(v, np, why): another player's effect moves victim v to square np (pushed, pulled, nudged, knocked down...). The Struggler may dodge. Returns true if v moved.
 async function hit(v, np, why) {
   if (np === v.pos) return false;
-  if (v.cls === "struggler") {
+  if (v.character === "struggler") {
     const r = d6(); log(`${v.name} rolls ${r} against being ${why}.`);
     if (r % 2 === 0) { log("Even! Dodged it neatly."); return false; }
     log("Odd. It lands.");
@@ -125,7 +125,7 @@ function rollBonus(p) {
 }
 // infatuate(v): the cat charms v (-1 on their next roll). The Struggler may resist.
 async function infatuate(v) {
-  if (v.cls === "struggler") { const r = d6(); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
+  if (v.character === "struggler") { const r = d6(); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
   v.pen = (v.pen || 0) + 1;
   log(`${v.name} is infatuated with the cat: -1 on their next roll.`);
   render(); syncGameState();
@@ -147,7 +147,7 @@ async function roll2(p) {
   return v;
 }
 
-// ------------------------------------------------------------------ CLASS LOGIC  (each returns true if the player gets another turn)
+// ------------------------------------------------------------------ CHARACTER LOGIC  (each returns true if the player gets another turn)
 const LOGIC = {
   // Plain roll-and-move (also used by the Struggler): roll, subtract any cat penalty, move. A 6 gives another turn.
   async base(p) { const r = await roll(p), net = rollBonus(p); await go(p, p.pos + Math.max(0, r + net)); return r === 6; },
@@ -403,11 +403,11 @@ async function useItem(p, i) {
 }
 
 // play(): runs the whole game: Charmer first, Cat owner last, everyone else in setup order. Repeats until someone wins.
-// Every turn: (1) every 3rd turn of the game a new item appears, (2) the player may use items, (3) the class's own turn.
+// Every turn: (1) every 3rd turn of the game a new item appears, (2) the player may use items, (3) the character's own turn.
 // Each player's turn is wrapped in try/catch: if the rules code hits an error the game shows a message in the board log, cleans up and moves on
 // to the next player instead of silently freezing.
 async function play() {
-  const rk = p => p.cls === "charmer" ? -1 : p.cls === "cat" ? 1 : 0;   // turn order rank
+  const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0;   // turn order rank
   G.order = [...G.players].sort((a, b) => rk(a) - rk(b));
   while (!G.winner) {
     if (G.order.every(q => q.disconnected)) break;
@@ -424,10 +424,10 @@ async function play() {
           log(`<b>\u2014 ${FLAVOR.turn(esc(p.name))} \u2014</b>`);
           await itemPhase(p);                                          // items are used before rolling
           if (p.disconnected) break;
-          again = await (LOGIC[p.cls] || LOGIC.base)(p);          // run this class's turn
+          again = await (LOGIC[p.character] || LOGIC.base)(p);          // run this character's turn
           if (again && !G.winner && !p.disconnected) log(FLAVOR.again(p.name));
         }
-        if (p.cls === "cat" && !G.winner && !p.disconnected) await catTurn(p);
+        if (p.character === "cat" && !G.winner && !p.disconnected) await catTurn(p);
         if (p.big) { p.big = false; render(); syncGameState(); }       // an energy-drink boost lasts for the turn only
         else render();
         ERRORS = 0;                                               // a turn finished normally
