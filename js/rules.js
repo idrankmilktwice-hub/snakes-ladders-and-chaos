@@ -79,14 +79,14 @@ async function slide(p) {
       const nums = [1, 2, 3, 4, 5, 6].map(x => ({ label: String(x), value: x }));
       const f1_ = await ask(`${p.name}: pick your first failure number for this ladder`, nums, p);
       const f2_ = await ask(`${p.name}: pick a second failure number`, nums.filter(o => o.value !== f1_), p);
-      const r = d6();
+      const r = await rollCheck(p, `you bet against ${f1_} and ${f2_}: roll for the ladder`);   // the player throws the die
       log(`${p.name} bets against ${f1_} and ${f2_}, and rolls ${r}.`);
       if (r === f1_ || r === f2_) { log("A failure number! The ladder wobbles and " + p.name + " stays put."); return; }
     }
     log(FLAVOR.ladder(p.name, n, L)); await set(p, L);
   } else if (Sn) {
     if (p.character === "struggler") {   // Struggler rolls: even = dodge the snake
-      const r = d6(); log(`${p.name} rolls ${r} against the snake.`);
+      const r = await rollCheck(p, "roll against the snake (even = escape)"); log(`${p.name} rolls ${r} against the snake.`);
       if (r % 2 === 0) { log("Even! " + p.name + " wriggles out of the snake\u2019s jaws."); return; }
     }
     log(FLAVOR.snake(p.name, n, Sn)); await set(p, Sn);
@@ -104,7 +104,7 @@ async function go(p, t) {
 async function hit(v, np, why) {
   if (np === v.pos) return false;
   if (v.character === "struggler") {
-    const r = d6(); log(`${v.name} rolls ${r} against being ${why}.`);
+    const r = await rollCheck(v, `roll against being ${why} (even = dodge)`); log(`${v.name} rolls ${r} against being ${why}.`);
     if (r % 2 === 0) { log("Even! Dodged it neatly."); return false; }
     log("Odd. It lands.");
   }
@@ -125,7 +125,7 @@ function rollBonus(p) {
 }
 // infatuate(v): the cat charms v (-1 on their next roll). The Struggler may resist.
 async function infatuate(v) {
-  if (v.character === "struggler") { const r = d6(); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
+  if (v.character === "struggler") { const r = await rollCheck(v, "roll against the cat\u2019s charm (even = immune)"); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
   v.pen = (v.pen || 0) + 1;
   log(`${v.name} is infatuated with the cat: -1 on their next roll.`);
   render(); syncGameState();
@@ -145,6 +145,17 @@ async function roll2(p) {
   const v = await rollDice(2);
   setPrompt(""); log(`${p.name} throws ${v[0]} and ${v[1]}.`);
   return v;
+}
+
+// rollCheck(p, what): a single die thrown by player p for a rule check (the Struggler's ladder / snake / push / charm rolls, the Bully's push-or-pull distance).
+// The player grabs the die and throws it (or presses ROLL / Space) - nothing is rolled automatically any more.
+// p is passed on to rollDice so the dice appear for the RIGHT player even when it is not their turn (e.g. a Struggler being pushed).
+// It writes no log line of its own: the caller logs what the number means. Returns the number rolled.
+async function rollCheck(p, what) {
+  setPrompt(`${p.name}: ${what} - grab the die and throw it, or press ROLL / Space.`);
+  const [r] = await rollDice(1, p);
+  setPrompt("");
+  return r;
 }
 
 // ------------------------------------------------------------------ CHARACTER LOGIC  (each returns true if the player gets another turn)
@@ -177,7 +188,8 @@ const LOGIC = {
         const vIdx = await ask("Choose your target", o.map(q => ({ label: q.name, value: G.players.indexOf(q) })));
         v = G.players[vIdx] || o[0];
       }
-      const x = d6(); log(`${p.name} looms over ${v.name} and rolls ${x} to ${dir.toLowerCase()} them.`);
+      const x = await rollCheck(p, `roll to ${dir.toLowerCase()} ${v.name}`);   // the Bully throws the die himself
+      log(`${p.name} looms over ${v.name} and rolls ${x} to ${dir.toLowerCase()} them.`);
       const np = dir === "Push" ? v.pos + x : Math.max(1, v.pos - x);
       if (np > 100) log("Overpushed! " + v.name + " stays put."); else await hit(v, np, dir === "Push" ? "pushed" : "pulled");
     }

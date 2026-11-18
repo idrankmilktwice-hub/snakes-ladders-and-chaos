@@ -374,12 +374,15 @@ function spawnDiceElements(n, canGrab) {
   }
 }
 
-// rollDice(n): put n dice at their waiting spot (slowly spinning) and wait for a throw or the ROLL button. Resolves with the list of results.
-function rollDice(n) {
-  if (G && G.cur && G.cur.disconnected) {
+// rollDice(n, who): put n dice at their waiting spot (slowly spinning) and wait for a throw or the ROLL button. Resolves with the list of results.
+// who = the player who must throw (optional). Normally it is the player whose turn it is; rules.js passes someone else when a rule makes
+// another player roll during this turn (e.g. a Struggler being pushed by the Bully).
+function rollDice(n, who) {
+  const roller = who || (G && G.cur);
+  if (roller && roller.disconnected) {
     return Promise.resolve(Array.from({ length: n }, () => d6()));
   }
-  const curIdx = G && G.cur ? G.players.indexOf(G.cur) : 0;
+  const curIdx = roller && G ? G.players.indexOf(roller) : 0;
   const isMyTurn = !NET.active || !G || (curIdx === NET.myPlayerIndex);
 
   if (NET.active && NET.isHost) {
@@ -405,7 +408,7 @@ function rollDice(n) {
     } else {
       $("rollBtn").classList.remove("ready");
       NET.pendingActorIdx = curIdx;
-      setPrompt(`Waiting for ${G && G.cur ? G.cur.name : 'player'} to roll...`);
+      setPrompt(`Waiting for ${roller ? roller.name : 'player'} to roll...`);
     }
 
     DICE.done = res;
