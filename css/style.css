@@ -1,9 +1,9 @@
 /* Snakes, Ladders and Chaos! - styles. The game is a fixed 1920x1080 stage (see fit() in js/main.js) so it matches the mockup at any window size. */
 @font-face { font-family: MC; src: url(../assets/Minecraft.ttf); }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #077dd6; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
 #stage {
   position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
-  background: var(--pattern-img, none) 0 0 repeat #077dd6;   /* the tiled pattern (assets/pattern.svg, set by initPatternArt in art.js) on top of the flat blue (same value as assets/screen_bg.svg) */
+  background: var(--pattern-img, none) 0 0 repeat #c3f73a;   /* the tiled pattern (assets/pattern.svg, set by initPatternArt in art.js) on top of the flat blue (same value as assets/screen_bg.svg) */
   font-family: MC, monospace; color: #2f2504;
 }
 #game { display: none; position: absolute; inset: 0; }
@@ -428,5 +428,7 @@ body:not(.on-title) #tLoad { display: none; }
 .gbtn:active .gb-top { transform: translateY(calc(11px * var(--sc))); }
 .gbtn:disabled { opacity: .65; cursor: default; } .gbtn:disabled:active .gb-top { transform: none; }
 .lin .lbadge, .lin .lcls { position: absolute; top: 0; } .lin .lbadge { left: 0; pointer-events: none; } .lin .lcls { left: 560px; }
-.pk-x { position: absolute; right: 28px; top: 28px; } .pk-more { position: absolute; left: calc(50% - 29px); bottom: 10px; }
+.pk-x { position: absolute; right: 28px; top: 28px; }
+.pk-more { position: absolute; left: calc(50% - 20px); bottom: 10px; width: 40px; height: 28px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pk-more:active { transform: translateY(2px); border-bottom-width: 2px; }
 .obtn { position: absolute; width: 1029.95px; height: 165px; box-sizing: border-box; padding: 15.0px 24px 0; border-radius: 22px; background: var(--tt-field); color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-family: MC, monospace; font-size: 60.0px; line-height: 1; white-space: nowrap; pointer-events: none; transition: background-color .35s; }

@@ -46,15 +46,15 @@ function gbInstallArt(svgText) {
 // The demo font draws NO digits or punctuation (. , ! : -), so those characters are shown in the Minecraft font, 30% bigger to match (css .gb-fb). A licensed full font would not need this.
 let _gcv; const GB_SPLIT = /([0-9.,!:\-]+)/;
 const gbFB = t => t.split(GB_SPLIT).map((seg, i) => i % 2 && seg ? `<span class="gb-fb">${seg}</span>` : seg).join("");
-const gbText = (txt, px) => { _gcv = _gcv || document.createElement("canvas").getContext("2d"); let w = 0; txt.split(GB_SPLIT).forEach((seg, i) => { if (!seg) return; _gcv.font = i % 2 ? `${px * 1.3}px MC` : `${px}px LM`; w += _gcv.measureText(seg).width; }); return w; };
+const gbText = (txt, px, lmOnly) => { _gcv = _gcv || document.createElement("canvas").getContext("2d"); let w = 0; (lmOnly ? [txt] : txt.split(GB_SPLIT)).forEach((seg, i) => { if (!seg) return; _gcv.font = i % 2 ? `${px * 1.3}px MC` : `${px}px LM`; w += _gcv.measureText(seg).width; }); return w; };
 // gbBuild(btn, h, label, opt): h = button height in px (the title buttons are 165 high). The width follows the text. opt = { icon: picture url, iconW: its width, minW: smallest width, maxW: largest width (longer text shrinks), html: custom content instead of text }
 function gbBuild(btn, h, label, opt) {
   opt = opt || {}; const sc = h / 165, txt = String(label || "").toUpperCase();
-  const base = opt.html ? 0 : gbText(txt, 70.9 * sc), fixed = (opt.icon ? opt.iconW + 14 * sc : 0) + 60 * sc;   // text width; icon + side room
+  const base = opt.html ? 0 : gbText(txt, 70.9 * sc, opt.lmOnly), fixed = (opt.icon ? opt.iconW + 14 * sc : 0) + 60 * sc;   // text width; icon + side room
   const k = opt.maxW && base + fixed > opt.maxW ? Math.max(.4, (opt.maxW - fixed) / base) : 1;                    // too long for maxW: shrink the text
-  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0));
+  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0, 174 * sc));   // never narrower than the art's two corners (too narrow made the face spill out of its shadow)
   btn.dataset.h = h; btn.style.setProperty("--sc", sc); btn.style.setProperty("--tk", k); btn.style.width = w + "px"; btn.style.height = h + "px";
-  btn.innerHTML = `<span class="gb-rim"></span><span class="gb-top"><span class="gb-face"></span><span class="tb-shine"></span><span class="gb-t">${opt.icon ? `<img src="${opt.icon}" alt="" style="height:${Math.round(82 * sc)}px">` : ""}${opt.html || `<span>${gbFB(txt)}</span>`}</span></span>`;
+  btn.innerHTML = `<span class="gb-rim"></span><span class="gb-top"><span class="gb-face"></span><span class="tb-shine"></span><span class="gb-t">${opt.icon ? `<img src="${opt.icon}" alt="" style="height:${Math.round(82 * sc)}px">` : ""}${opt.html || `<span>${opt.lmOnly ? txt : gbFB(txt)}</span>`}</span></span>`;
 }
 function gbLabel(btn, text) { gbBuild(btn, +btn.dataset.h, text); }   // change a button's text (the button resizes)
 

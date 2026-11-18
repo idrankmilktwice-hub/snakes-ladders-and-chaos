@@ -5,6 +5,8 @@
 // =====================================================================================
 
 // Player lines. Geometry is taken from docs/Local_Screen.jpg (6 players). With fewer players the lines are scaled up: 2 players = height of the Local button (165px), 6 = 99px.
+const BADGE_ROMAN = true;   // the demo font has no digits, so the player badges use I, II, III... in Little Monster. With a font that has digits, set this to false to get P1, P2...
+const ROMAN = ["I", "II", "III", "IV", "V", "VI"];
 const LROW = { x: 237, y: 248, pitch: 123.4, h: 99, hMax: 165 };
 const lrowScale = n => (LROW.hMax - (n - 2) * (LROW.hMax - LROW.h) / 4) / LROW.h;
 const LBASE = 49.9;   // font size (px) of "Pick a Character"; long character names shrink to fit
@@ -30,7 +32,7 @@ function buildLocal() {
   h += `<button class="gbtn" id="tStart" style="position:absolute;left:1625px;top:910px"></button>`;
   L.innerHTML = h; root.appendChild(L);
   // every button here is a green stretchable button (see gbBuild in title.js): [button, height, text]
-  L.querySelectorAll(".lbadge").forEach(b => gbBuild(b, 99, "P" + b.dataset.p, { minW: 100 }));
+  L.querySelectorAll(".lbadge").forEach(b => gbBuild(b, 99, BADGE_ROMAN ? ROMAN[b.dataset.p - 1] : "P" + b.dataset.p, { minW: 112, lmOnly: true }));
   [["hGen", 95, "Generate Code"], ["hCopy", 95, "Copy Direct Link"], ["jBtn", 95, "Join Lobby"]].forEach(([id, h, t]) => gbBuild($(id), h, t));
   gbBuild($("tStart"), 110, "Start", { minW: 235 });
   L.querySelectorAll(".lname").forEach(el => {
@@ -58,14 +60,13 @@ function buildLocal() {
     const hh = Math.min(HEAD_BOX.h, (c.id === "gambler" ? HEAD_BOX.wideW : HEAD_BOX.w) / HEAD_RATIO[c.id]);
     return `<div class="pk-slot"><div class="pk-panel" data-k="${k}"><img class="pk-art" src="${A("panel_pick_" + (k % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="pk-head" src="${A(PORT[c.id] + ".svg")}" alt="" style="height:${hh}px">` +
       `<div class="pk-name${c.name.length > 14 ? " long" : ""}">${c.name}</div>` +
-      `<div class="pk-desc"><div class="pk-scroll"><ul>${CHARACTER_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="gbtn pk-more" aria-label="Full description"></button></div>` +
+      `<div class="pk-desc"><div class="pk-scroll"><ul>${CHARACTER_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="pk-more" aria-label="Full description"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>` +
       `<button class="pk-pick" aria-label="Pick ${c.name}"><span class="tb-shine"></span></button><span class="pk-shine"></span></div></div>`;
   }).join("") + `</div><div id="tFull"><div class="tf-card"></div></div>`;
   document.body.appendChild(P);   // lives outside the scaled stage so the dark layer covers the whole window and the panels can sit on the window's bottom edge
   TT.pkPanels = [...P.querySelectorAll(".pk-panel")];
   addEventListener("resize", () => { if (TT.pickOpen) layoutPanels(); });
-  gbBuild(P.querySelector(".pk-x"), 74, "X", { minW: 74 });   // close (X) and expand buttons are green buttons too
-  P.querySelectorAll(".pk-more").forEach(b => gbBuild(b, 34, "", { minW: 58, html: '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>' }));
+  gbBuild(P.querySelector(".pk-x"), 74, "X", { minW: 74 });   // close (X) button
   TT.pkPanels.forEach((p, k) => { p.querySelector(".pk-pick").onclick = () => pickCharacter(k); p.querySelector(".pk-more").onclick = () => openFull(k); });
   P.querySelector(".pk-x").onclick = closePick;
   P.addEventListener("click", e => { if (!e.target.closest(".pk-panel, .pk-x, .tf-card")) { if ($("tFull").style.display === "block") closeFull(); else closePick(); } });   // click anywhere else = back
