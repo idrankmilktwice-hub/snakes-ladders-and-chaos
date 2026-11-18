@@ -35,6 +35,29 @@ function themeSvg(text) {
     .replace(/class="(cls-\d+)"/g, (m, c) => !map[c] ? "" : ["2f2504", "c3f73a", "eeffae", "7d9926", "4b5b18"].includes(map[c]) ? `class="pc pc-${map[c]}"` : `style="fill:#${map[c]}"`);   // palette colours switch with the theme, others (the orange) stay
 }
 
+// ---- GREEN STRETCHABLE BUTTON: the green button from the title screen, buildable at any size ----
+// assets/button_home.svg is used as a "9-slice" (css border-image): its corners keep their shape and the middle stretches, so a button can be as wide as its text needs.
+// gbInstallArt() makes a light and a dark copy of the art (same colour switch as the css palette); gbBuild() fills a <button class="gbtn"> with a button of a given height.
+const GB_DARK = { "2f2504": "#c3f73a", "c3f73a": "#2f2504", "eeffae": "#c3f73a", "7d9926": "#1c1002", "4b5b18": "#110d03" };
+function gbInstallArt(svgText) {
+  const mk = dark => `url("data:image/svg+xml;utf8,${encodeURIComponent(svgText.replace(/<\?xml[^>]*\?>/, "").replace(/<svg /, '<svg width="309.39" height="139.57" ').replace(/fill:\s*#([0-9a-fA-F]{6})/g, (m, h) => "fill:" + ((dark && GB_DARK[h.toLowerCase()]) || "#" + h)))}")`;
+  const st = document.createElement("style"); st.textContent = `html { --gbtn: ${mk(false)}; } html[data-theme=dark] { --gbtn: ${mk(true)}; }`; document.head.appendChild(st);
+}
+// The demo font draws NO digits or punctuation (. , ! : -), so those characters are shown in the Minecraft font, 30% bigger to match (css .gb-fb). A licensed full font would not need this.
+let _gcv; const GB_SPLIT = /([0-9.,!:\-]+)/;
+const gbFB = t => t.split(GB_SPLIT).map((seg, i) => i % 2 && seg ? `<span class="gb-fb">${seg}</span>` : seg).join("");
+const gbText = (txt, px) => { _gcv = _gcv || document.createElement("canvas").getContext("2d"); let w = 0; txt.split(GB_SPLIT).forEach((seg, i) => { if (!seg) return; _gcv.font = i % 2 ? `${px * 1.3}px MC` : `${px}px LM`; w += _gcv.measureText(seg).width; }); return w; };
+// gbBuild(btn, h, label, opt): h = button height in px (the title buttons are 165 high). The width follows the text. opt = { icon: picture url, iconW: its width, minW: smallest width, maxW: largest width (longer text shrinks), html: custom content instead of text }
+function gbBuild(btn, h, label, opt) {
+  opt = opt || {}; const sc = h / 165, txt = String(label || "").toUpperCase();
+  const base = opt.html ? 0 : gbText(txt, 70.9 * sc), fixed = (opt.icon ? opt.iconW + 14 * sc : 0) + 60 * sc;   // text width; icon + side room
+  const k = opt.maxW && base + fixed > opt.maxW ? Math.max(.4, (opt.maxW - fixed) / base) : 1;                    // too long for maxW: shrink the text
+  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0));
+  btn.dataset.h = h; btn.style.setProperty("--sc", sc); btn.style.setProperty("--tk", k); btn.style.width = w + "px"; btn.style.height = h + "px";
+  btn.innerHTML = `<span class="gb-rim"></span><span class="gb-top"><span class="gb-face"></span><span class="tb-shine"></span><span class="gb-t">${opt.icon ? `<img src="${opt.icon}" alt="" style="height:${Math.round(82 * sc)}px">` : ""}${opt.html || `<span>${gbFB(txt)}</span>`}</span></span>`;
+}
+function gbLabel(btn, text) { gbBuild(btn, +btn.dataset.h, text); }   // change a button's text (the button resizes)
+
 // glide(el, to, ms, ease, delay): slide an element from where it is now to offset to={x,y} (pixels away from its home spot); remembers the new spot.
 function glide(el, to, ms, ease, delay) {
   const tf = p => `translate(${p.x || 0}px,${p.y || 0}px)`, from = { x: el._x || 0, y: el._y || 0 };   // (missing numbers count as 0, so a slide can never be invalid)
@@ -150,13 +173,14 @@ addEventListener("keydown", e => { if (e.key === "Escape") goBack(); });
 function enterHome() { if (TT.state === "intro") { TT.state = "home"; $("title").classList.add("done"); } }
 
 // buildTitle(root, logoSvg, buttonSvg, backSvg): create every piece of the title screen.
-function buildTitle(root, logoSvg, btnSvg, backSvg, descSvg) {
+function buildTitle(root, logoSvg, btnSvg, backSvg) {
+  gbInstallArt(btnSvg);
   const backD = (backSvg.match(/<path class="cls-1" d="([^"]+)"/) || [])[1] || "";
   root.innerHTML =
     `<div id="tLogo">${themeSvg(logoSvg)}</div><div id="tMenu">` +
     TITLE_PAGES.map((p, i) => `<button class="tbtn" data-id="${p.id}" style="left:${TITLE.btnX[i]}px;top:${TITLE.btnY}px;--d:${(TITLE.btnStart + i * TITLE.btnGap).toFixed(2)}s"><span class="tb-rim"></span><span class="tb-face">${themeSvg(btnSvg)}<span class="tb-shine"></span><span class="tb-label">${p.label}</span></span></button>`).join("") +
     `</div><button id="tBack" title="Back" aria-label="Back"><svg class="tk-shadow" viewBox="0 0 184.18 321.83"><path d="${backD}"/></svg><span class="tk-face">${themeSvg(backSvg)}</span></button>` +
-    `<div id="tRows">` + ROWS.map((r, i) => `<button class="tbtn pg" data-row="${i}" style="left:${ROWPOS.gx}px;top:${ROWPOS.gy[i]}px"><span class="tb-rim"></span><span class="tb-face">${themeSvg(btnSvg)}<span class="tb-shine"></span><span class="tb-label">${r.label}</span></span></button><button class="obtn" data-row="${i}" style="left:${ROWPOS.ox}px;top:${ROWPOS.oy[i]}px"><span class="ob-face">${themeSvg(descSvg)}<span class="tb-shine"></span><span class="ob-label">${r.text}</span></span></button>`).join("") + `</div>` +
+    `<div id="tRows">` + ROWS.map((r, i) => `<button class="tbtn pg" data-row="${i}" style="left:${ROWPOS.gx}px;top:${ROWPOS.gy[i]}px"><span class="tb-rim"></span><span class="tb-face">${themeSvg(btnSvg)}<span class="tb-shine"></span><span class="tb-label">${r.label}</span></span></button><div class="obtn" data-row="${i}" style="left:${ROWPOS.ox}px;top:${ROWPOS.gy[i]}px">${r.text}</div>`).join("") + `</div>` +
     `<div id="tPage"><div class="tp-card"></div></div>` +
     // the light/dark switch (top right): sun, the switch, moon
     `<svg id="tSun" viewBox="0 0 54 54"><circle cx="27" cy="27" r="12" fill="none" stroke-width="3"/><path d="M27 2L34 13H20Z M27 52L20 41H34Z M52 27L41 20V34Z M2 27L13 20V34Z" fill="none" stroke-width="2.5" stroke-linejoin="round"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(45 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(135 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(225 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(315 27 27)"/></svg>` +
@@ -172,7 +196,7 @@ function buildTitle(root, logoSvg, btnSvg, backSvg, descSvg) {
   TT.rows.forEach((r, i) => {   // rows wait off-screen (green left, orange right) until the Play page opens; clicking either button picks the row
     r.g._x = ROWPOS.gOff; r.o._x = ROWPOS.oOff; r.g._y = r.o._y = 0;
     r.g.style.transform = `translate(${ROWPOS.gOff}px,0)`; r.o.style.transform = `translate(${ROWPOS.oOff}px,0)`;
-    r.g.onclick = r.o.onclick = () => openSub(i);
+    r.g.onclick = () => openSub(i);   // only the green button is clickable; the dark box just describes it
   });
   TT.btns.forEach(b => { b._x = b._y = 0; b.onclick = () => openPage(b.dataset.id); });   // every sliding piece starts with a known position (0,0)
   TT.logo._x = TT.logo._y = 0;
@@ -191,9 +215,9 @@ async function initTitle() {
   const root = $("title");
   $("setup").style.display = "none"; root.classList.add("on"); document.body.classList.add("on-title"); document.documentElement.classList.add("on-title");
   try {
-    const [logo, btn, back, desc] = await Promise.all([T("logo.svg"), T("button_home.svg"), T("button_back.svg"), T("button_playscreen_description.svg")]);
+    const [logo, btn, back] = await Promise.all([T("logo.svg"), T("button_home.svg"), T("button_back.svg")]);
     try { await document.fonts.load("72px LM"); } catch (e) { /* font not ready: the fallback shows briefly */ }
-    buildTitle(root, logo, btn, back, desc);
+    buildTitle(root, logo, btn, back);
     if (room) { enterHome(); await openPage("play"); await openSub(2); autoJoin(room); }
   } catch (e) { console.warn("Title screen could not start:", e); showSetup(); if (room) { window.TITLE_ACTIVE = false; setGameMode("online"); joinRoom(room); } }
 }

@@ -23,12 +23,16 @@ const slideOut = (el, dx, delay) => el.animate([{ opacity: 1, transform: "none" 
 function buildLocal() {
   const root = $("title"), L = document.createElement("div"); L.id = "tLocal";
   let h = "";
-  for (let i = 0; i < CONFIG.MAX_PLAYERS; i++) h += `<div class="lrow" data-i="${i}"><div class="lin"><div class="lbadge c${i % 2}"><span class="tb-shine"></span><span class="lb-t">P${i + 1}</span></div><span class="lchev"></span><input class="lname" data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" autocomplete="off"><button class="lcls c${i % 2}" data-i="${i}"></button></div></div>`;
+  for (let i = 0; i < CONFIG.MAX_PLAYERS; i++) h += `<div class="lrow" data-i="${i}"><div class="lin"><div class="gbtn lbadge" data-p="${i + 1}"></div><span class="lchev"></span><input class="lname" data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" autocomplete="off"><button class="gbtn lcls" data-i="${i}"></button></div></div>`;
   h += `<div id="tCnt"><span class="cl">PLAYERS:</span><button id="tCntBtn" aria-label="Number of players"><b id="tCntNum">6</b><i></i><svg viewBox="0 0 24 14"><path d="M3 3L12 11.5 21 3" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square"/></svg></button><div id="tCntMenu">${[2, 3, 4, 5, 6].map(v => `<button data-v="${v}">${v}</button>`).join("")}</div></div>`;
-  h += `<div id="tHost" class="tgrp"><button class="cbtn hbtn" id="hGen"><span><i class="tb-shine"></i><b class="ht">Generate Code</b></span></button><div class="hcode empty" id="hCode">- - - - -</div><button class="cbtn hbtn" id="hCopy"><span><i class="tb-shine"></i><b class="ht">Copy Direct Link</b></span></button></div>` +
-       `<div id="tJoin" class="tgrp"><input class="hcode" id="jCode" maxlength="6" placeholder="ENTER CODE" autocomplete="off" spellcheck="false"><button class="cbtn hbtn" id="jBtn"><span><i class="tb-shine"></i><b class="ht">Join Lobby</b></span></button></div><div id="tToast"></div><div id="tWait">Waiting for the host...</div>`;
-  h += `<button class="tbtn" id="tStart" style="left:1500px;top:860px"><span class="tb-rim"></span><span class="tb-face">${themeSvg(TT.btnSvg)}<span class="tb-shine"></span><span class="tb-label">START</span></span></button>`;
+  h += `<div id="tHost" class="tgrp"><button class="gbtn" id="hGen"></button><div class="hcode empty" id="hCode">- - - - -</div><button class="gbtn" id="hCopy"></button></div>` +
+       `<div id="tJoin" class="tgrp"><input class="hcode" id="jCode" maxlength="6" placeholder="ENTER CODE" autocomplete="off" spellcheck="false"><button class="gbtn" id="jBtn"></button></div><div id="tToast"></div><div id="tWait">Waiting for the host...</div>`;
+  h += `<button class="gbtn" id="tStart" style="position:absolute;left:1625px;top:910px"></button>`;
   L.innerHTML = h; root.appendChild(L);
+  // every button here is a green stretchable button (see gbBuild in title.js): [button, height, text]
+  L.querySelectorAll(".lbadge").forEach(b => gbBuild(b, 99, "P" + b.dataset.p, { minW: 100 }));
+  [["hGen", 95, "Generate Code"], ["hCopy", 95, "Copy Direct Link"], ["jBtn", 95, "Join Lobby"]].forEach(([id, h, t]) => gbBuild($(id), h, t));
+  gbBuild($("tStart"), 110, "Start", { minW: 235 });
   L.querySelectorAll(".lname").forEach(el => {
     const i = +el.dataset.i, nm = () => el.value.trim() || `Player ${i + 1}`;
     el.oninput = () => { if (S.mode === "online") onPlayerNameInput(i, nm()); else S.rows[i].name = nm(); };   // online: also sent to the other players
@@ -50,16 +54,18 @@ function buildLocal() {
   $("jCode").onkeydown = e => { if (e.key === "Enter") joinPressed(); };
   // the pick overlay: dark layer, X button, the six panels, and the full-rules popup
   const P = document.createElement("div"); P.id = "tPick";
-  P.innerHTML = `<div class="pk-dim"></div><button class="pk-x" aria-label="Close"></button><div id="pkPanels">` + CHARACTERS.map((c, k) => {
+  P.innerHTML = `<div class="pk-dim"></div><button class="gbtn pk-x" aria-label="Close"></button><div id="pkPanels">` + CHARACTERS.map((c, k) => {
     const hh = Math.min(HEAD_BOX.h, (c.id === "gambler" ? HEAD_BOX.wideW : HEAD_BOX.w) / HEAD_RATIO[c.id]);
     return `<div class="pk-slot"><div class="pk-panel" data-k="${k}"><img class="pk-art" src="${A("panel_pick_" + (k % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="pk-head" src="${A(PORT[c.id] + ".svg")}" alt="" style="height:${hh}px">` +
       `<div class="pk-name${c.name.length > 14 ? " long" : ""}">${c.name}</div>` +
-      `<div class="pk-desc"><div class="pk-scroll"><ul>${CHARACTER_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="pk-more" aria-label="Full description"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>` +
+      `<div class="pk-desc"><div class="pk-scroll"><ul>${CHARACTER_BRIEF[c.id].pts.map(t => `<li>${t}</li>`).join("")}</ul></div><button class="gbtn pk-more" aria-label="Full description"></button></div>` +
       `<button class="pk-pick" aria-label="Pick ${c.name}"><span class="tb-shine"></span></button><span class="pk-shine"></span></div></div>`;
   }).join("") + `</div><div id="tFull"><div class="tf-card"></div></div>`;
   document.body.appendChild(P);   // lives outside the scaled stage so the dark layer covers the whole window and the panels can sit on the window's bottom edge
   TT.pkPanels = [...P.querySelectorAll(".pk-panel")];
   addEventListener("resize", () => { if (TT.pickOpen) layoutPanels(); });
+  gbBuild(P.querySelector(".pk-x"), 74, "X", { minW: 74 });   // close (X) and expand buttons are green buttons too
+  P.querySelectorAll(".pk-more").forEach(b => gbBuild(b, 34, "", { minW: 58, html: '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>' }));
   TT.pkPanels.forEach((p, k) => { p.querySelector(".pk-pick").onclick = () => pickCharacter(k); p.querySelector(".pk-more").onclick = () => openFull(k); });
   P.querySelector(".pk-x").onclick = closePick;
   P.addEventListener("click", e => { if (!e.target.closest(".pk-panel, .pk-x, .tf-card")) { if ($("tFull").style.display === "block") closeFull(); else closePick(); } });   // click anywhere else = back
@@ -81,7 +87,8 @@ function refreshRow(i) {
   const r = S.rows[i], b = $("tLocal").querySelector(`.lcls[data-i="${i}"]`), c = r && CHARACTERS.find(c => c.id === r.character);
   if (!r) return;
   b.disabled = S.mode === "online" && i !== NET.myPlayerIndex;
-  b.innerHTML = `<span class="tb-shine"></span>` + (c ? `<img src="${A(PORT[c.id] + ".svg")}" alt=""><span class="lt" style="font-size:${fitFont(c.name)}px">${c.name}</span>` : `<span class="lt">Pick a Character</span>`);
+  if (c) gbBuild(b, 99, c.name, { icon: A(PORT[c.id] + ".svg"), iconW: Math.min(82 * 99 / 165 * HEAD_RATIO[c.id], 70), maxW: 378 });   // head + name; the button stretches to fit
+  else gbBuild(b, 99, "Pick a Character", { maxW: 378 });
 }
 // syncRows(): copy names / characters from S into the lines (used when the lobby changes online)
 function syncRows() {
@@ -104,7 +111,7 @@ async function showLocal(mode) {
   const L = $("tLocal"), online = mode !== "local"; L.dataset.mode = mode;
   if (online) { if (NET.active) leaveOnlineLobby(); S.mode = "online"; S.netState = "idle"; S.rows = []; initRows(); S.n = mode === "host" ? 1 : 0; NET.onLobbyUpdate = onlineLobbyUpdate; }
   else { setGameMode("local"); initRows(); }
-  $("hCode").textContent = "- - - - -"; $("hCode").classList.add("empty"); $("jCode").value = ""; $("jCode").disabled = false; $("jBtn").disabled = false; $("jBtn").querySelector(".ht").textContent = "Join Lobby"; $("tToast").style.display = "none";
+  $("hCode").textContent = "- - - - -"; $("hCode").classList.add("empty"); $("jCode").value = ""; $("jCode").disabled = false; $("jBtn").disabled = false; gbLabel($("jBtn"), "Join Lobby"); $("tToast").style.display = "none";
   L.style.display = "block"; layoutRows(); syncRows();
   const grp = { local: $("tCnt"), host: $("tHost"), join: $("tJoin") }[mode];
   const items = [...L.querySelectorAll(".lrow")].slice(0, S.n).map(r => r.firstChild).concat([grp, $("tStart")]);
@@ -136,14 +143,14 @@ function toast(anchor, text, ok, pos) {
 async function hostGenerate() {
   if (TT.net) return;
   if (NET.active && NET.isHost && S.n > 1) return toast($("hGen"), "Players are connected!", false, "below");
-  TT.net = true; const t = $("hGen").querySelector(".ht"); $("hGen").disabled = true; t.textContent = "Generating...";
+  TT.net = true; $("hGen").disabled = true; gbLabel($("hGen"), "Generating...");
   try {
     if (NET.active) leaveOnlineLobby();
     S.mode = "online"; S.rows = []; initRows(); S.n = 1; NET.onLobbyUpdate = onlineLobbyUpdate;
     await initHost(); S.netState = "lobby";
     $("hCode").textContent = NET.roomCode; $("hCode").classList.remove("empty"); onlineLobbyUpdate();
   } catch (err) { toast($("hGen"), "Could not create lobby!", false, "below"); }
-  t.textContent = "Generate Code"; $("hGen").disabled = false; TT.net = false;
+  gbLabel($("hGen"), "Generate Code"); $("hGen").disabled = false; TT.net = false;
 }
 // copyLink(): the Copy Direct Link button - an invite link that opens straight into the Join screen
 function copyLink() {
@@ -158,17 +165,17 @@ async function joinPressed() {
   if (TT.net) return;
   const code = ($("jCode").value || "").trim().toUpperCase();
   if (!code) return toast($("jBtn"), "Enter a code!", false, "right");
-  TT.net = true; const t = $("jBtn").querySelector(".ht"); $("jBtn").disabled = true; t.textContent = "Joining...";
+  TT.net = true; $("jBtn").disabled = true; gbLabel($("jBtn"), "Joining...");
   try {
     if (NET.active) leaveOnlineLobby();
     S.mode = "online"; S.rows = []; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate;
     await initGuest(code, "Player"); S.netState = "lobby";
-    $("jCode").disabled = true; t.textContent = "Joined"; onlineLobbyUpdate();
+    $("jCode").disabled = true; gbLabel($("jBtn"), "Joined"); onlineLobbyUpdate();
     toast($("jBtn"), "Room Found!", true, "right");
   } catch (err) {
     if (NET.active) leaveOnlineLobby();
     S.mode = "online"; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate; onlineLobbyUpdate();
-    t.textContent = "Join Lobby"; $("jBtn").disabled = false;
+    gbLabel($("jBtn"), "Join Lobby"); $("jBtn").disabled = false;
     toast($("jBtn"), /full|started/i.test(err && err.message) ? "Lobby is full!" : "Can't find Lobby!", false, "right");
   }
   TT.net = false;

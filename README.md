@@ -50,6 +50,7 @@ Every function and variable in the JS files has a comment saying what it does an
 | change what the board log says       | `FLAVOR` in `js/rules.js`                        |
 | change how a character plays             | `LOGIC` in `js/rules.js`                         |
 | change pawn / snake / number sizes   | `render.js` (`placePawns`, `SW`, `NUM_H`)        |
+| change a green button's size / text       | `gbBuild(...)` calls in `js/local.js`, `.gbtn` in `css/style.css` |
 | change which sound plays            | `SOUNDS` in `js/config.js` (and `ROLL_MS` for the dice roll length) |
 | swap or add art                      | put the SVG in `assets/`, list it in `assets/manifest.json` |
 
