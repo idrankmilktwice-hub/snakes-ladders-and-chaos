@@ -229,6 +229,8 @@ function leaveOnlineLobby() {
       }
     } catch (e) {}
   }
+  if (typeof stopHeartbeat === "function") { stopHeartbeat(); stopRecovery(); }
+  NET.gameStarted = false; NET.hostLost = false; NET.selfLost = false; NET.retired = false; NET.myToken = null; NET.seatHash = []; NET.waitMsg = null;
   if (typeof stopServerRelay === "function") stopServerRelay();
   if (typeof stopCloudRelay === "function") stopCloudRelay();
   if (NET.peer) {
@@ -384,8 +386,12 @@ function start() {
   log("Items are scattered across the board: step on one to pick it up!");
 
   if (NET.active && NET.isHost) {
+    NET.gameStarted = true; NET.epoch = 0; NET.hostIdx = 0;                      // from now on the "reconnect" rules apply (see network.js)
+    NET.seatHash = NET.seatHash.slice(0, G.players.length);                      // sha256 of every seat's secret token
+    NET.connections.forEach(c => { delete c.token; c.lastRx = performance.now(); });
     // Send a clean snapshot of the game state (without circular / DOM references)
     const snapshot = {
+      hashes: NET.seatHash, epoch: 0, hostIdx: 0, roomCode: NET.roomCode,
       players: G.players,
       items: G.items,
       turnNo: G.turnNo,
@@ -400,6 +406,7 @@ function start() {
       cur: G.cur,
     };
     broadcast({ type: "GAME_START", G: snapshot, logHtml: $("log").innerHTML });
+    saveSession();
   }
 
   play();
@@ -429,10 +436,41 @@ $("about").innerHTML =
 // drawSettings(): (re)draw the volume bar from VOLUME (audio.js).
 function drawSettings() {
   let bar = "";
+<<<<<<< HEAD
   for (let i = 1; i <= 10; i++)
     bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
   $("settings").innerHTML =
     `<p>Sound effects</p><div class="volbar">${bar}</div><p class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</p>`;
+=======
+  for (let i = 1; i <= 10; i++) bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
+  $("settings").innerHTML = `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>` + (NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : "");
+}
+// ---- Switch Device (online games): a one-time code that lets this player carry on from another device ----
+const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };
+const fmtLeft = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+function swDeviceHtml() {
+  const x = XFER_UI;
+  if (x.code && performance.now() < x.until) {
+    const cnt = n => `<div class="swc"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A(n[0])}" alt=""><span>${n[1]}</span></div>`;
+    return `<div class="swbox"><div class="swcode">${cnt(["counter_buff.svg", x.code.room])}${cnt(["counter_debuff.svg", x.code.secret])}</div><p class="swnote">Enter this joining code on your other device. Valid for <span id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</span></p></div>`;
+  }
+  return `<div class="swbox"><button id="swBtn" class="cbtn" onclick="switchDevicePressed()"><span>Switch Device</span></button><p class="swnote">Play from a different device with this joining code. Valid for the next 2 minutes</p>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}</div>`;
+}
+async function switchDevicePressed() {
+  if (XFER_UI.busy) return;
+  XFER_UI.busy = true; XFER_UI.err = ""; sfx("small");
+  try {
+    const c = await requestTransferCode();
+    XFER_UI.code = { room: c.room, secret: c.secret }; XFER_UI.until = performance.now() + c.ms;
+    if (XFER_UI.timer) clearInterval(XFER_UI.timer);
+    XFER_UI.timer = setInterval(() => {                          // count down; when it runs out the button comes back
+      const left = Math.ceil((XFER_UI.until - performance.now()) / 1000);
+      if (left <= 0) { clearInterval(XFER_UI.timer); XFER_UI.timer = null; XFER_UI.code = null; if (TAB === "settings") drawSettings(); }
+      else { const el = $("swLeft"); if (el) el.textContent = fmtLeft(left); }
+    }, 500);
+  } catch (e) { XFER_UI.err = (e && e.message) || "Could not make a code."; }
+  XFER_UI.busy = false; drawSettings();
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 }
 // setVolume(n): called when step n of the bar is clicked. Clicking step 1 while it is the only one lit mutes; any other step selects that volume.
 function setVolume(n) {
@@ -462,6 +500,7 @@ function showTab(k) {
   $("rulebook").style.display = k === "rulebook" ? "block" : "none";
   $("about").style.display = k === "about" ? "block" : "none";
   $("settings").style.display = k === "settings" ? "block" : "none";
+  if (k === "settings") drawSettings();                       // (the Switch Device part only exists during an online game)
   $("chatView").style.display = k === "chat" ? "block" : "none";
   $("chatInputBar").style.display = k === "chat" ? "flex" : "none";
   $("prompt").style.display = k === "chat" ? "none" : "flex";
@@ -516,10 +555,17 @@ $("boxes").innerHTML = BOXES.map(
 ).join("");
 
 // ---- start-up ----
+<<<<<<< HEAD
 loadSounds(); // decode the sound effects in the background (see audio.js)
 drawSetup(); // show the setup screen straight away
 loadAssets().then(() => {
+=======
+loadSounds();                   // decode the sound effects in the background (see audio.js)
+drawSetup();                    // show the setup screen straight away
+loadAssets().then(async () => {
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   drawSetup();
+  if (typeof autoRejoin === "function" && await autoRejoin()) return;   // the page was reloaded or crashed in the middle of an online game: back to the seat
   // Auto-join room from URL query param ?room=CODE
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get("room");

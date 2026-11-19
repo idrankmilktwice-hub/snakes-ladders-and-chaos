@@ -2,6 +2,8 @@
 //  network.js  -  Multiplayer Layer (WebRTC P2P + SSE/HTTP/WS Fallback)
 //  Provides room creation, join handshakes, ordered action routing, live drag previews,
 //  chat, disconnect recovery, and authoritative state synchronization.
+//  RECONNECT SYSTEM (added): secret seat tokens, heartbeat loss detection, automatic rejoin,
+//  host migration, "switch device" transfer codes and a 5-second turn grace. See section 4 onwards.
 // =====================================================================================
 
 var NET = {
@@ -22,6 +24,37 @@ var NET = {
   onJoinDenied: null,
   disconnectTimer: null,
   reconnecting: false,
+
+  // ---- reconnect system ----
+  epoch: 0,            // host generation: 0 = the original host, +1 every time the host role moves to someone else
+  hostIdx: 0,          // seat number of whoever is host right now
+  gameStarted: false,  // true once GAME_START happened (before that the lobby rules apply)
+  retired: false,      // this page gave up its seat (other tab / other device / lobby ended)
+  myToken: null,       // my secret seat token (never sent to anybody except the host that issued it)
+  seatHash: [],        // sha256 of every seat's token (everybody holds these, so any player can become host and still check tokens)
+  xferCodes: [],       // host: live "switch device" codes [{idx, secret, exp}]
+  xferFails: 0,        // host: wrong transfer-code attempts (locks transfer codes after too many)
+  xferLockUntil: 0,
+  xferWaiter: null,    // guest: waiting for the host to answer a transfer-code request
+  pendingXfer: null,   // guest: transfer secret to present while joining
+  lastRx: 0,           // guest: when something last arrived from the host
+  joinedAt: 0,
+  hostLost: false,     // guest: the host stopped answering, recovery is running
+  hostLostAt: 0,
+  noElectUntil: 0,
+  selfLost: false,     // host: my own connection died
+  recTimer: null,
+  pingTimer: null,
+  monTimer: null,
+  probeTimer: null,
+  selfTimer: null,
+  rcTimer: null,
+  lastMonTick: 0,
+  waitMsg: null,       // host: the last WAIT_* prompt nobody answered yet (replayed to a player who rejoins)
+  reconnectWaiter: null,
+  sendJoinHandshake: null,
+  linkUpSince: 0,
+  linkWasDown: false,
 
   // Pending host resolvers (paired with active actor index so disconnects can unblock)
   pendingActorIdx: null,
@@ -62,6 +95,7 @@ const ICE_CONFIG = {
 };
 
 const IN_GAME_TYPES = new Set([
+<<<<<<< HEAD
   "STATE_SYNC",
   "WAIT_ROLL",
   "WAIT_MOVE",
@@ -73,6 +107,12 @@ const IN_GAME_TYPES = new Set([
   "FLY_ITEM",
   "DRAG_MOVE",
   "GAME_OVER",
+=======
+  "STATE_SYNC", "WAIT_ROLL", "WAIT_MOVE", "WAIT_CHOOSE",
+  "WAIT_ITEM", "WAIT_TARGET", "LOG_LINE", "ACTION_SYNC",
+  "FLY_ITEM", "DRAG_MOVE", "GAME_OVER", "PLAYER_LEFT", "PLAYER_BACK",
+  "RECONNECT_WAIT", "RECONNECT_WAIT_END"
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 ]);
 
 function genRoomCode() {
@@ -89,6 +129,115 @@ function fullPeerId(code) {
 
 function makeMsgId() {
   return Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+}
+
+// ---- reconnect system constants ----
+const HB_PING_MS = 1000;          // guests ping the host this often
+const HB_TIMEOUT_MS = 2800;       // nothing heard for this long = disconnected (a closed tab is noticed instantly, this is for dead connections)
+const LOBBY_TIMEOUT_MS = 12000;   // the lobby is more forgiving (nobody is waiting for anybody)
+const RECOVERY_GIVEUP_MS = 20000; // a player that cannot find any host for this long learns the lobby is over
+const ELECT_BASE_MS = 1000;       // new-host election: first candidate takes over this long after the host is lost...
+const ELECT_STEP_MS = 3500;       // ...each next candidate waits this much longer
+const XFER_TTL_MS = 120000;       // a "switch device" code lives 2 minutes
+const SESSION_KEY = "snc_session";
+const SESSION_MAX_AGE = 6 * 3600 * 1000;
+
+// hostPeerId(code, epoch): the address of the host. Epoch 0 = the original host; every host change gets a fresh address so two hosts never share one.
+function hostPeerId(code, epoch) {
+  return fullPeerId(code) + (epoch ? "-e" + epoch : "");
+}
+function isHostPeerId(id) {
+  if (typeof id !== "string" || !NET.roomCode) return false;
+  const base = fullPeerId(NET.roomCode);
+  return id.indexOf(base) === 0 && /^(-e\d+)?$/.test(id.slice(base.length));
+}
+
+// ---- secret tokens: sha256 (small synchronous implementation: crypto.subtle is missing on plain-http LAN pages) ----
+const SHA_K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+function sha256hex(str) {
+  const bytes = Array.from(new TextEncoder().encode(String(str)));
+  const bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  for (let i = 7; i >= 0; i--) bytes.push(i >= 4 ? 0 : (bitLen >>> (i * 8)) & 255);
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19], w = new Array(64);
+  const rr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let o = 0; o < bytes.length; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (bytes[o + i * 4] << 24) | (bytes[o + i * 4 + 1] << 16) | (bytes[o + i * 4 + 2] << 8) | bytes[o + i * 4 + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = rr(w[i - 15], 7) ^ rr(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = rr(w[i - 2], 17) ^ rr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & f) ^ (~e & g)) + SHA_K[i] + w[i]) | 0;
+      const t2 = ((rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(x => (x >>> 0).toString(16).padStart(8, "0")).join("");
+}
+function randomBytes(n) {
+  const a = new Uint8Array(n);
+  try { (self.crypto || self.msCrypto).getRandomValues(a); } catch (e) { for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); }
+  return a;
+}
+function makeToken() { return Array.from(randomBytes(16), b => b.toString(16).padStart(2, "0")).join(""); }
+function makeXferSecret() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = randomBytes(6);
+  return Array.from(r, b => chars[b % chars.length]).join("");
+}
+function seatByToken(token) {
+  if (!token || typeof token !== "string") return -1;
+  return NET.seatHash.indexOf(sha256hex(token));
+}
+
+// ---- the saved session: lets a page that was closed / reloaded / crashed find its way back to its seat ----
+// sessionStorage belongs to THIS tab (a reload gets it back); localStorage is the fallback for a tab that was closed and reopened.
+function saveSession() {
+  if (!NET.active || NET.retired || !NET.roomCode || !NET.myToken || !NET.gameStarted) return;
+  const s = JSON.stringify({ room: NET.roomCode, token: NET.myToken, idx: NET.myPlayerIndex, epoch: NET.epoch, ts: Date.now(), live: true });
+  try { sessionStorage.setItem(SESSION_KEY, s); } catch (e) {}
+  try { localStorage.setItem(SESSION_KEY, s); } catch (e) {}
+}
+function readSession(store) {
+  try {
+    const j = JSON.parse(store.getItem(SESSION_KEY) || "null");
+    if (j && j.token && j.room && Date.now() - j.ts < SESSION_MAX_AGE) return j;
+  } catch (e) {}
+  return null;
+}
+// loadSession(room): the seat this device holds in that room (used when the player types the room code)
+function loadSession(room) {
+  const want = room ? String(room).toUpperCase() : null;
+  for (const st of [window.sessionStorage, window.localStorage]) {
+    let j = null;
+    try { j = st && readSession(st); } catch (e) {}
+    if (j && (!want || j.room === want)) return j;
+  }
+  return null;
+}
+// pickAutoSession(): the seat this page should take back by itself right now. This tab's own session always counts (page reload);
+// the shared one counts only if no other live tab is refreshing it (this tab was closed and reopened).
+function pickAutoSession() {
+  let j = null;
+  try { j = readSession(window.sessionStorage); } catch (e) {}
+  if (j) return j;
+  try { j = readSession(window.localStorage); } catch (e) {}
+  if (j && (!j.live || Date.now() - j.ts > 15000)) return j;
+  return null;
+}
+function clearSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+}
+function markSessionClosed() {   // this page is going away cleanly: let a new page take the seat back at once
+  try {
+    const j = readSession(window.localStorage);
+    if (j && j.token === NET.myToken) { j.live = false; localStorage.setItem(SESSION_KEY, JSON.stringify(j)); }
+  } catch (e) {}
 }
 
 // ------------------------------------------------------------------ 1. FALLBACK TRANSPORTS
@@ -163,6 +312,7 @@ function deliverRelayPacket(srcPeerId, msg, mqttBrokerIdx) {
     hc.open = true;
     handleNetData(msg, hc);
   } else if (!NET.isHost && NET.hostConn) {
+    if (srcPeerId && !isHostPeerId(srcPeerId)) return;   // a guest only believes the host
     if (mqttBrokerIdx !== undefined) NET.hostConn.mqttIdx = mqttBrokerIdx;
     NET.hostConn.open = true;
     handleNetData(msg, NET.hostConn);
@@ -515,9 +665,9 @@ function stopServerRelay() {
 }
 
 // Connects instant SSE stream (/api/events) with automatic long-poll fallback (/api/poll?wait=8)
-function startServerRelay() {
+function startServerRelay(keepSeq) {
   stopServerRelay();
-  NET.httpSeq = 0;
+  if (!keepSeq) NET.httpSeq = 0;
   if (/\.github\.io$/i.test(location.hostname)) {
     NET.httpEnabled = false;
     return;
@@ -598,16 +748,21 @@ function createHybridConn(peerId, rtcConn) {
     mqttIdx: undefined,
     open: true,
     playerIndex: null,
+    lastRx: 0,            // when this connection last delivered anything (heartbeat watching)
     isRtcOpen() {
       return !!(this.rtcConn && this.rtcConn.open);
     },
     send(msg, opts) {
+<<<<<<< HEAD
       if (
         msg &&
         typeof msg === "object" &&
         !msg._mid &&
         msg.type !== "DRAG_MOVE"
       ) {
+=======
+      if (msg && typeof msg === "object" && !msg._mid && msg.type !== "DRAG_MOVE" && msg.type !== "PING" && msg.type !== "PONG") {
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
         msg._mid = makeMsgId();
       }
       // Fast path: direct WebRTC DataChannel is open -> send ONLY via WebRTC (zero server/WS load!)
@@ -629,14 +784,24 @@ function createHybridConn(peerId, rtcConn) {
   };
 }
 
+// sendToPeer(peerId, msg): one message to a specific address (used to knock on several possible host addresses)
+function sendToPeer(peerId, msg, opts) {
+  const h = (NET.hostConn && NET.hostConn.peer === peerId) ? NET.hostConn : createHybridConn(peerId, null);
+  h.send(msg, opts || { allBrokers: true });
+}
+
 // Keep PeerJS signaling & Cloud WSS relays alive across tab switches
 document.addEventListener("visibilitychange", () => {
   if (document.hidden || !NET.active) return;
+<<<<<<< HEAD
   if (NET.peer && NET.peer.disconnected && !NET.peer.destroyed) {
     try {
       NET.peer.reconnect();
     } catch (e) {}
   }
+=======
+  ensureTransports();
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   const ping = new Uint8Array([0xc0, 0x00]);
   NET.mqttSockets.forEach((s) => {
     if (s && s.ready && s.ws && s.ws.readyState === 1) {
@@ -648,22 +813,9 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ------------------------------------------------------------------ 3. HOST & GUEST INIT
-function initHost(customCode) {
+// startHostTransport(pid, onIdTaken): bring up everything a host needs to be reachable at address pid (relays + PeerJS). Used for a new room and when the host role moves.
+function startHostTransport(pid, onIdTaken) {
   return new Promise((resolve, reject) => {
-    initRows();
-    NET.roomCode = (customCode || genRoomCode()).toUpperCase();
-    const pid = fullPeerId(NET.roomCode);
-    NET.isHost = true;
-    NET.active = true;
-    NET.myPlayerIndex = 0;
-    NET.joined = true;
-    NET.connections = [];
-    NET.peerMap = {};
-    NET.seenMsgs.clear();
-    NET.earlyQueue = [];
-    NET.stateSeq = 0;
-    NET.myId = pid;
-
     let settled = false;
     const finishHost = () => {
       if (!settled) {
@@ -714,6 +866,7 @@ function initHost(customCode) {
       handleIncomingConnection(conn);
     });
 
+<<<<<<< HEAD
     NET.peer.on("error", (err) => {
       if (err.type === "unavailable-id" && !settled) {
         stopCloudRelay();
@@ -721,6 +874,12 @@ function initHost(customCode) {
           NET.peer.destroy();
         } catch (e) {}
         initHost().then(resolve).catch(reject);
+=======
+    NET.peer.on("error", err => {
+      if (err.type === "unavailable-id" && !settled && onIdTaken) {
+        settled = true;
+        onIdTaken();
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       } else if (!settled && (NET.httpEnabled || mqttIsReady())) {
         finishHost();
       } else if (!settled) {
@@ -739,28 +898,100 @@ function initHost(customCode) {
   });
 }
 
-function initGuest(code, playerName) {
+function initHost(customCode) {
+  return new Promise((resolve, reject) => {
+    initRows();
+    NET.roomCode = (customCode || genRoomCode()).toUpperCase();
+    const pid = hostPeerId(NET.roomCode, 0);
+    NET.isHost = true;
+    NET.active = true;
+    NET.myPlayerIndex = 0;
+    NET.joined = true;
+    NET.connections = [];
+    NET.peerMap = {};
+    NET.seenMsgs.clear();
+    NET.earlyQueue = [];
+    NET.stateSeq = 0;
+    NET.myId = pid;
+    NET.epoch = 0;
+    NET.hostIdx = 0;
+    NET.gameStarted = false;
+    NET.retired = false;
+    NET.hostLost = false;
+    NET.selfLost = false;
+    NET.waitMsg = null;
+    NET.xferCodes = [];
+    NET.myToken = makeToken();                      // the host's own secret seat token
+    NET.seatHash = [sha256hex(NET.myToken)];
+
+    startHostTransport(pid, () => {
+      stopCloudRelay();
+      try { NET.peer.destroy(); } catch (e) {}
+      initHost().then(resolve).catch(reject);
+    }).then(code => {
+      startHeartbeat();
+      resolve(code);
+    }).catch(reject);
+  });
+}
+
+// guestConnectRtc(): open the direct WebRTC channel to the current host address (the relays carry everything until it is open)
+function guestConnectRtc() {
+  const hc = NET.hostConn;
+  if (!hc || !NET.peer || NET.peer.disconnected || NET.peer.destroyed || hc.isRtcOpen()) return;
+  try {
+    const rtcConn = NET.peer.connect(hc.peer, { reliable: true });
+    hc.rtcConn = rtcConn;
+    rtcConn.on("open", () => {
+      if (!NET.joined && NET.sendJoinHandshake) NET.sendJoinHandshake();
+    });
+    rtcConn.on("data", data => handleNetData(data, hc));
+    rtcConn.on("close", () => {
+      if (hc.rtcConn !== rtcConn || NET.hostConn !== hc) return;
+      if (!NET.httpEnabled && !mqttIsReady()) { if (NET.joined) onHostLost("rtc"); }
+      else NET.lastRx = Math.min(NET.lastRx || 0, performance.now() - HB_TIMEOUT_MS + 1200);   // the relay may still be carrying us: give it a moment
+    });
+    rtcConn.on("error", () => {});
+  } catch (e) {}
+}
+
+// initGuest(code, playerName, opts): join a room. opts = { token, epoch, rejoin, xfer }:
+//   token  = the secret seat token of a returning player; xfer = a "switch device" secret; epoch = last host generation this device knew.
+function initGuest(code, playerName, opts) {
+  opts = opts || {};
   return new Promise((resolve, reject) => {
     NET.roomCode = code.toUpperCase().trim();
-    const targetId = fullPeerId(NET.roomCode);
     NET.isHost = false;
     NET.active = true;
     NET.joined = false;
+    NET.retired = false;
+    NET.hostLost = false;
+    NET.gameStarted = false;
     NET.seenMsgs.clear();
     NET.earlyQueue = [];
     NET.myId = "guest-" + Math.random().toString(36).slice(2, 10);
+    NET.myToken = opts.token || null;
+    NET.pendingXfer = opts.xfer || null;
+    NET.epoch = opts.epoch || 0;
 
-    const hc = createHybridConn(targetId, null);
+    const returning = !!(opts.token || opts.xfer || opts.rejoin);
+    const epochs = returning ? [0, 1, 2, 3, 4, 5].map(i => NET.epoch + i) : [0];   // a returning player does not know which generation of host is alive
+    const hc = createHybridConn(hostPeerId(NET.roomCode, NET.epoch), null);
     NET.hostConn = hc;
 
     let settled = false;
     let joinRetryTimer = null;
 
     const cleanupRetry = () => {
+<<<<<<< HEAD
       if (joinRetryTimer) {
         clearInterval(joinRetryTimer);
         joinRetryTimer = null;
       }
+=======
+      if (joinRetryTimer) { clearInterval(joinRetryTimer); joinRetryTimer = null; }
+      NET.sendJoinHandshake = null;
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     };
 
     NET.onJoinAck = () => {
@@ -778,7 +1009,9 @@ function initGuest(code, playerName) {
       }
     };
 
+    const joinMsg = () => ({ type: "JOIN_REQ", name: playerName || "Guest", token: opts.token || undefined, xfer: opts.xfer || undefined });
     const sendJoinHandshake = () => {
+<<<<<<< HEAD
       if (NET.joined) {
         cleanupRetry();
         return;
@@ -787,7 +1020,12 @@ function initGuest(code, playerName) {
         { type: "JOIN_REQ", name: playerName || "Guest" },
         { allBrokers: true },
       );
+=======
+      if (NET.joined) { cleanupRetry(); return; }
+      epochs.forEach(e => sendToPeer(hostPeerId(NET.roomCode, e), joinMsg()));
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     };
+    NET.sendJoinHandshake = sendJoinHandshake;
 
     startServerRelay();
     startCloudRelay(() => {
@@ -797,6 +1035,7 @@ function initGuest(code, playerName) {
     // Immediate attempt over HTTP/SSE if served by serve.py
     if (NET.httpEnabled) setTimeout(sendJoinHandshake, 60);
 
+<<<<<<< HEAD
     const connectRtcAttempt = () => {
       if (
         !NET.peer ||
@@ -819,14 +1058,22 @@ function initGuest(code, playerName) {
       } catch (e) {}
     };
 
+=======
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     let tries = 0;
+    const maxTries = returning ? 17 : 10;
     joinRetryTimer = setInterval(() => {
       tries++;
+<<<<<<< HEAD
       if (NET.joined) {
         cleanupRetry();
         return;
       }
       if (tries > 10) {
+=======
+      if (NET.joined) { cleanupRetry(); return; }
+      if (tries > maxTries) {
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
         cleanupRetry();
         if (!settled) {
           settled = true;
@@ -838,12 +1085,17 @@ function initGuest(code, playerName) {
       }
       sendJoinHandshake();
       if (!hc.isRtcOpen() && !NET.httpEnabled) {
+<<<<<<< HEAD
         wsSend(targetId, {
           _mid: makeMsgId(),
           type: "JOIN_REQ",
           name: playerName || "Guest",
         });
         if (tries === 3 || tries === 6) connectRtcAttempt();
+=======
+        epochs.forEach(e => wsSend(hostPeerId(NET.roomCode, e), { _mid: makeMsgId(), type: "JOIN_REQ", name: playerName || "Guest", token: opts.token || undefined, xfer: opts.xfer || undefined }));
+        if (tries === 3 || tries === 6) guestConnectRtc();
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       }
     }, 1200);
 
@@ -857,7 +1109,7 @@ function initGuest(code, playerName) {
     NET.peer.on("open", (id) => {
       NET.myId = id;
       setupSocketRelay(NET.peer);
-      connectRtcAttempt();
+      guestConnectRtc();
     });
 
     NET.peer.on("disconnected", () => {
@@ -874,6 +1126,24 @@ function initGuest(code, playerName) {
   });
 }
 
+// ensureTransports(): wake up whatever relay channel went to sleep (called when the tab comes back, the network returns, or recovery runs)
+function ensureTransports() {
+  if (!NET.active || NET.retired) return;
+  if (NET.peer && NET.peer.disconnected && !NET.peer.destroyed) {
+    try { NET.peer.reconnect(); } catch (e) {}
+  }
+  if (NET.sse && NET.sse.readyState === 2 && NET.httpEnabled) startServerRelay(true);   // the event stream died for good: open a new one, keeping our place
+  if (!NET.mqttSockets.length && NET.roomCode && NET.myId) startCloudRelay();
+  if (!NET.isHost && NET.hostConn && !NET.hostConn.isRtcOpen()) guestConnectRtc();
+}
+
+// linkAlive(): does this device seem to have a working connection at all? (used so a device that is itself offline never blames - or replaces - the others)
+function linkAlive() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return false;
+  const peerOk = !!(NET.peer && !NET.peer.disconnected && !NET.peer.destroyed);
+  return !!((NET.httpEnabled && NET.sseConnected) || mqttIsReady() || peerOk);
+}
+
 function handleIncomingConnection(rtcConn) {
   const peerId = rtcConn.peer;
   let hc = NET.peerMap[peerId];
@@ -887,24 +1157,31 @@ function handleIncomingConnection(rtcConn) {
 
   rtcConn.on("data", (data) => handleNetData(data, hc));
   rtcConn.on("close", () => {
+    if (hc.rtcConn !== rtcConn) return;   // an older channel closing after a newer one took over
     if (!NET.httpEnabled && !mqttIsReady()) {
-      removeGuestConnection(hc);
+      seatLost(hc, "rtc");                // no other way to reach them: they are gone
+    } else if (hc.lastRx) {
+      hc.lastRx = Math.min(hc.lastRx, performance.now() - HB_TIMEOUT_MS + 1200);   // the relay may still carry them: if nothing arrives within ~1s they are gone
     }
   });
 }
 
+// removeGuestConnection(hc): LOBBY only - the player's slot disappears. (In a running game a lost player keeps their seat: see seatLost.)
 function removeGuestConnection(hc) {
   if (!hc) return;
   const idx = NET.connections.indexOf(hc);
   if (idx !== -1) NET.connections.splice(idx, 1);
   if (hc.peer && NET.peerMap[hc.peer] === hc) delete NET.peerMap[hc.peer];
-  if (hc.playerIndex != null) handlePlayerLeave(hc.playerIndex);
+  const pi = hc.playerIndex;
+  hc.playerIndex = null;
+  if (pi != null) handlePlayerLeave(pi);
 }
 
 // Notify peers cleanly when tab closes or reloads
 window.addEventListener("beforeunload", () => {
-  if (!NET.active) return;
+  if (!NET.active || NET.retired) return;
   try {
+    markSessionClosed();
     if (NET.isHost) {
       broadcast({ type: "HOST_LEFT" });
     } else if (NET.hostConn) {
@@ -930,36 +1207,129 @@ window.addEventListener("beforeunload", () => {
   } catch (e) {}
 });
 
-// ------------------------------------------------------------------ 4. DISCONNECT RECOVERY
-function handlePeerDisconnect(who) {
-  showNetworkBanner(`${who} disconnected! Reconnecting... (60s)`);
-  let sec = 60;
-  if (NET.disconnectTimer) clearInterval(NET.disconnectTimer);
-  NET.disconnectTimer = setInterval(() => {
-    sec--;
-    if (sec <= 0) {
-      clearInterval(NET.disconnectTimer);
-      showNetworkBanner(`${who} left the game. Returning to lobby...`);
-      setTimeout(() => location.reload(), 2000);
-    } else {
-      showNetworkBanner(`${who} disconnected! Waiting (${sec}s)...`);
-    }
-  }, 1000);
+// The device itself went offline / came back: react at once instead of waiting for the heartbeat
+window.addEventListener("offline", () => {
+  if (!NET.active || NET.retired || !NET.gameStarted || !G || G.winner) return;
+  if (NET.isHost) onHostSelfLost();
+  else onHostLost("offline");
+});
+window.addEventListener("online", () => {
+  if (!NET.active || NET.retired) return;
+  ensureTransports();
+  if (NET.hostLost) recoveryTick();
+});
+// ------------------------------------------------------------------ 4. HEARTBEAT, LOSS DETECTION, RECOVERY, HOST MIGRATION
+// How it works:
+//  * Every guest pings the host once a second and the host answers. Anything that arrives counts as proof of life.
+//  * Nothing heard for HB_TIMEOUT_MS = disconnected. (A closed tab / reload is noticed at once through the BYE message instead.)
+//  * The host keeps a lost player's SEAT (their secret token still opens it) and marks the player "disconnected".
+//  * A guest that loses the host keeps knocking on every possible host address; the first living player in seat order becomes the new host.
+
+function startHeartbeat() {
+  stopHeartbeat();
+  NET.lastMonTick = performance.now();
+  NET.lastRx = performance.now();
+  let n = 0;
+  NET.pingTimer = setInterval(() => {
+    if (!NET.active || NET.retired) return;
+    n++;
+    if (n % 5 === 0) saveSession();                                   // keeps "this seat is held by a live tab" fresh
+    if (!NET.isHost && NET.joined && NET.hostConn && !NET.hostLost) NET.hostConn.send({ type: "PING" });
+  }, HB_PING_MS);
+  NET.monTimer = setInterval(monitorTick, 500);
+}
+function stopHeartbeat() {
+  if (NET.pingTimer) { clearInterval(NET.pingTimer); NET.pingTimer = null; }
+  if (NET.monTimer) { clearInterval(NET.monTimer); NET.monTimer = null; }
 }
 
+function monitorTick() {
+  if (!NET.active || NET.retired) return;
+  const now = performance.now();
+  const gap = now - NET.lastMonTick;
+  NET.lastMonTick = now;
+  if (gap > 2500) {            // this computer slept / the tab was frozen: everybody gets a fresh start instead of a mass false alarm
+    NET.lastRx = now;
+    NET.connections.forEach(c => { c.lastRx = now; });
+    return;
+  }
+  if (G && G.winner) return;
+  if (NET.isHost) {
+    if (NET.selfLost) return;
+    const lim = NET.gameStarted ? HB_TIMEOUT_MS : LOBBY_TIMEOUT_MS;
+    const seated = NET.connections.filter(c => c.playerIndex != null && c.lastRx);
+    // if EVERY guest went quiet at once and my own link looks dead, the problem is mine - do not blame them
+    if (NET.gameStarted && seated.length && seated.every(c => now - c.lastRx > lim) && !linkAlive()) { onHostSelfLost(); return; }
+    seated.forEach(c => { if (now - c.lastRx > lim) seatLost(c, "timeout"); });
+  } else if (NET.joined && !NET.hostLost && NET.lastRx) {
+    if (now - NET.lastRx > (NET.gameStarted ? HB_TIMEOUT_MS : LOBBY_TIMEOUT_MS)) onHostLost("timeout");
+  }
+}
+
+// ---- host side: a player's connection died ----
+function seatLost(hc, why) {
+  if (!hc) return;
+  const idx = hc.playerIndex;
+  if (idx == null) { dropConnection(hc); return; }
+  if (!NET.gameStarted) { removeGuestConnection(hc); return; }       // still in the lobby: the slot is removed
+  onSeatLost(idx, why);
+}
+function dropConnection(hc) {
+  const i = NET.connections.indexOf(hc);
+  if (i !== -1) NET.connections.splice(i, 1);
+  if (hc.peer && NET.peerMap[hc.peer] === hc) delete NET.peerMap[hc.peer];
+  hc.playerIndex = null;          // anything this connection still says is ignored
+  hc.open = false;
+}
+function onSeatLost(idx, why) {
+  if (!NET.isHost || !G || G.winner) return;
+  const p = G.players[idx];
+  if (!p || idx === NET.myPlayerIndex) return;
+  const hc = NET.connections.find(c => c.playerIndex === idx);
+  if (hc) dropConnection(hc);
+  if (p.disconnected) return;
+  p.disconnected = true;
+  p.missed = false;
+  log(`<b>${esc(p.name)} disconnected.</b>`);
+  broadcast({ type: "PLAYER_LEFT", index: idx, name: p.name });
+  hostAutoResolve(idx);           // if the game was waiting for them, let it carry on without them
+  render();
+  if (typeof syncGameState === "function") syncGameState();
+}
+
+// hostAutoResolve(idx): the game was waiting on a player who just vanished: finish what is pending with neutral defaults.
+function hostAutoResolve(idx) {
+  if (NET.pendingActorIdx !== idx) return;
+  NET.waitMsg = null;
+  if (DICE.waiting && !DICE.flying && DICE.done) {
+    const vals = DICE.list.map(() => d6());
+    const snap = DICE.list.map(d => ({ x: d.x, y: d.y, rx: d.rx, ry: d.ry }));
+    sendAction({ type: "ROLL_LAUNCH", vx: 1, vy: 0.4, vals, startDice: snap });   // everybody sees the same roll
+    launch(1, 0.4, vals, snap);
+  }
+  if (NET.pendingMoveRes) { const fn = NET.pendingMoveRes; NET.pendingMoveRes = null; fn(null); }
+  if (NET.pendingChoiceRes) { const fn = NET.pendingChoiceRes; NET.pendingChoiceRes = null; fn(0); }
+  if (NET.pendingItemRes) { const fn = NET.pendingItemRes; NET.pendingItemRes = null; fn(null); }
+  if (NET.pendingTargetRes) { const fn = NET.pendingTargetRes; NET.pendingTargetRes = null; fn(null); }
+  NET.pendingActorIdx = null;
+  setPrompt("");
+}
+
+// handlePlayerLeave(idx): old entry point. Lobby = remove the slot, game = the seat stays and the player is marked disconnected.
 function handlePlayerLeave(playerIdx) {
   if (playerIdx == null) return;
-  // If still in setup lobby, remove that slot cleanly
   if (!G) {
     const pName =
       (S.rows[playerIdx] && S.rows[playerIdx].name) ||
       `Player ${playerIdx + 1}`;
     S.rows.splice(playerIdx, 1);
+    NET.seatHash.splice(playerIdx, 1);
     S.n = Math.max(1, S.n - 1);
     // Re-index remaining guest connections above playerIdx
     NET.connections.forEach((c) => {
       if (c.playerIndex > playerIdx) {
         c.playerIndex--;
+<<<<<<< HEAD
         c.send({
           type: "JOIN_ACK",
           yourIndex: c.playerIndex,
@@ -967,6 +1337,9 @@ function handlePlayerLeave(playerIdx) {
           n: S.n,
           roomCode: NET.roomCode,
         });
+=======
+        c.send({ type: "JOIN_ACK", yourIndex: c.playerIndex, rows: S.rows, n: S.n, roomCode: NET.roomCode, token: c.token });
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       }
     });
     S.msg = `${pName} left the lobby.`;
@@ -974,6 +1347,7 @@ function handlePlayerLeave(playerIdx) {
     if (NET.onLobbyUpdate) NET.onLobbyUpdate();
     return;
   }
+<<<<<<< HEAD
 
   // In-game disconnect: mark disconnected & unblock if Host was waiting on them!
   const p = G.players[playerIdx];
@@ -1008,23 +1382,232 @@ function handlePlayerLeave(playerIdx) {
       fn(null);
     }
   }
+=======
+  onSeatLost(playerIdx, "left");
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 }
 
-function showNetworkBanner(text) {
+// ---- guest side: the host stopped answering ----
+function onHostLost(why) {
+  if (NET.hostLost || NET.retired || !NET.active || NET.isHost) return;
+  if (G && G.winner) return;
+  if (!G || !NET.gameStarted) {      // lobby: nothing to save, back to the start screen
+    showNetworkBanner("Host disconnected. Returning to lobby...");
+    setTimeout(() => location.reload(), 1500);
+    return;
+  }
+  NET.hostLost = true;
+  NET.hostLostAt = performance.now();
+  showNetworkBanner("Connection lost. Reconnecting...");
+  startRecovery();
+}
+function startRecovery() {
+  stopRecovery();
+  NET.linkUpSince = 0;
+  NET.linkWasDown = false;
+  recoveryTick();
+  NET.recTimer = setInterval(recoveryTick, 1000);
+}
+function stopRecovery() {
+  if (NET.recTimer) { clearInterval(NET.recTimer); NET.recTimer = null; }
+}
+function myName() {
+  return (G && G.players[NET.myPlayerIndex] && G.players[NET.myPlayerIndex].name) || "Player";
+}
+function recoveryTick() {
+  if (!NET.active || NET.retired || !NET.hostLost || NET.isHost) { stopRecovery(); return; }
+  const el = performance.now() - NET.hostLostAt;
+  ensureTransports();
+  // knock on every address a host could be using right now (the original one, and the next few generations)
+  for (let e = NET.epoch; e <= NET.epoch + 5; e++) {
+    sendToPeer(hostPeerId(NET.roomCode, e), { type: "JOIN_REQ", name: myName(), token: NET.myToken || undefined, xfer: NET.pendingXfer || undefined });
+  }
+  if (el > 8000) showNetworkBanner(`Connection lost. Reconnecting... (${Math.floor(el / 1000)}s)`, { form: true });
+  maybeElect(el);
+  if (el > RECOVERY_GIVEUP_MS && NET.hostLost) endLobby("The lobby has ended: nobody is hosting it any more.");
+}
+
+// maybeElect(el): the first living player in seat order becomes the new host, the next one only if the first never appears.
+function maybeElect(el) {
+  const now = performance.now();
+  if (!linkAlive()) { NET.linkUpSince = 0; NET.linkWasDown = true; return; }   // my own connection is down: I must not replace anybody
+  if (NET.linkWasDown) {
+    if (!NET.linkUpSince) NET.linkUpSince = now;
+    if (now - NET.linkUpSince < 2500) return;                         // my connection only just came back: give the host time to answer my knock first
+  }
+  if (now < NET.noElectUntil || !G) return;
+  const me = NET.myPlayerIndex;
+  const cands = [];
+  G.players.forEach((p, i) => { if (i !== NET.hostIdx && (i === me || !p.disconnected)) cands.push(i); });
+  const rank = cands.indexOf(me);
+  if (rank < 0) return;
+  if (el < ELECT_BASE_MS + rank * ELECT_STEP_MS) return;
+  becomeHost(NET.epoch + 1 + rank);        // every rank has its own address, so two hosts can never share one
+}
+
+// becomeHost(epoch): this page takes over running the game from the last state it received.
+function becomeHost(epoch) {
+  if (!G || NET.retired) return;
+  stopRecovery();
+  const me = NET.myPlayerIndex;
+  NET.isHost = true;
+  NET.epoch = epoch;
+  NET.hostIdx = me;
+  NET.hostLost = false;
+  NET.selfLost = false;
+  NET.joined = true;
+  NET.gameStarted = true;
+  NET.hostConn = null;
+  NET.connections = [];
+  NET.peerMap = {};
+  NET.seenMsgs.clear();
+  NET.earlyQueue = [];
+  NET.waitMsg = null;
+  NET.xferCodes = [];
+  NET.pendingActorIdx = null;
+  NET.myId = hostPeerId(NET.roomCode, epoch);
+  NET.stateSeq = G._stateSeq || 0;
+  G.players.forEach((p, i) => {            // everybody else has to come back to me; until then they count as disconnected
+    p.missed = false;
+    if (i === me) p.disconnected = false;
+    else p.disconnected = true;
+  });
+  stopServerRelay();
+  stopCloudRelay();
+  startHostTransport(NET.myId).catch(() => {});
+  startHeartbeat();
+  saveSession();
+  hideNetworkBanner();
+  log(`<b>${esc(myName())} is the new host.</b>`);
+  render();
+  watchOldHosts();
+  // a short grace so most players have found me before the first prompt goes out
+  setTimeout(() => {
+    if (!NET.isHost || NET.retired || !G || G.winner) return;
+    if (typeof play === "function") play({ resume: true });
+  }, 1500);
+}
+
+// ---- two hosts alive at once (rare: a host that was only cut off for a while, or a wrong election): they compare notes and one steps down ----
+function hostTuple() {
+  const now = performance.now();
+  const live = 1 + NET.connections.filter(c => c.playerIndex != null && c.lastRx && now - c.lastRx < HB_TIMEOUT_MS).length;
+  return { live, seq: NET.stateSeq, epoch: NET.epoch };
+}
+// iLose(mine, theirs): more live players wins, then the one that played further, then the older host
+function iLose(mine, theirs) {
+  if (mine.live !== theirs.live) return mine.live < theirs.live;
+  if (mine.seq !== theirs.seq) return mine.seq < theirs.seq;
+  return mine.epoch > theirs.epoch;
+}
+// watchOldHosts(): for a while after taking over, check that the previous host really is gone
+function watchOldHosts() {
+  if (NET.probeTimer) clearInterval(NET.probeTimer);
+  let n = 0;
+  NET.probeTimer = setInterval(() => {
+    if (!NET.isHost || NET.retired || ++n > 15) { clearInterval(NET.probeTimer); NET.probeTimer = null; return; }
+    probeOtherHosts(0, NET.epoch - 1);
+  }, 2000);
+}
+function probeOtherHosts(fromEpoch, toEpoch) {
+  for (let e = fromEpoch; e <= toEpoch; e++) {
+    if (e === NET.epoch) continue;
+    createHybridConn(hostPeerId(NET.roomCode, e), null).send({ type: "HOST_PROBE", tuple: hostTuple() }, { allBrokers: true });
+  }
+}
+// a page that has to give up its host role (or seat) comes back as an ordinary player: the saved session lets it rejoin by itself
+function stepDown() {
+  if (NET.retired) return;
+  saveSession();
+  NET.retired = true;
+  stopHeartbeat();
+  showNetworkBanner("Another host is running this game. Rejoining...");
+  setTimeout(() => location.reload(), 600);
+}
+
+// onHostSelfLost(): the HOST's own connection died. Keep the game as it is, do not blame the guests; when the link returns check whether somebody took over meanwhile.
+function onHostSelfLost() {
+  if (NET.selfLost || !NET.isHost || NET.retired) return;
+  NET.selfLost = true;
+  showNetworkBanner("Connection lost. Reconnecting...");
+  if (NET.selfTimer) clearInterval(NET.selfTimer);
+  NET.selfTimer = setInterval(() => {
+    ensureTransports();
+    if (!linkAlive()) return;
+    clearInterval(NET.selfTimer);
+    NET.selfTimer = null;
+    probeOtherHosts(NET.epoch + 1, NET.epoch + 6);     // did somebody take over while I was gone?
+    probeOtherHosts(0, NET.epoch - 1);
+    setTimeout(() => {
+      if (NET.retired || !NET.selfLost) return;
+      NET.selfLost = false;                             // nobody did: carry on
+      const now = performance.now();
+      NET.connections.forEach(c => { c.lastRx = now; });
+      hideNetworkBanner();
+    }, 3000);
+  }, 1000);
+}
+
+// endLobby(text): nobody is left to host: the saved seat is useless now
+function endLobby(text) {
+  clearSession();
+  retireSelf(text, { button: "Back to the start screen", clear: true });
+}
+
+// retireSelf(text, opts): this page stops playing for good (its seat is used elsewhere, or the lobby is over)
+function retireSelf(text, opts) {
+  opts = opts || {};
+  if (NET.retired) return;
+  NET.retired = true;
+  stopHeartbeat();
+  stopRecovery();
+  hideReconnectCountdown();
+  if (NET.probeTimer) { clearInterval(NET.probeTimer); NET.probeTimer = null; }
+  if (NET.selfTimer) { clearInterval(NET.selfTimer); NET.selfTimer = null; }
+  try { stopServerRelay(); } catch (e) {}
+  try { stopCloudRelay(); } catch (e) {}
+  if (NET.peer) { try { NET.peer.destroy(); } catch (e) {} NET.peer = null; }
+  NET.connections = [];
+  NET.peerMap = {};
+  hideNetworkBanner();
+  let ov = $("netOverlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "netOverlay";
+    $("stage").appendChild(ov);
+  }
+  ov.innerHTML = `<div class="nbox"><p>${esc(text)}</p>${opts.button ? `<button class="cbtn" style="--s:1.4;width:380px" id="netOvBtn"><span>${esc(opts.button)}</span></button>` : ""}</div>`;
+  ov.style.display = "flex";
+  const b = $("netOvBtn");
+  if (b) b.onclick = () => location.reload();
+}
+
+// ---- banner shown while this page is reconnecting ----
+function showNetworkBanner(text, opts) {
   let el = $("netBanner");
   if (!el) {
     el = document.createElement("div");
     el.id = "netBanner";
+    el.innerHTML = `<span id="nbText"></span><span id="nbForm"><input id="nbCode" maxlength="13" placeholder="ROOM CODE" autocomplete="off" spellcheck="false"><button id="nbGo" class="cbtn" style="--s:.7;width:130px"><span>Rejoin</span></button></span>`;
     $("stage").appendChild(el);
+    $("nbGo").onclick = () => manualRejoin($("nbCode").value);
+    $("nbCode").onkeydown = e => { if (e.key === "Enter") manualRejoin($("nbCode").value); };
   }
+<<<<<<< HEAD
   if (!text) {
     el.style.display = "none";
     return;
   }
   el.textContent = text;
+=======
+  if (!text) { el.style.display = "none"; return; }
+  $("nbText").textContent = text;
+  const form = !!(opts && opts.form);
+  $("nbForm").style.display = form ? "inline-flex" : "none";
+  if (form && !$("nbCode").value) $("nbCode").value = NET.roomCode || "";
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   el.style.display = "block";
 }
-
 function hideNetworkBanner() {
   if (NET.disconnectTimer) {
     clearInterval(NET.disconnectTimer);
@@ -1034,9 +1617,282 @@ function hideNetworkBanner() {
   if (el) el.style.display = "none";
 }
 
+// manualRejoin(raw): the player typed a room code (optionally followed by a switch-device code) into the banner
+function manualRejoin(raw) {
+  const s = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (s.length < 5) return;
+  const room = s.slice(0, 5), xfer = s.length >= 11 ? s.slice(5, 11) : null;
+  if (room !== NET.roomCode) {       // another lobby: start a fresh page, the start screen joins it (with this device's seat there, if it has one)
+    location.href = location.pathname + "?room=" + room;
+    return;
+  }
+  NET.pendingXfer = xfer;
+  if (!NET.hostLost) { NET.hostLost = true; NET.hostLostAt = performance.now(); startRecovery(); }
+  else recoveryTick();
+}
+
+// ---- the 5-second wait when a disconnected player's turn comes ----
+// waitForReconnect(p, ms): host. Resolves true if p comes back within ms, false if not. Everybody sees a countdown.
+function waitForReconnect(p, ms) {
+  if (!p.disconnected) return Promise.resolve(true);
+  const idx = G.players.indexOf(p);
+  broadcast({ type: "RECONNECT_WAIT", idx, ms });
+  showReconnectCountdown(idx, ms);
+  return new Promise(resolve => {
+    let done = false, t = null;
+    const fin = ok => {
+      if (done) return;
+      done = true;
+      clearTimeout(t);
+      NET.reconnectWaiter = null;
+      broadcast({ type: "RECONNECT_WAIT_END" });
+      hideReconnectCountdown();
+      resolve(ok);
+    };
+    t = setTimeout(() => fin(!p.disconnected), ms);
+    NET.reconnectWaiter = i => { if (i === idx) fin(true); };
+  });
+}
+function showReconnectCountdown(idx, ms) {
+  hideReconnectCountdown();
+  const name = G && G.players[idx] ? G.players[idx].name : "Player";
+  const end = performance.now() + ms;
+  const tick = () => {
+    const s = Math.max(0, Math.ceil((end - performance.now()) / 1000));
+    setPrompt(`Waiting for ${name} to reconnect... ${s}`);
+  };
+  tick();
+  NET.rcTimer = setInterval(tick, 250);
+}
+function hideReconnectCountdown() {
+  if (NET.rcTimer) {
+    clearInterval(NET.rcTimer);
+    NET.rcTimer = null;
+    setPrompt("");
+  }
+}
+// ------------------------------------------------------------------ 5. SEATS: REJOIN, TWO-TAB RULE, SWITCH DEVICE, SNAPSHOTS
+// logTailHtml(n): the last n lines of the board log (a rejoining player gets these)
+function logTailHtml(n) {
+  const l = $("log");
+  if (!l) return "";
+  return Array.from(l.children).slice(-n).map(k => k.outerHTML).join("");
+}
+
+// buildSnapshot(): everything a player needs to pick the game up from nothing (sent to a rejoiner, or to the page taking over as host)
+function buildSnapshot() {
+  return {
+    roomCode: NET.roomCode,
+    epoch: NET.epoch,
+    hostIdx: NET.myPlayerIndex,
+    hashes: NET.seatHash.slice(0, G.players.length),
+    stateSeq: NET.stateSeq,
+    players: G.players.map(p => ({ name: p.name, character: p.character, pos: p.pos, color: p.color, items: (p.items || []).slice(), cb: p.cb || 0, pen: p.pen || 0, big: !!p.big, cd: p.cd || 0, disconnected: !!p.disconnected })),
+    items: G.items,
+    turnNo: G.turnNo || 0,
+    L: G.L, S: G.S, cobra: G.cobra, kind: G.kind,
+    cat: G.cat, catSkin: G.catSkin, catNow: !!G.catNow,
+    curIndex: G.cur ? G.players.indexOf(G.cur) : null,
+    winnerIndex: G.winner ? G.players.indexOf(G.winner) : null,
+    logHtml: logTailHtml(80),
+    chat: NET.chatHistory.slice(-40).map(c => ({ sender: c.sender, text: c.text, color: c.color }))
+  };
+}
+
+// applyJoinSnapshot(snap): a fresh page builds the game from it; a page that already has the game updates it in place
+function applyJoinSnapshot(snap) {
+  const fresh = !G;
+  if (fresh) {
+    if (typeof leaveTitle === "function") leaveTitle();
+    G = { players: snap.players, items: snap.items, turnNo: snap.turnNo, L: snap.L, S: snap.S, cobra: snap.cobra, kind: snap.kind, cat: snap.cat, catSkin: snap.catSkin, catNow: snap.catNow, winner: null, cur: null, built: 0, _stateSeq: snap.stateSeq || 0 };
+    G.cur = snap.curIndex != null ? G.players[snap.curIndex] : null;
+    G.winner = snap.winnerIndex != null ? G.players[snap.winnerIndex] : null;
+    const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0;
+    G.order = [...G.players].sort((a, b) => rk(a) - rk(b));
+    const co = G.players.find(p => p.character === "cat");
+    if (co) G.catOwner = co;
+    $("setup").style.display = "none";
+    $("game").style.display = "block";
+    setPrompt("");
+  } else {
+    G._stateSeq = snap.stateSeq || 0;        // the host's numbering is the truth now (a new host may count from a different place)
+    applyStateSync({
+      stateSeq: snap.stateSeq || 0, turnNo: snap.turnNo,
+      players: snap.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd, disc: p.disconnected })),
+      S: snap.S, L: snap.L, items: snap.items, cat: snap.cat, catSkin: snap.catSkin, catNow: snap.catNow,
+      curIndex: snap.curIndex, winnerIndex: snap.winnerIndex
+    });
+  }
+  const l = $("log"); if (l) { l.innerHTML = snap.logHtml || ""; l.scrollTop = 1e6; }
+  const big = $("biglog"); if (big) { big.innerHTML = snap.logHtml || ""; big.scrollTop = 1e6; }
+  if (fresh && Array.isArray(snap.chat)) snap.chat.forEach(c => appendChatMessage(c.sender, c.text, c.color, true));
+  render();
+  if (fresh && NET.earlyQueue.length) {
+    const q = NET.earlyQueue.splice(0);
+    q.forEach(item => handleNetData(item.msg, item.fromConn));
+  }
+  if (G.winner) showLocalGameOverPrompt();
+}
+
+// ---- host: somebody asks to take a seat in the running game ----
+function hostRejoin(msg, hc) {
+  if (!G || NET.retired) return;
+  const now = performance.now();
+  let idx = -1, viaXfer = false;
+  if (msg.xfer) {                                   // "switch device" code
+    if (now < NET.xferLockUntil) { hc.send({ type: "JOIN_DENIED", reason: "Too many wrong codes. Try again in a moment." }); return; }
+    const secret = String(msg.xfer).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const k = NET.xferCodes.findIndex(c => c.secret === secret && c.exp > Date.now());
+    if (k >= 0) { idx = NET.xferCodes[k].idx; NET.xferCodes.splice(k, 1); viaXfer = true; NET.xferFails = 0; }
+    else {
+      if (++NET.xferFails >= 6) { NET.xferCodes = []; NET.xferFails = 0; NET.xferLockUntil = now + 30000; }
+      hc.send({ type: "JOIN_DENIED", reason: "That code is wrong or has expired." });
+      return;
+    }
+  } else if (msg.token) {                           // the player's own secret seat token
+    idx = seatByToken(msg.token);
+  }
+  if (idx < 0 || idx >= G.players.length) {
+    hc.send({ type: "JOIN_DENIED", reason: "Game already started. Only the players who started it can come back." });
+    return;
+  }
+  if (idx === NET.myPlayerIndex && hc.peer !== NET.myId) {     // somebody claims the HOST's own seat from another page/device: the host role moves there
+    hostHandover(hc, viaXfer);
+    return;
+  }
+  seatTakeover(idx, hc, viaXfer);
+}
+
+// seatTakeover(idx, hc, viaXfer): connection hc is now the one and only connection of seat idx
+function seatTakeover(idx, hc, viaXfer) {
+  const now = performance.now();
+  const old = NET.connections.find(c => c.playerIndex === idx && c !== hc);
+  if (old) {                                        // two pages for one seat: the NEWEST wins, the older one is told to stop
+    try { old.send({ type: "SEAT_TAKEN", reason: viaXfer ? "switched" : "other" }); } catch (e) {}
+    dropConnection(old);
+  }
+  hc.playerIndex = idx;
+  hc.lastRx = now;
+  hc.open = true;
+  if (!NET.connections.includes(hc)) NET.connections.push(hc);
+  NET.peerMap[hc.peer] = hc;
+
+  let newToken;
+  if (viaXfer) {                                    // the new device gets its own token; the old device's token stops working
+    newToken = makeToken();
+    NET.seatHash[idx] = sha256hex(newToken);
+    broadcast({ type: "SEAT_HASHES", hashes: NET.seatHash.slice(0, G.players.length) });
+  }
+  const p = G.players[idx];
+  const wasDown = !!p.disconnected;
+  p.disconnected = false;
+  p.missed = false;
+  hc.send({ type: "REJOIN_ACK", yourIndex: idx, token: newToken, epoch: NET.epoch, hostIdx: NET.myPlayerIndex, hostId: NET.myId, snap: buildSnapshot() });
+  if (NET.waitMsg) hc.send(NET.waitMsg);             // whatever the game is waiting for is shown to them again
+  if (wasDown) {
+    log(`<b>${esc(p.name)} reconnected.</b>`);
+    broadcast({ type: "PLAYER_BACK", index: idx, name: p.name });
+  } else if (viaXfer) {
+    log(`<b>${esc(p.name)} switched device.</b>`);
+  }
+  render();
+  if (typeof syncGameState === "function") syncGameState();
+  if (NET.reconnectWaiter) NET.reconnectWaiter(idx);
+}
+
+// ---- the host's own seat is claimed from another page/device: hand the host role over ----
+function hostHandover(hc, viaXfer) {
+  const idx = NET.myPlayerIndex;
+  const newEpoch = NET.epoch + 1;
+  let newToken = null;
+  if (viaXfer) { newToken = makeToken(); NET.seatHash[idx] = sha256hex(newToken); }
+  const snap = buildSnapshot();
+  snap.epoch = newEpoch;
+  snap.hostIdx = idx;
+  hc.send({ type: "HOST_HANDOVER", snap, token: newToken, yourIndex: idx, epoch: newEpoch });
+  broadcast({ type: "HOST_MOVED", epoch: newEpoch, hostId: hostPeerId(NET.roomCode, newEpoch), hostIdx: idx });
+  setTimeout(() => retireSelf(viaXfer ? "This game continues on your other device." : "This game was opened in another tab or device.", viaXfer ? { clear: true } : { button: "Play here instead" }), 700);
+  if (viaXfer) clearSession();
+}
+
+// ---- "Switch device": the player asks for a one-time code ----
+function makeTransferCode(idx) {
+  NET.xferCodes = NET.xferCodes.filter(c => c.idx !== idx && c.exp > Date.now());
+  const secret = makeXferSecret();
+  NET.xferCodes.push({ idx, secret, exp: Date.now() + XFER_TTL_MS });
+  return { room: NET.roomCode, secret, ms: XFER_TTL_MS };
+}
+function requestTransferCode() {
+  return new Promise((resolve, reject) => {
+    if (!NET.active || !NET.gameStarted || NET.retired) return reject(new Error("Only available in an online game."));
+    if (NET.isHost) return resolve(makeTransferCode(NET.myPlayerIndex));
+    if (!NET.hostConn || NET.hostLost) return reject(new Error("Not connected right now."));
+    if (NET.xferWaiter) clearTimeout(NET.xferWaiter.t);
+    NET.xferWaiter = { resolve, reject, t: setTimeout(() => { NET.xferWaiter = null; reject(new Error("The host did not answer.")); }, 5000) };
+    NET.hostConn.send({ type: "XFER_REQ" });
+  });
+}
+
+// ---- guest: the host accepted me back (or I just switched device) ----
+function applyRejoinAck(msg) {
+  if (NET.isHost || !msg.snap) return;
+  if (NET.joined && !NET.hostLost && G && NET.gameStarted) return;     // a duplicate answer from the same host
+  NET.joined = true;
+  NET.gameStarted = true;
+  NET.myPlayerIndex = msg.yourIndex;
+  NET.epoch = msg.epoch;
+  NET.hostIdx = msg.hostIdx;
+  NET.roomCode = msg.snap.roomCode || NET.roomCode;
+  NET.seatHash = msg.snap.hashes || NET.seatHash;
+  if (msg.token) NET.myToken = msg.token;
+  if (NET.hostConn) { NET.hostConn.peer = msg.hostId; NET.hostConn.rtcConn = null; NET.hostConn.lastRx = performance.now(); }
+  NET.hostLost = false;
+  NET.pendingXfer = null;
+  NET.lastRx = performance.now();
+  NET.joinedAt = performance.now();
+  stopRecovery();
+  hideNetworkBanner();
+  applyJoinSnapshot(msg.snap);
+  saveSession();
+  startHeartbeat();
+  guestConnectRtc();
+  if (NET.onJoinAck) { const fn = NET.onJoinAck; NET.onJoinAck = null; fn(); }
+}
+
+// ---- this page was asked to become the host (the old host handed over) ----
+function applyHostHandover(msg) {
+  if (NET.isHost || !msg.snap) return;
+  NET.joined = true;
+  NET.gameStarted = true;
+  NET.myPlayerIndex = msg.yourIndex;
+  NET.roomCode = msg.snap.roomCode || NET.roomCode;
+  NET.seatHash = msg.snap.hashes || NET.seatHash;
+  if (msg.token) NET.myToken = msg.token;
+  NET.hostLost = false;
+  NET.pendingXfer = null;
+  stopRecovery();
+  hideNetworkBanner();
+  applyJoinSnapshot(msg.snap);
+  if (NET.onJoinAck) { const fn = NET.onJoinAck; NET.onJoinAck = null; fn(); }
+  becomeHost(msg.epoch);
+}
+
+// ---- host: the answer to another host probing us (two hosts alive) ----
+function answerHostProbe(msg, hc) {
+  if (!NET.isHost || NET.retired || !msg.tuple) return;
+  const mine = hostTuple();
+  const iLoseNow = iLose(mine, msg.tuple);
+  hc.send({ type: "HOST_PROBE_ACK", tuple: mine, youLose: !iLoseNow });
+  if (iLoseNow) stepDown();
+}
 // ------------------------------------------------------------------ 5. MESSAGE ROUTING
 function handleNetData(msg, fromConn) {
   if (!msg || typeof msg !== "object") return;
+  if (NET.retired) return;
+  // proof of life (heartbeat): anything that arrives counts
+  const nowT = performance.now();
+  if (fromConn) fromConn.lastRx = nowT;
+  if (!NET.isHost) NET.lastRx = nowT;
 
   // If Guest receives in-game events milliseconds before GAME_START arrives, buffer instead of dropping!
   if (!NET.isHost && !G && IN_GAME_TYPES.has(msg.type)) {
@@ -1056,8 +1912,10 @@ function handleNetData(msg, fromConn) {
   switch (msg.type) {
     case "JOIN_REQ": {
       if (!NET.isHost) return;
+      if (NET.gameStarted) { hostRejoin(msg, fromConn); return; }          // game running: only the players who started it may come back
       initRows();
       if (fromConn.playerIndex != null) {
+<<<<<<< HEAD
         fromConn.send({
           type: "JOIN_ACK",
           yourIndex: fromConn.playerIndex,
@@ -1072,10 +1930,20 @@ function handleNetData(msg, fromConn) {
           type: "JOIN_DENIED",
           reason: "Room is full or game already started.",
         });
+=======
+        fromConn.send({ type: "JOIN_ACK", yourIndex: fromConn.playerIndex, rows: S.rows, n: S.n, roomCode: NET.roomCode, token: fromConn.token });
+        return;
+      }
+      if (S.n >= CONFIG.MAX_PLAYERS) {
+        fromConn.send({ type: "JOIN_DENIED", reason: "Room is full or game already started." });
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
         return;
       }
       const pIdx = S.n++;
       fromConn.playerIndex = pIdx;
+      fromConn.lastRx = nowT;
+      fromConn.token = makeToken();                                       // this player's secret seat token (the host keeps only its hash)
+      NET.seatHash[pIdx] = sha256hex(fromConn.token);
       if (!NET.connections.includes(fromConn)) {
         NET.connections.push(fromConn);
       }
@@ -1090,6 +1958,7 @@ function handleNetData(msg, fromConn) {
         S.rows[pIdx].character = "";
         S.rows[pIdx].locked = false;
       }
+<<<<<<< HEAD
       fromConn.send({
         type: "JOIN_ACK",
         yourIndex: pIdx,
@@ -1097,6 +1966,9 @@ function handleNetData(msg, fromConn) {
         n: S.n,
         roomCode: NET.roomCode,
       });
+=======
+      fromConn.send({ type: "JOIN_ACK", yourIndex: pIdx, rows: S.rows, n: S.n, roomCode: NET.roomCode, token: fromConn.token });
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       broadcastLobby();
       if (NET.onLobbyUpdate) NET.onLobbyUpdate();
       break;
@@ -1105,8 +1977,11 @@ function handleNetData(msg, fromConn) {
       NET.joined = true;
       NET.myPlayerIndex = msg.yourIndex;
       NET.roomCode = msg.roomCode;
+      if (msg.token) NET.myToken = msg.token;
       if (Array.isArray(msg.rows)) S.rows = msg.rows;
       if (typeof msg.n === "number") S.n = msg.n;
+      NET.joinedAt = nowT;
+      startHeartbeat();
       hideNetworkBanner();
       if (NET.onJoinAck) {
         const fn = NET.onJoinAck;
@@ -1125,7 +2000,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "LOBBY_STATE": {
-      NET.joined = true;
+      if (!NET.joined) { NET.joined = true; startHeartbeat(); }
       if (Array.isArray(msg.rows)) S.rows = msg.rows;
       if (typeof msg.n === "number") S.n = msg.n;
       if (typeof msg.smsg === "string") S.msg = msg.smsg;
@@ -1140,7 +2015,7 @@ function handleNetData(msg, fromConn) {
     case "LOBBY_ROW_UPDATE": {
       if (NET.isHost) {
         initRows();
-        const idx = msg.index != null ? msg.index : fromConn.playerIndex;
+        const idx = fromConn ? fromConn.playerIndex : null;       // a player can only change their OWN row
         if (idx != null && S.rows[idx]) {
           if (msg.name !== undefined && msg.name !== null)
             S.rows[idx].name = msg.name;
@@ -1153,6 +2028,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "BYE": {
+<<<<<<< HEAD
       if (NET.isHost) {
         if (
           fromConn &&
@@ -1163,13 +2039,86 @@ function handleNetData(msg, fromConn) {
         }
         removeGuestConnection(fromConn);
       }
+=======
+      if (NET.isHost && fromConn && fromConn.playerIndex != null) seatLost(fromConn, "bye");
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       break;
     }
     case "HOST_LEFT": {
-      if (!NET.isHost) {
-        showNetworkBanner("Host closed the room. Returning to lobby...");
-        setTimeout(() => location.reload(), 2000);
+      if (!NET.isHost) onHostLost("left");
+      break;
+    }
+    case "PING": {
+      if (!NET.isHost) return;
+      // a connection that is not a seat (any more) learns that it is not known: it will try to rejoin
+      fromConn.send({ type: "PONG", unknown: fromConn.playerIndex == null && NET.gameStarted ? true : undefined });
+      break;
+    }
+    case "PONG": {
+      if (!NET.isHost && msg.unknown && G && NET.gameStarted && nowT - NET.joinedAt > 2500) onHostLost("unknown seat");
+      break;
+    }
+    case "REJOIN_ACK": {
+      applyRejoinAck(msg);
+      break;
+    }
+    case "HOST_HANDOVER": {
+      applyHostHandover(msg);
+      break;
+    }
+    case "HOST_MOVED": {
+      if (NET.isHost || !G || !msg.hostId) break;
+      NET.epoch = msg.epoch;
+      NET.hostIdx = msg.hostIdx;
+      NET.noElectUntil = nowT + 10000;
+      if (NET.hostConn) { NET.hostConn.peer = msg.hostId; NET.hostConn.rtcConn = null; }
+      NET.hostLost = true;
+      NET.hostLostAt = nowT;
+      showNetworkBanner("Host switched device. Reconnecting...");
+      startRecovery();
+      break;
+    }
+    case "SEAT_TAKEN": {
+      if (NET.isHost && msg.reason !== "other" && msg.reason !== "switched") break;
+      retireSelf(msg.reason === "switched" ? "This game continues on your other device." : "This game was opened in another tab or device.", msg.reason === "switched" ? { clear: true } : { button: "Play here instead" });
+      if (msg.reason === "switched") clearSession();
+      break;
+    }
+    case "SEAT_HASHES": {
+      if (!NET.isHost && Array.isArray(msg.hashes)) NET.seatHash = msg.hashes;
+      break;
+    }
+    case "XFER_REQ": {
+      if (!NET.isHost || !NET.gameStarted || fromConn.playerIndex == null) break;
+      const c = makeTransferCode(fromConn.playerIndex);
+      fromConn.send({ type: "XFER_CODE", secret: c.secret, ms: c.ms });
+      break;
+    }
+    case "XFER_CODE": {
+      if (NET.xferWaiter) {
+        const w = NET.xferWaiter; NET.xferWaiter = null; clearTimeout(w.t);
+        w.resolve({ room: NET.roomCode, secret: msg.secret, ms: msg.ms });
       }
+      break;
+    }
+    case "HOST_PROBE": {
+      if (NET.isHost) answerHostProbe(msg, fromConn);
+      break;
+    }
+    case "HOST_PROBE_ACK": {
+      if (NET.isHost && msg.youLose) stepDown();
+      break;
+    }
+    case "RECONNECT_WAIT": {
+      if (!NET.isHost && G) showReconnectCountdown(msg.idx, msg.ms);
+      break;
+    }
+    case "RECONNECT_WAIT_END": {
+      if (!NET.isHost) hideReconnectCountdown();
+      break;
+    }
+    case "PLAYER_BACK": {
+      if (!NET.isHost && G && G.players[msg.index]) { G.players[msg.index].disconnected = false; render(); }
       break;
     }
     case "GAME_START": {
@@ -1178,6 +2127,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "ACTION_REQ": {
+<<<<<<< HEAD
       const pIdx =
         msg.playerIndex != null
           ? msg.playerIndex
@@ -1186,6 +2136,11 @@ function handleNetData(msg, fromConn) {
             : null;
       if (fromConn && fromConn.playerIndex == null && pIdx != null)
         fromConn.playerIndex = pIdx;
+=======
+      if (!NET.isHost || !fromConn) return;
+      const pIdx = fromConn.playerIndex;                  // who the CONNECTION belongs to (never what the message claims)
+      if (pIdx == null || NET.pendingActorIdx !== pIdx) return;   // only the seat the game is waiting for may act
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       handleRemoteAction(msg.action, pIdx);
       break;
     }
@@ -1197,6 +2152,10 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "DRAG_MOVE": {
+      if (NET.isHost) {
+        if (!fromConn || fromConn.playerIndex == null) return;
+        msg.playerIndex = fromConn.playerIndex;           // the host trusts the connection, not the message
+      }
       if (msg.playerIndex !== NET.myPlayerIndex) {
         if (NET.isHost) {
           // Forward live drag to other guests
@@ -1348,6 +2307,7 @@ function handleNetData(msg, fromConn) {
     case "PLAYER_LEFT": {
       if (!NET.isHost && G && G.players[msg.index]) {
         G.players[msg.index].disconnected = true;
+        render();
       }
       break;
     }
@@ -1380,7 +2340,7 @@ function sendDragPreview(payload) {
   NET.lastDragSentAt = now;
   const msg = { type: "DRAG_MOVE", playerIndex: NET.myPlayerIndex, ...payload };
   if (NET.isHost) {
-    forwardToOtherGuests(msg, 0);
+    forwardToOtherGuests(msg, NET.myPlayerIndex);
   } else if (NET.hostConn && NET.hostConn.open) {
     NET.hostConn.send(msg);
   }
@@ -1440,6 +2400,7 @@ function handleRemoteAction(action, playerIdx) {
   }
 
   clearRemoteDragVisuals();
+  if (NET.isHost) NET.waitMsg = null;                  // the prompt that was waiting has been answered
 
   if (action.type === "ROLL_LAUNCH") {
     launch(action.vx, action.vy, action.vals, action.startDice);
@@ -1480,7 +2441,9 @@ function handleRemoteAction(action, playerIdx) {
 
 // ------------------------------------------------------------------ 7. BROADCAST, LOBBY, CHAT, STATE SYNC
 function broadcast(msg) {
-  if (!NET.isHost || !NET.connections.length) return;
+  if (!NET.isHost || NET.retired) return;
+  if (msg && typeof msg.type === "string" && msg.type.indexOf("WAIT_") === 0) NET.waitMsg = msg;   // replayed to a player who rejoins
+  if (!NET.connections.length) return;
   if (msg && typeof msg === "object" && !msg._mid) {
     msg._mid = makeMsgId();
   }
@@ -1530,7 +2493,8 @@ function sendLobbyUpdate(name, character) {
 
 function sendAction(action) {
   if (NET.isHost) {
-    broadcast({ type: "ACTION_SYNC", action, playerIndex: 0 });
+    NET.waitMsg = null;
+    broadcast({ type: "ACTION_SYNC", action, playerIndex: NET.myPlayerIndex });
   } else if (NET.hostConn && NET.hostConn.open) {
     NET.hostConn.send({
       type: "ACTION_REQ",
@@ -1584,6 +2548,8 @@ function showLocalGameOverPrompt() {
   ) {
     showTab("boardlog");
   }
+  clearSession();            // the game is over: nothing to come back to
+  stopHeartbeat();
   setPrompt(`${G.winner.name} wins!`);
   const b = makeBtn("Play again", false);
   b.onclick = () => location.reload();
@@ -1594,6 +2560,12 @@ function showLocalGameOverPrompt() {
 function applyRemoteGameStart(msg) {
   if (typeof leaveTitle === "function") leaveTitle(); // the host started: remove the title/lobby screens
   G = msg.G;
+  NET.gameStarted = true;
+  NET.seatHash = G.hashes || [];
+  NET.epoch = G.epoch || 0;
+  NET.hostIdx = G.hostIdx || 0;
+  NET.joinedAt = performance.now();
+  delete G.hashes; delete G.epoch; delete G.hostIdx; delete G.roomCode;
   G.built = 0;
   G._stateSeq = 0;
   delete G.snkKey;
@@ -1619,6 +2591,7 @@ function applyRemoteGameStart(msg) {
     big.scrollTop = 1e6;
   }
   render();
+  saveSession();
 
   // Flush any in-game packets that arrived slightly ahead of GAME_START
   if (NET.earlyQueue.length) {
@@ -1653,6 +2626,8 @@ function applyStateSync(msg) {
         gp.pen = mp.pen;
         gp.items = mp.items;
         gp.big = mp.big;
+        if (mp.cd !== undefined) gp.cd = mp.cd;
+        if (mp.disc !== undefined) gp.disconnected = !!mp.disc;
       }
     });
   }
@@ -1671,9 +2646,40 @@ function applyStateSync(msg) {
   if (msg.L) G.L = msg.L;
   if (msg.items) G.items = msg.items;
   if (msg.catNow !== undefined) G.catNow = msg.catNow;
+  if (typeof msg.turnNo === "number") G.turnNo = msg.turnNo;
   if (msg.curIndex != null) G.cur = G.players[msg.curIndex];
   if (msg.winnerIndex != null) G.winner = G.players[msg.winnerIndex];
 
   if (movedRemotely) sfx("tock", 270);
   render();
+}
+
+
+// ------------------------------------------------------------------ 8. AUTOMATIC REJOIN AFTER A RELOAD / CRASH
+// autoRejoin(): called once at start-up. If this page holds a seat in a game that is still going, take it back (no clicks needed).
+async function autoRejoin() {
+  const sess = pickAutoSession();
+  if (!sess) return false;
+  showNetworkBanner("Rejoining your game...");
+  try {
+    NET.onLobbyUpdate = null;
+    await initGuest(sess.room, "Player", { token: sess.token, epoch: sess.epoch || 0, rejoin: true });
+    hideNetworkBanner();
+    return true;
+  } catch (err) {
+    clearSession();                                  // the game is gone (everybody left) or this seat is no longer ours
+    teardownNet();
+    showNetworkBanner("The game you were in has ended.");
+    setTimeout(hideNetworkBanner, 3500);
+    return false;
+  }
+}
+// teardownNet(): drop every connection and timer (no screen changes)
+function teardownNet() {
+  stopHeartbeat(); stopRecovery();
+  try { stopServerRelay(); } catch (e) {}
+  try { stopCloudRelay(); } catch (e) {}
+  if (NET.peer) { try { NET.peer.destroy(); } catch (e) {} NET.peer = null; }
+  NET.active = false; NET.isHost = false; NET.joined = false; NET.gameStarted = false; NET.hostLost = false;
+  NET.connections = []; NET.peerMap = {}; NET.hostConn = null; NET.myToken = null; NET.seatHash = [];
 }

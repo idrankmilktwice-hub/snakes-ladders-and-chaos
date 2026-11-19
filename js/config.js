@@ -6,11 +6,20 @@
 
 // ---- Game settings you can change ----
 const CONFIG = {
+<<<<<<< HEAD
   LADDERS: 9, // how many ladders each board gets
   SNAKES: 9, // how many snakes each board gets (at most 1 more than the number of ordinary snake heads in manifest.json: the cobra + one head each)
   MIN_PLAYERS: 2, // fewest players allowed on the setup screen
   MAX_PLAYERS: 6, // most players allowed (the layout has room for 6 panels)
   STEP_MS: 350, // pause (milliseconds) after every piece movement so you can follow what happened
+=======
+  LADDERS: 9,         // how many ladders each board gets
+  SNAKES: 9,          // how many snakes each board gets (at most 1 more than the number of ordinary snake heads in manifest.json: the cobra + one head each)
+  MIN_PLAYERS: 2,     // fewest players allowed on the setup screen
+  MAX_PLAYERS: 6,     // most players allowed (the layout has room for 6 panels)
+  STEP_MS: 350,       // pause (milliseconds) after every piece movement so you can follow what happened
+  RECONNECT_MS: 5000  // online: how long a disconnected player's turn waits for them to come back before it is skipped
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 };
 
 // ---- Sounds. file = path inside assets/. skip = seconds of leading silence to cut so the sound lands exactly on the action.

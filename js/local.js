@@ -57,12 +57,19 @@ function buildLocal() {
     L = document.createElement("div");
   L.id = "tLocal";
   let h = "";
+<<<<<<< HEAD
   for (let i = 0; i < CONFIG.MAX_PLAYERS; i++)
     h += `<div class="lrow" data-i="${i}"><div class="lin"><div class="gbtn lbadge" data-p="${i + 1}"></div><span class="lchev"></span><input class="lname" data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" autocomplete="off"><button class="gbtn lcls" data-i="${i}"></button></div></div>`;
   h += `<div id="tCnt"><span class="cl">PLAYERS:</span><button id="tCntBtn" aria-label="Number of players"><b id="tCntNum">6</b><i></i><svg viewBox="0 0 24 14"><path d="M3 3L12 11.5 21 3" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square"/></svg></button><div id="tCntMenu">${[2, 3, 4, 5, 6].map((v) => `<button data-v="${v}">${v}</button>`).join("")}</div></div>`;
   h +=
     `<div id="tHost" class="tgrp"><button class="gbtn" id="hGen"></button><div class="hcode empty" id="hCode">- - - - -</div><button class="gbtn" id="hCopy"></button></div>` +
     `<div id="tJoin" class="tgrp"><input class="hcode" id="jCode" maxlength="6" placeholder="ENTER CODE" autocomplete="off" spellcheck="false"><button class="gbtn" id="jBtn"></button></div><div id="tToast"></div><div id="tWait">Waiting for the host...</div>`;
+=======
+  for (let i = 0; i < CONFIG.MAX_PLAYERS; i++) h += `<div class="lrow" data-i="${i}"><div class="lin"><div class="gbtn lbadge" data-p="${i + 1}"></div><span class="lchev"></span><input class="lname" data-i="${i}" maxlength="14" placeholder="Player ${i + 1}" autocomplete="off"><button class="gbtn lcls" data-i="${i}"></button></div></div>`;
+  h += `<div id="tCnt"><span class="cl">PLAYERS:</span><button id="tCntBtn" aria-label="Number of players"><b id="tCntNum">6</b><i></i><svg viewBox="0 0 24 14"><path d="M3 3L12 11.5 21 3" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square"/></svg></button><div id="tCntMenu">${[2, 3, 4, 5, 6].map(v => `<button data-v="${v}">${v}</button>`).join("")}</div></div>`;
+  h += `<div id="tHost" class="tgrp"><button class="gbtn" id="hGen"></button><div class="hcode empty" id="hCode">- - - - -</div><button class="gbtn" id="hCopy"></button></div>` +
+       `<div id="tJoin" class="tgrp"><input class="hcode" id="jCode" maxlength="13" placeholder="ENTER CODE" autocomplete="off" spellcheck="false"><button class="gbtn" id="jBtn"></button></div><div id="tToast"></div><div id="tWait">Waiting for the host...</div>`;
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   h += `<button class="gbtn" id="tStart" style="position:absolute;left:1625px;top:910px"></button>`;
   L.innerHTML = h;
   root.appendChild(L);
@@ -135,6 +142,12 @@ function buildLocal() {
   $("jCode").onkeydown = (e) => {
     if (e.key === "Enter") joinPressed();
   };
+<<<<<<< HEAD
+=======
+  $("hGen").onclick = hostGenerate; $("hCopy").onclick = copyLink; $("jBtn").onclick = joinPressed;
+  $("jCode").addEventListener("input", () => { const n = $("jCode").value.length; $("jCode").style.fontSize = n > 6 ? Math.min(56, Math.floor((232 / n - 4) / 0.6)) + "px" : ""; });   // a long (switch-device) code shrinks to fit the box
+  $("jCode").onkeydown = e => { if (e.key === "Enter") joinPressed(); };
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   // the pick overlay: dark layer, X button, the six panels, and the full-rules popup
   const P = document.createElement("div");
   P.id = "tPick";
@@ -375,13 +388,15 @@ function copyLink() {
 // joinPressed(): the Join Lobby button - try the typed code; a small pop-up says what happened
 async function joinPressed() {
   if (TT.net) return;
-  const code = ($("jCode").value || "").trim().toUpperCase();
+  const raw = ($("jCode").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const code = raw.length >= 11 ? raw.slice(0, 5) : raw, xfer = raw.length >= 11 ? raw.slice(5, 11) : "";   // room code, plus a switch-device secret if one was typed after it
   if (!code) return toast($("jBtn"), "Enter a code!", false, "right");
   TT.net = true;
   $("jBtn").disabled = true;
   gbLabel($("jBtn"), "Joining...");
   try {
     if (NET.active) leaveOnlineLobby();
+<<<<<<< HEAD
     S.mode = "online";
     S.rows = [];
     initRows();
@@ -410,14 +425,33 @@ async function joinPressed() {
       false,
       "right",
     );
+=======
+    S.mode = "online"; S.rows = []; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate;
+    const sess = typeof loadSession === "function" ? loadSession(code) : null;   // a seat this device already holds in that room
+    await initGuest(code, "Player", { token: !xfer && sess ? sess.token : undefined, epoch: sess ? sess.epoch : 0, rejoin: !!(xfer || sess), xfer: xfer || undefined });
+    if (G) { TT.net = false; return; }                                           // took a seat in a running game: the game screen is already up
+    S.netState = "lobby";
+    $("jCode").disabled = true; gbLabel($("jBtn"), "Joined"); onlineLobbyUpdate();
+    toast($("jBtn"), "Room Found!", true, "right");
+  } catch (err) {
+    if (NET.active) leaveOnlineLobby();
+    S.mode = "online"; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate; onlineLobbyUpdate();
+    gbLabel($("jBtn"), "Join Lobby"); $("jBtn").disabled = false;
+    const m = (err && err.message) || "";
+    toast($("jBtn"), /wrong|expired|too many/i.test(m) ? "Wrong code!" : /started/i.test(m) ? "Game already started!" : /full/i.test(m) ? "Lobby is full!" : "Can't find Lobby!", false, "right");
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   }
   TT.net = false;
 }
 // autoJoin(code): used by invite links - fill the code and join straight away
+<<<<<<< HEAD
 function autoJoin(code) {
   $("jCode").value = code.toUpperCase().slice(0, 6);
   joinPressed();
 }
+=======
+function autoJoin(code) { $("jCode").value = code.toUpperCase().slice(0, 13); joinPressed(); }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 
 // leaveTitle(): the game itself is starting - remove the title screen completely.
 function leaveTitle() {

@@ -1974,6 +1974,7 @@ body:not(.on-title) #tLoad {
 /* ============================================================================================================
    GREEN STRETCHABLE BUTTONS (.gbtn - built by gbBuild() in js/title.js) + the dark description boxes on the Play page
    ============================================================================================================ */
+<<<<<<< HEAD
 .gbtn {
   position: relative;
   flex: none;
@@ -2112,3 +2113,64 @@ body:not(.on-title) #tLoad {
   pointer-events: none;
   transition: background-color 0.35s;
 }
+=======
+.gbtn { position: relative; flex: none; padding: 0; border: 0; background: none; cursor: pointer; color: var(--tt-ink); font-family: LM, monospace; }
+.gbtn:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 6px; }
+.gb-rim { position: absolute; inset: 0; border-radius: calc(11px * var(--sc)); background: var(--tt-rim); transition: background-color .35s; }
+.gb-top { position: absolute; left: calc(6px * var(--sc)); top: calc(5px * var(--sc)); right: calc(7.6px * var(--sc)); bottom: calc(20.4px * var(--sc)); transition: transform .07s; }
+.gb-face { position: absolute; inset: 0; box-sizing: border-box; border-style: solid; border-color: transparent; border-width: calc(30px * var(--sc)) calc(65px * var(--sc)) calc(40px * var(--sc)) calc(95px * var(--sc)); border-image: var(--gbtn) 30 65 40 95 fill stretch; }   /* the 9-slice: corners keep their shape, the middle stretches */
+.gb-top .tb-shine { border-radius: calc(4px * var(--sc)); }
+.gb-t { position: absolute; left: 0; right: 0; top: 0; height: calc(102.35px * var(--sc)); display: flex; align-items: center; justify-content: center; gap: calc(14px * var(--sc)); font-size: calc(70.9px * var(--sc) * var(--tk, 1)); line-height: 1; white-space: nowrap; transform: translateY(calc(7.8px * var(--sc))); }
+.gb-fb { font-family: MC, monospace; font-size: 1.3em; }
+.gb-t img { position: relative; top: calc(-7.8px * var(--sc)); width: auto; flex: none; } .gb-t svg { position: relative; top: calc(-7.8px * var(--sc)); }
+.gbtn:active .gb-top { transform: translateY(calc(11px * var(--sc))); }
+.gbtn:disabled { opacity: .65; cursor: default; } .gbtn:disabled:active .gb-top { transform: none; }
+.lin .lbadge, .lin .lcls { position: absolute; top: 0; } .lin .lbadge { left: 0; pointer-events: none; } .lin .lcls { left: 560px; }
+.pk-x { position: absolute; right: 28px; top: 28px; }
+.pk-more { position: absolute; left: calc(50% - 20px); bottom: 10px; width: 40px; height: 28px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pk-more:active { transform: translateY(2px); border-bottom-width: 2px; }
+.obtn { position: absolute; width: 1029.95px; height: 165px; box-sizing: border-box; padding: 15.0px 24px 0; border-radius: 22px; background: var(--tt-field); color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-family: MC, monospace; font-size: 60.0px; line-height: 1; white-space: nowrap; pointer-events: none; transition: background-color .35s; }
+
+/* =====================================================================================
+   RECONNECT SYSTEM (online games)
+   ===================================================================================== */
+/* ---- disconnected player: red icon centred on the portrait square, faded head and pawn ---- */
+.pp .dcicon { width: 84px; height: auto; transform: translate(-50%, -50%) scale(.5); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s cubic-bezier(.3, 1.5, .5, 1); z-index: 2; }
+.pp.dc .dcicon { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.pp.dc .port { filter: grayscale(.85) opacity(.55); }
+.pw.dc { opacity: .4; }
+/* glow when a player drops (slow, red) and when they return (fast, lime) */
+.pp .pbody.flashdc { animation: dcPanelRed 1.3s ease-out 2; }
+.pp .pbody.flashback { animation: dcPanelLime .45s ease-out; }
+.pp .dcicon.flashdc { animation: dcIconRed 1.3s ease-out 2; }
+.pp .dcicon.flashback { animation: dcIconLime .45s ease-out; }
+@keyframes dcPanelRed  { 0% { filter: none; } 35% { filter: drop-shadow(0 0 14px #ff3b3b) drop-shadow(0 0 5px #ff3b3b); } 100% { filter: none; } }
+@keyframes dcPanelLime { 0% { filter: none; } 40% { filter: drop-shadow(0 0 12px #c3f73a) drop-shadow(0 0 4px #c3f73a); } 100% { filter: none; } }
+@keyframes dcIconRed   { 0% { filter: none; } 35% { filter: drop-shadow(0 0 16px #ff3b3b) drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 2px #fff); } 100% { filter: none; } }
+@keyframes dcIconLime  { 0% { filter: none; } 40% { filter: drop-shadow(0 0 14px #c3f73a) drop-shadow(0 0 5px #c3f73a); } 100% { filter: none; } }
+
+/* ---- reconnect banner: now with a small "type the room code" form ---- */
+#netBanner #nbForm { display: none; align-items: center; gap: 12px; margin-left: 22px; vertical-align: middle; }
+#netBanner #nbCode { width: 170px; height: 44px; box-sizing: border-box; border: 0; border-radius: 8px; padding: 0 12px; background: #2f2504; color: #fff; font-family: MC, monospace; font-size: 24px; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
+#netBanner .cbtn { display: inline-block; vertical-align: middle; }
+
+/* ---- full-screen notice: this page gave up its seat (opened elsewhere / lobby ended) ---- */
+#netOverlay { display: none; position: absolute; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(20, 14, 2, .86); }
+#netOverlay .nbox { max-width: 760px; padding: 40px 48px; text-align: center; background: #2f2504; border: 5px solid #c3f73a; border-radius: 18px; color: #fff3cf; font-size: 34px; line-height: 1.3; }
+#netOverlay .nbox p { margin: 0 0 26px; }
+#netOverlay .cbtn { margin: 0 auto; }
+
+/* ---- Settings tab: Sound effects row + "Switch Device" ---- */
+#settings .sfxrow { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
+#settings .volbar { margin: 6px 0 12px; } #settings .volbar .seg { height: 40px; }
+#settings .swbox { border-top: 2px solid #c3f73a; padding-top: 10px; }
+#settings #swBtn { --s: .85; --img: var(--btn-orange); width: 100%; margin: 0 0 8px; }
+html[data-theme=dark] #settings #swBtn { --img: var(--btn-blue); }            /* the orange button by day, the blue one at night */
+#settings .swnote { margin: 0; font-size: 15px; line-height: 1.25; color: #fff3cf; }
+#settings .swerr { margin: 6px 0 0; font-size: 15px; color: #ff9a62; }
+#settings .swcode { display: flex; gap: 10px; justify-content: center; margin: 0 0 8px; }
+#settings .swc { --f: 1.75; position: relative; width: calc(84.4px * var(--f)); height: calc(49.04px * var(--f)); flex: none; }
+#settings .swc img { position: absolute; left: 0; top: 0; width: 100%; }
+#settings .swc img.csh { left: calc(-2.4px * var(--f)); width: calc(89px * var(--f)); }
+#settings .swc span { position: absolute; left: calc(2.4px * var(--f)); top: calc(2.2px * var(--f)); width: calc(79.5px * var(--f)); height: calc(31.7px * var(--f)); line-height: calc(31.7px * var(--f)); text-align: center; white-space: nowrap; color: #fff3cf; font-family: MC, monospace; font-size: 27px; letter-spacing: 2px; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)

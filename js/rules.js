@@ -123,6 +123,7 @@ function syncGameState() {
     broadcast({
       type: "STATE_SYNC",
       stateSeq: ++NET.stateSeq,
+<<<<<<< HEAD
       players: G.players.map((p) => ({
         pos: p.pos,
         cb: p.cb,
@@ -130,6 +131,10 @@ function syncGameState() {
         items: p.items,
         big: p.big,
       })),
+=======
+      players: G.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd || 0, disc: !!p.disconnected })),
+      turnNo: G.turnNo || 0,
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       S: G.S,
       L: G.L,
       items: G.items,
@@ -174,6 +179,7 @@ async function slide(p) {
     L = G.L[n],
     Sn = G.S[n];
   if (L) {
+<<<<<<< HEAD
     if (p.character === "struggler") {
       // Struggler picks two "failure" numbers, then rolls: hitting one means no climb
       const nums = [1, 2, 3, 4, 5, 6].map((x) => ({
@@ -200,11 +206,22 @@ async function slide(p) {
           "A failure number! The ladder wobbles and " + p.name + " stays put.",
         );
         return;
+=======
+    if (p.character === "struggler" && !p.disconnected) {   // Struggler picks two "failure" numbers, then rolls: hitting one means no climb (a disconnected player is an ordinary pawn: no abilities)
+      const nums = [1, 2, 3, 4, 5, 6].map(x => ({ label: String(x), value: x }));
+      const f1_ = await ask(`${p.name}: pick your first failure number for this ladder`, nums, p);
+      const f2_ = await ask(`${p.name}: pick a second failure number`, nums.filter(o => o.value !== f1_), p);
+      if (!p.disconnected) {   // (they may have dropped while choosing)
+        const r = await rollCheck(p, `you bet against ${f1_} and ${f2_}: roll for the ladder`);   // the player throws the die
+        log(`${p.name} bets against ${f1_} and ${f2_}, and rolls ${r}.`);
+        if (r === f1_ || r === f2_) { log("A failure number! The ladder wobbles and " + p.name + " stays put."); return; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       }
     }
     log(FLAVOR.ladder(p.name, n, L));
     await set(p, L);
   } else if (Sn) {
+<<<<<<< HEAD
     if (p.character === "struggler") {
       // Struggler rolls: even = dodge the snake
       const r = await rollCheck(p, "roll against the snake (even = escape)");
@@ -213,6 +230,11 @@ async function slide(p) {
         log("Even! " + p.name + " wriggles out of the snake\u2019s jaws.");
         return;
       }
+=======
+    if (p.character === "struggler" && !p.disconnected) {   // Struggler rolls: even = dodge the snake
+      const r = await rollCheck(p, "roll against the snake (even = escape)"); log(`${p.name} rolls ${r} against the snake.`);
+      if (r % 2 === 0) { log("Even! " + p.name + " wriggles out of the snake\u2019s jaws."); return; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     }
     log(FLAVOR.snake(p.name, n, Sn));
     await set(p, Sn);
@@ -235,6 +257,7 @@ async function go(p, t) {
 // hit(v, np, why): another player's effect moves victim v to square np (pushed, pulled, nudged, knocked down...). The Struggler may dodge. Returns true if v moved.
 async function hit(v, np, why) {
   if (np === v.pos) return false;
+<<<<<<< HEAD
   if (v.character === "struggler") {
     const r = await rollCheck(v, `roll against being ${why} (even = dodge)`);
     log(`${v.name} rolls ${r} against being ${why}.`);
@@ -242,6 +265,11 @@ async function hit(v, np, why) {
       log("Even! Dodged it neatly.");
       return false;
     }
+=======
+  if (v.character === "struggler" && !v.disconnected) {
+    const r = await rollCheck(v, `roll against being ${why} (even = dodge)`); log(`${v.name} rolls ${r} against being ${why}.`);
+    if (r % 2 === 0) { log("Even! Dodged it neatly."); return false; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     log("Odd. It lands.");
   }
   log(`${v.name} is ${why}: ${v.pos} to ${np}.`);
@@ -270,6 +298,7 @@ function rollBonus(p) {
 }
 // infatuate(v): the cat charms v (-1 on their next roll). The Struggler may resist.
 async function infatuate(v) {
+<<<<<<< HEAD
   if (v.character === "struggler") {
     const r = await rollCheck(
       v,
@@ -282,6 +311,9 @@ async function infatuate(v) {
     }
     log("Odd. Those eyes are irresistible.");
   }
+=======
+  if (v.character === "struggler" && !v.disconnected) { const r = await rollCheck(v, "roll against the cat\u2019s charm (even = immune)"); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   v.pen = (v.pen || 0) + 1;
   log(`${v.name} is infatuated with the cat: -1 on their next roll.`);
   render();
@@ -337,6 +369,7 @@ const LOGIC = {
       (q) => q !== p && q.pos > p.pos && q.pos <= p.pos + 6,
     );
     let dir = null;
+<<<<<<< HEAD
     if (inRange) dir = await ask(`${p.name}: Push or Pull?`, ["Push", "Pull"]);
     else
       log(
@@ -354,12 +387,20 @@ const LOGIC = {
       log(FLAVOR.stay(p.name));
       return r === 6;
     }
+=======
+    if (inRange && !p.disconnected) dir = await ask(`${p.name}: Push or Pull?`, ["Push", "Pull"]);
+    else if (!inRange) log(`${p.name} looks around: nobody within reach. No one to bully this turn!`);
+    const r = await roll(p), net = rollBonus(p), from = p.pos, t = from + Math.max(0, r + net);
+    if (t > 100) { log(FLAVOR.exact(p.name)); return r === 6; }
+    if (t === from) { log(FLAVOR.stay(p.name)); return r === 6; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     await selfMove(p, t);
     if (t === 100) {
       win(p);
       return false;
     }
     // passing over players: nudge each one forward or back 1
+<<<<<<< HEAD
     for (const q of G.players.filter(
       (q) => q !== p && q.pos > from && q.pos < t,
     )) {
@@ -378,6 +419,17 @@ const LOGIC = {
     // landing on someone: push or pull them with a fresh roll (only checked BEFORE any snake/ladder, so being swallowed to a tail never triggers it)
     const o = G.players.filter((q) => q !== p && q.pos === t);
     if (o.length && dir) {
+=======
+    for (const q of G.players.filter(q => q !== p && q.pos > from && q.pos < t)) {
+      if (p.disconnected) break;                                   // a disconnected Bully is an ordinary pawn: no nudging
+      const nd = await ask(`${p.name} passes over ${q.name}: nudge them forward or back 1?`, [{ label: "Forward", value: 1 }, { label: "Back", value: -1 }]);
+      log(`${p.name} shoulders past ${q.name}, nudging them ${nd > 0 ? "forward" : "back"} 1.`);
+      await hit(q, Math.max(1, q.pos + nd), "nudged");
+    }
+    // landing on someone: push or pull them with a fresh roll (only checked BEFORE any snake/ladder, so being swallowed to a tail never triggers it)
+    const o = G.players.filter(q => q !== p && q.pos === t);
+    if (o.length && dir && !p.disconnected) {
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       let v = o[0];
       if (o.length > 1) {
         const vIdx = await ask(
@@ -386,6 +438,7 @@ const LOGIC = {
         );
         v = G.players[vIdx] || o[0];
       }
+<<<<<<< HEAD
       const x = await rollCheck(p, `roll to ${dir.toLowerCase()} ${v.name}`); // the Bully throws the die himself
       log(
         `${p.name} looms over ${v.name} and rolls ${x} to ${dir.toLowerCase()} them.`,
@@ -393,6 +446,14 @@ const LOGIC = {
       const np = dir === "Push" ? v.pos + x : Math.max(1, v.pos - x);
       if (np > 100) log("Overpushed! " + v.name + " stays put.");
       else await hit(v, np, dir === "Push" ? "pushed" : "pulled");
+=======
+      if (!p.disconnected) {                                       // (they may have dropped while choosing)
+        const x = await rollCheck(p, `roll to ${dir.toLowerCase()} ${v.name}`);   // the Bully throws the die himself
+        log(`${p.name} looms over ${v.name} and rolls ${x} to ${dir.toLowerCase()} them.`);
+        const np = dir === "Push" ? v.pos + x : Math.max(1, v.pos - x);
+        if (np > 100) log("Overpushed! " + v.name + " stays put."); else await hit(v, np, dir === "Push" ? "pushed" : "pulled");
+      }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     }
     if (!G.winner) await slide(p);
     return r === 6;
@@ -400,6 +461,7 @@ const LOGIC = {
 
   // GAMBLER: two dice. A 1 = go back by the other die; double 1s stay; double 6s = another turn; special finish on 97-99.
   async gambler(p) {
+<<<<<<< HEAD
     const [a, b] = await roll2(p),
       again = a === 6 && b === 6,
       net = rollBonus(p),
@@ -425,6 +487,14 @@ const LOGIC = {
       await slide(p);
       return false;
     }
+=======
+    const [a, b] = await roll2(p), again = a === 6 && b === 6, net = rollBonus(p), need = 100 - p.pos;
+    if (p.disconnected) { await go(p, p.pos + a + b); return false; }   // dropped: an ordinary pawn that just moves the dice total
+    if (need < 4 && (a === need || b === need)) { log(`${p.name} rolls the exact ${need} and finishes!`); await selfMove(p, 100); win(p); return false; }
+    if (need < 4 && a !== 1 && b !== 1) { log("No exact number: the Gambler stays put."); return again; }
+    if (a === 1 && b === 1) { log("Snake eyes! Double 1s: the Gambler stays put."); return false; }
+    if (a === 1 || b === 1) { const x = a === 1 ? b : a; log(`A 1! The gamble backfires: back ${x}.`); await selfMove(p, Math.max(1, p.pos - x)); await slide(p); return false; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     let t = p.pos + Math.max(0, a + b + net);
     if (t > 100) {
       t = 200 - t;
@@ -438,6 +508,7 @@ const LOGIC = {
 
   // ORACLE: calls a number first. Right call = bonus d3 added to the move, and snakes can't bite on that move.
   async oracle(p) {
+<<<<<<< HEAD
     const call = await ask(
       `${p.name}: call the number you will roll`,
       [1, 2, 3, 4, 5, 6].map((n) => ({ label: String(n), value: n })),
@@ -458,6 +529,14 @@ const LOGIC = {
       log(FLAVOR.exact(p.name));
       return r === 6;
     }
+=======
+    const call = p.disconnected ? 0 : await ask(`${p.name}: call the number you will roll`, [1, 2, 3, 4, 5, 6].map(n => ({ label: String(n), value: n })));
+    const r = await roll(p), net = rollBonus(p);
+    if (p.disconnected || call !== r) { if (!p.disconnected) log(`${p.name} called ${call}: the vision was wrong. No bonus.`); await go(p, p.pos + Math.max(0, r + net)); return r === 6; }
+    const b = rnd(1, 3), t = p.pos + Math.max(0, r + net) + b;
+    log(`The vision was right! Bonus d3 shows ${b}: ${r + b} squares in total, and snakes can\u2019t bite this move.`);
+    if (t > 100) { log(FLAVOR.exact(p.name)); return r === 6; }
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     await selfMove(p, t);
     if (t === 100) {
       win(p);
@@ -510,11 +589,17 @@ function ghostSvg(h, x, y) {
   return `<use href="#${kd.head.p}all" opacity=".9" transform="translate(${f1(x)} ${f1(y - 6)}) scale(${kd.sc * 1.1}) translate(${-(b.x + b.w / 2)} ${-(b.y + b.h / 2)})"/>`;
 }
 // CHARMER: before rolling, may drag one snake head in range to another square on its row (then waits a turn). Never gets extra turns.
+<<<<<<< HEAD
 LOGIC.charmer = async (p) => {
   if (p.cd) {
     p.cd = 0;
     log(FLAVOR.recharge(p.name));
   } else {
+=======
+LOGIC.charmer = async p => {
+  if (p.cd) { p.cd = 0; log(FLAVOR.recharge(p.name)); }
+  else if (!p.disconnected) {
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     const near = charmerRange(p);
     if (!near.length) log("No snakes in range! Gotta move closer!");
     else {
@@ -700,6 +785,7 @@ function spawnItem(quiet) {
 // (if their hands are full they may swap one of their items for it).
 async function landOn(p) {
   const it = itemAt(p.pos);
+<<<<<<< HEAD
   if (!it) return;
   if (it.trap) {
     // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
@@ -710,6 +796,11 @@ async function landOn(p) {
     render();
     syncGameState();
     return;
+=======
+  if (!it || p.disconnected) return;                                // a disconnected pawn picks nothing up and trips nothing
+  if (it.trap) {                                                    // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
+    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); render(); syncGameState(); return;
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   }
   const name = ITEMS[it.type].name;
   if (p.items.length < ITEM_MAX) {
@@ -741,12 +832,17 @@ async function landOn(p) {
 }
 // itemPhase(p): before p rolls, let them use any of their items. Their items glow; click one to use it, or press Roll / Space to carry on.
 async function itemPhase(p) {
+<<<<<<< HEAD
   while (p.items.length && !G.winner) {
     const i = await awaitItemChoice(
       p,
       `${p.name}: click a glowing item to use it, or roll without (Space).`,
       "Roll",
     );
+=======
+  while (p.items.length && !G.winner && !p.disconnected) {
+    const i = await awaitItemChoice(p, `${p.name}: click a glowing item to use it, or roll without (Space).`, "Roll");
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
     if (i === null) break;
     await useItem(p, i);
   }
@@ -871,15 +967,44 @@ async function useItem(p, i) {
 // Every turn: (1) every 3rd turn of the game a new item appears, (2) the player may use items, (3) the character's own turn.
 // Each player's turn is wrapped in try/catch: if the rules code hits an error the game shows a message in the board log, cleans up and moves on
 // to the next player instead of silently freezing.
+<<<<<<< HEAD
 async function play() {
   const rk = (p) =>
     p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0; // turn order rank
+=======
+async function play(opts) {
+  const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0;   // turn order rank
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   G.order = [...G.players].sort((a, b) => rk(a) - rk(b));
+  // A page that took over as host (see network.js becomeHost) resumes at the START of the interrupted turn (or the cat's move, if that was running).
+  let startIdx = 0;
+  if (opts && opts.resume && G.cur) {
+    const ci = G.order.indexOf(G.cur);
+    if (ci >= 0) startIdx = ci;
+    if (G.catNow && G.catOwner === G.cur) {
+      try { await catTurn(G.cur); } catch (err) { console.error(err); resetInteraction(); }
+      startIdx++;
+    } else G.turnNo = Math.max(0, (G.turnNo || 1) - 1);          // the interrupted turn counts again when it restarts
+  }
   while (!G.winner) {
+<<<<<<< HEAD
     if (G.order.every((q) => q.disconnected)) break;
     for (const p of G.order) {
+=======
+    if (G.order.every(q => q.disconnected)) break;
+    for (let oi = startIdx; oi < G.order.length; oi++) {
+      const p = G.order[oi];
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
       if (G.winner) break;
-      if (p.disconnected) continue;
+      if (p.disconnected) {
+        // Their turn begins: give them 5 seconds (once per absence) to come back. If they do, they play normally; if not, the turn is skipped (the cat's too).
+        if (!p.missed && typeof waitForReconnect === "function") {
+          G.cur = p; render(); syncGameState();
+          const back = await waitForReconnect(p, CONFIG.RECONNECT_MS || 5000);
+          if (!back) { p.missed = true; log(`${esc(p.name)} did not come back in time: turn skipped.`); }
+        }
+        if (p.disconnected) continue;
+      }
       try {
         G.turnNo = (G.turnNo || 0) + 1;
         if (G.turnNo % ITEM_EVERY === 0) spawnItem(); // a new item appears every ITEM_EVERY turns
@@ -924,6 +1049,7 @@ async function play() {
         await sleep(800);
       }
     }
+    startIdx = 0;
   }
   render();
   if (!G.winner) return;

@@ -714,6 +714,7 @@ function slotCenter(i, j) {
 }
 // buildPanels(): one panel per player. Panels alternate orange / blue.
 function buildPanels() {
+<<<<<<< HEAD
   $("panels").innerHTML = G.players
     .map((p, i) => {
       const [px, py] = panelPos(i),
@@ -726,6 +727,12 @@ function buildPanels() {
         )
         .join("");
       return `<div class="pp" id="pp${i}" style="left:${px}px;top:${py}px" title="${esc(CHARACTERS.find((c) => c.id === p.character).name)}"><img class="psh" src="${A("player_panel_shadow.svg")}" alt="" style="left:${PANEL_SHADOW.x}px;width:${PANEL_SHADOW.artW}px;transform-origin:0 0;transform:scale(${PANEL_SHADOW.w / PANEL_SHADOW.artW},${PANEL_SHADOW.h / PANEL_SHADOW.artH})"><div class="pbody"><img class="pbg" src="${A("player_panel_" + (i % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size + 16}px">
+=======
+  $("panels").innerHTML = G.players.map((p, i) => {
+    const [px, py] = panelPos(i), f = PANEL.field, pt = PANEL.portrait;
+    const slots = PANEL.slots.map((s, j) => `<div class="slot" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
+    return `<div class="pp" id="pp${i}" style="left:${px}px;top:${py}px" title="${esc(CHARACTERS.find(c => c.id === p.character).name)}"><img class="psh" src="${A("player_panel_shadow.svg")}" alt="" style="left:${PANEL_SHADOW.x}px;width:${PANEL_SHADOW.artW}px;transform-origin:0 0;transform:scale(${PANEL_SHADOW.w / PANEL_SHADOW.artW},${PANEL_SHADOW.h / PANEL_SHADOW.artH})"><div class="pbody"><img class="pbg" src="${A("player_panel_" + (i % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size + 16}px"><img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 <div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - 12, 24)}px">${esc(p.name)}</div>${slots}</div>
 <div class="ctr" style="left:168px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_buff.svg")}" alt=""><span id="bf${i}">+0</span></div>
 <div class="ctr" style="left:272px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_debuff.svg")}" alt=""><span id="df${i}">-0</span></div></div>`;
@@ -801,12 +808,33 @@ function render() {
       if (act && $("gPawn").lastChild !== pw) $("gPawn").appendChild(pw); // bring the active pawn to the front
     }
     const pp = $("pp" + i);
+<<<<<<< HEAD
     if (pp) pp.classList.toggle("cur", act || (G.catNow && G.catOwner === p)); // the active panel sinks into its shadow
     setCounter("bf" + i, `+${p.cb || 0}`); // buff counter
     setCounter("df" + i, `-${p.pen || 0}`); // debuff counter
+=======
+    if (pp) pp.classList.toggle("cur", act || (G.catNow && G.catOwner === p));      // the active panel sinks into its shadow
+    updateDisconnectLook(p, i, pp, pw);                                              // red "disconnected" icon on the head, faded pawn, glow when it changes
+    setCounter("bf" + i, `+${p.cb || 0}`);                                           // buff counter
+    setCounter("df" + i, `-${p.pen || 0}`);                                          // debuff counter
+>>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   });
   if (G.cat && $("pwc"))
     $("pwc").classList.toggle("act", !!G.catNow && !G.winner);
+}
+
+// updateDisconnectLook(p, i, pp, pw): show / hide the disconnected icon on player i's panel and fade their pawn.
+// When the state CHANGES (not on the first draw) the panel glows: slowly in red when they drop, quickly in lime when they come back.
+function updateDisconnectLook(p, i, pp, pw) {
+  const now = !!p.disconnected, seen = G.dcShown || (G.dcShown = {});
+  if (pp) pp.classList.toggle("dc", now);
+  if (pw) pw.classList.toggle("dc", now);
+  if (seen[i] !== undefined && seen[i] !== now && pp) {
+    const body = pp.querySelector(".pbody"), icon = $("dc" + i), cls = now ? "flashdc" : "flashback";
+    [body, icon].forEach(el => { if (el) { el.classList.remove("flashdc", "flashback"); void el.offsetWidth; el.classList.add(cls); } });   // (offsetWidth lets the animation restart)
+    setTimeout(() => [body, icon].forEach(el => el && el.classList.remove(cls)), now ? 2600 : 900);
+  }
+  seen[i] = now;
 }
 
 // switchCat(): change the cat to a different random picture (never the same as now). Called when the cat is clicked or moves squares.
