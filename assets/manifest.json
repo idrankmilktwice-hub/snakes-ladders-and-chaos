@@ -1,11 +1,7 @@
 {
   "tiles": {
-    "dark": [
-      "tile_dark.svg"
-    ],
-    "light": [
-      "tile_light.svg"
-    ],
+    "dark": ["tile_dark.svg"],
+    "light": ["tile_light.svg"],
     "shadow": "tile_shadow.svg"
   },
   "heads": [
