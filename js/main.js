@@ -274,7 +274,7 @@ function start() {
   }
   // G = the new game. players: name/character/position(pos)/colour. L = ladders, S = snakes, cobra = long snake's tail.
   // cat = the cat token (or null), catSkin = which cat picture is showing, catNow = true while the cat's own turn is running.
-  G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, character: r.character, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, 5), catNow: false, winner: null, cur: null };
+  G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, character: r.character, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, ART.cats.length - 1), catNow: false, winner: null, cur: null };
   assignKinds();
   const co = G.players.find(p => p.character === "cat");
   if (co) { G.cat = { pos: 1 }; G.catOwner = co; }

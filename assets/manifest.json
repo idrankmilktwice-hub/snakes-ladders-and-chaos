@@ -1,7 +1,11 @@
 {
   "tiles": {
-    "dark": ["tile_dark.svg"],
-    "light": ["tile_light.svg"],
+    "dark": [
+      "tile_dark.svg"
+    ],
+    "light": [
+      "tile_light.svg"
+    ],
     "shadow": "tile_shadow.svg"
   },
   "heads": [
@@ -83,7 +87,11 @@
     "cat_3.svg",
     "cat_4.svg",
     "cat_5.svg",
-    "cat_6.svg"
+    "cat_6.svg",
+    "cat_7.svg",
+    "cat_8.svg",
+    "cat_9.svg",
+    "cat_10.svg"
   ],
   "items": {
     "stick": "item_stick.svg",
