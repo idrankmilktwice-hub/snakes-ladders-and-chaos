@@ -218,7 +218,8 @@ function refreshRow(i) {
       icon: A(PORT[c.id] + ".svg"),
       iconW: Math.min(((82 * 99) / 165) * HEAD_RATIO[c.id], 70),
       maxW: 378,
-    }); // head + name; the button stretches to fit
+    });
+  // head + name; the button stretches to fit
   else gbBuild(b, 99, "Pick a Character", { maxW: 378 });
 }
 // syncRows(): copy names / characters from S into the lines (used when the lobby changes online)
