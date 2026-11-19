@@ -4,14 +4,7 @@
 // =====================================================================================
 
 // initRows(): make sure there is a setup row (name + character) for every possible player.
-function initRows() {
-  while (S.rows.length < CONFIG.MAX_PLAYERS)
-    S.rows.push({
-      name: `Player ${S.rows.length + 1}`,
-      character: "",
-      locked: false,
-    });
-}
+function initRows() { while (S.rows.length < CONFIG.MAX_PLAYERS) S.rows.push({ name: `Player ${S.rows.length + 1}`, character: "", locked: false }); }
 
 // drawSetup(): (re)draw the start screen from S. Called at load, after any change on the screen, and when art finishes loading.
 // S.pick = number of the player row whose character chooser is open (null = closed).
@@ -20,18 +13,13 @@ function drawSetup() {
   const setupEl = $("setup");
   const activeEl = document.activeElement;
   let savedInput = null;
-  if (
-    activeEl &&
-    activeEl.tagName === "INPUT" &&
-    setupEl &&
-    setupEl.contains(activeEl)
-  ) {
+  if (activeEl && activeEl.tagName === "INPUT" && setupEl && setupEl.contains(activeEl)) {
     savedInput = {
       id: activeEl.id || null,
       playerIdx: activeEl.dataset ? activeEl.dataset.playerInput : null,
       value: activeEl.value,
       selStart: activeEl.selectionStart,
-      selEnd: activeEl.selectionEnd,
+      selEnd: activeEl.selectionEnd
     };
     if (savedInput.playerIdx != null && S.rows[+savedInput.playerIdx]) {
       S.rows[+savedInput.playerIdx].name = savedInput.value;
@@ -42,18 +30,16 @@ function drawSetup() {
 
   // Mode Switcher: Local Play vs Online Multiplayer
   h += `<div class="mode-toggle">
-    <button class="cbtn mode-btn ${S.mode === "local" ? "" : "alt"}" onclick="setGameMode('local')"><span>Local Pass & Play</span></button>
-    <button class="cbtn mode-btn ${S.mode === "online" ? "" : "alt"}" onclick="setGameMode('online')"><span>Online Multiplayer</span></button>
+    <button class="cbtn mode-btn ${S.mode === 'local' ? '' : 'alt'}" onclick="setGameMode('local')"><span>Local Pass & Play</span></button>
+    <button class="cbtn mode-btn ${S.mode === 'online' ? '' : 'alt'}" onclick="setGameMode('online')"><span>Online Multiplayer</span></button>
   </div>`;
 
   if (S.mode === "local") {
     h += `<div class="top">Players: <select id="cnt" onchange="S.n=+this.value;drawSetup()">`;
-    for (let i = CONFIG.MIN_PLAYERS; i <= CONFIG.MAX_PLAYERS; i++)
-      h += `<option ${i === S.n ? "selected" : ""}>${i}</option>`;
+    for (let i = CONFIG.MIN_PLAYERS; i <= CONFIG.MAX_PLAYERS; i++) h += `<option ${i === S.n ? "selected" : ""}>${i}</option>`;
     h += "</select></div>";
     for (let i = 0; i < S.n; i++) {
-      const r = S.rows[i],
-        c = CHARACTERS.find((c) => c.id === r.character);
+      const r = S.rows[i], c = CHARACTERS.find(c => c.id === r.character);
       h += `<div class="row"><span class="dot" style="background:${COLORS[i]}"></span><input data-player-input="${i}" value="${esc(r.name)}" ${r.locked ? "disabled" : ""} oninput="S.rows[${i}].name=this.value" onchange="S.rows[${i}].name=this.value">
 <button class="cls" ${r.locked ? "disabled" : ""} onclick="S.pick=${i};drawSetup()">${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a character"}<small>${r.locked ? "locked in" : "click to choose"}</small></button></div>`;
     }
@@ -67,33 +53,24 @@ function drawSetup() {
         <input id="joinCodeInput" placeholder="ROOM CODE" maxlength="6" onkeydown="if(event.key==='Enter')joinRoomPressed()" style="text-transform:uppercase; width:220px; height:68px; font-size:32px; text-align:center;">
         <button class="cbtn alt" style="--s:1.5; width:240px" onclick="joinRoomPressed()"><span>Join Game</span></button>
       </div>`;
-    } else if (
-      S.netState === "hosting" ||
-      S.netState === "joining" ||
-      S.netState === "lobby"
-    ) {
-      const link =
-        location.origin + location.pathname + "?room=" + NET.roomCode;
+    } else if (S.netState === "hosting" || S.netState === "joining" || S.netState === "lobby") {
+      const link = location.origin + location.pathname + "?room=" + NET.roomCode;
       h += `<div style="display:flex; align-items:center; gap:20px; margin-bottom:14px;">
         <div class="room-badge">Room Code: <b style="color:#c3f73a; letter-spacing:2px;">${NET.roomCode}</b></div>
         <button class="cbtn copy-btn" onclick="copyInviteLink('${link}')"><span>Copy Link</span></button>
-        <span style="font-size:24px; color:#fff3cf;">${NET.isHost ? "(You are Host)" : "(Connected as Guest)"}</span>
+        <span style="font-size:24px; color:#fff3cf;">${NET.isHost ? '(You are Host)' : '(Connected as Guest)'}</span>
         <button class="cbtn alt" style="--s:1.0; width:160px; margin-left:auto;" onclick="leaveOnlineLobby()"><span>Leave</span></button>
       </div>`;
 
       // Show connected player slots
       for (let i = 0; i < S.n; i++) {
-        const r = S.rows[i] || {
-          name: `Player ${i + 1}`,
-          character: "",
-          locked: false,
-        };
-        const c = CHARACTERS.find((c) => c.id === r.character);
-        const isMe = i === NET.myPlayerIndex;
+        const r = S.rows[i] || { name: `Player ${i + 1}`, character: "", locked: false };
+        const c = CHARACTERS.find(c => c.id === r.character);
+        const isMe = (i === NET.myPlayerIndex);
         const canEdit = isMe;
         h += `<div class="row"><span class="dot" style="background:${COLORS[i]}"></span>
           <input data-player-input="${i}" value="${esc(r.name ?? `Player ${i + 1}`)}" ${canEdit ? "" : "disabled"} oninput="onPlayerNameInput(${i}, this.value)" onchange="onPlayerNameChanged(${i}, this.value)">
-          <button class="cls" ${canEdit ? "" : "disabled"} onclick="${canEdit ? `S.pick=${i};drawSetup()` : ""}">
+          <button class="cls" ${canEdit ? "" : "disabled"} onclick="${canEdit ? `S.pick=${i};drawSetup()` : ''}">
             ${c ? `<img src="${A(PORT[c.id] + ".svg")}" alt="">${c.name}` : "Pick a character"}
             <small>${isMe ? "(You - click to choose)" : "Player slot"}</small>
           </button>
@@ -109,15 +86,9 @@ function drawSetup() {
     }
   }
 
-  if (S.pick != null) {
-    // the character chooser
-    h +=
-      `<div id="chooser" onclick="if(event.target===this){S.pick=null;drawSetup()}"><div class="grid">` +
-      CHARACTERS.map(
-        (c) =>
-          `<button class="card" onclick="onCharacterPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`,
-      ).join("") +
-      `</div></div>`;
+  if (S.pick != null) {   // the character chooser
+    h += `<div id="chooser" onclick="if(event.target===this){S.pick=null;drawSetup()}"><div class="grid">` +
+      CHARACTERS.map(c => `<button class="card" onclick="onCharacterPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`).join("") + `</div></div>`;
   }
   setupEl.innerHTML = h;
 
@@ -125,17 +96,12 @@ function drawSetup() {
   if (savedInput && S.pick == null) {
     const restoreEl = savedInput.id
       ? $(savedInput.id)
-      : savedInput.playerIdx != null
-        ? setupEl.querySelector(
-            `input[data-player-input="${savedInput.playerIdx}"]`,
-          )
-        : null;
+      : (savedInput.playerIdx != null ? setupEl.querySelector(`input[data-player-input="${savedInput.playerIdx}"]`) : null);
     if (restoreEl && !restoreEl.disabled) {
       restoreEl.value = savedInput.value;
       restoreEl.focus();
       try {
-        if (savedInput.selStart != null)
-          restoreEl.setSelectionRange(savedInput.selStart, savedInput.selEnd);
+        if (savedInput.selStart != null) restoreEl.setSelectionRange(savedInput.selStart, savedInput.selEnd);
       } catch (e) {}
     }
   }
@@ -167,10 +133,7 @@ async function startHosting() {
 
 async function joinRoomPressed() {
   const code = ($("joinCodeInput") && $("joinCodeInput").value) || "";
-  if (!code.trim()) {
-    S.msg = "Please enter a room code.";
-    return drawSetup();
-  }
+  if (!code.trim()) { S.msg = "Please enter a room code."; return drawSetup(); }
   await joinRoom(code.trim());
 }
 
@@ -180,7 +143,7 @@ async function joinRoom(code) {
   drawSetup();
   try {
     NET.onLobbyUpdate = () => drawSetup();
-    const myName = "Player"; // the host assigns the real name (Player 2, 3, ...)
+    const myName = "Player";   // the host assigns the real name (Player 2, 3, ...)
     await initGuest(code, myName);
     S.netState = "lobby";
     S.msg = `Connected to room ${NET.roomCode}!`;
@@ -195,34 +158,21 @@ async function joinRoom(code) {
 let nameSyncTimer = null;
 
 function leaveOnlineLobby() {
-  if (nameSyncTimer) {
-    clearTimeout(nameSyncTimer);
-    nameSyncTimer = null;
-  }
+  if (nameSyncTimer) { clearTimeout(nameSyncTimer); nameSyncTimer = null; }
   if (NET.active) {
     try {
       if (NET.isHost) {
         broadcast({ type: "HOST_LEFT" });
       } else if (NET.hostConn) {
-        const bye = {
-          _mid: makeMsgId(),
-          type: "BYE",
-          playerIndex: NET.myPlayerIndex,
-        };
+        const bye = { _mid: makeMsgId(), type: "BYE", playerIndex: NET.myPlayerIndex };
         if (NET.hostConn.isRtcOpen()) NET.hostConn.rtcConn.send(bye);
         else {
-          if (typeof mqttSend === "function")
-            mqttSend(NET.hostConn.peer, bye, NET.hostConn.mqttIdx, true);
+          if (typeof mqttSend === "function") mqttSend(NET.hostConn.peer, bye, NET.hostConn.mqttIdx, true);
           if (NET.httpEnabled && NET.roomCode && NET.myId) {
             fetch("/api/send", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                room: NET.roomCode,
-                src: NET.myId,
-                dst: NET.hostConn.peer,
-                data: bye,
-              }),
+              body: JSON.stringify({ room: NET.roomCode, src: NET.myId, dst: NET.hostConn.peer, data: bye })
             }).catch(() => {});
           }
         }
@@ -234,9 +184,7 @@ function leaveOnlineLobby() {
   if (typeof stopServerRelay === "function") stopServerRelay();
   if (typeof stopCloudRelay === "function") stopCloudRelay();
   if (NET.peer) {
-    try {
-      NET.peer.destroy();
-    } catch (e) {}
+    try { NET.peer.destroy(); } catch (e) {}
     NET.peer = null;
   }
   NET.active = false;
@@ -253,15 +201,12 @@ function leaveOnlineLobby() {
 }
 
 function copyInviteLink(link) {
-  navigator.clipboard
-    .writeText(link)
-    .then(() => {
-      S.msg = "Invite link copied to clipboard!";
-      drawSetup();
-    })
-    .catch(() => {
-      prompt("Copy invite link:", link);
-    });
+  navigator.clipboard.writeText(link).then(() => {
+    S.msg = "Invite link copied to clipboard!";
+    drawSetup();
+  }).catch(() => {
+    prompt("Copy invite link:", link);
+  });
 }
 
 function onPlayerNameInput(idx, val) {
@@ -276,10 +221,7 @@ function onPlayerNameInput(idx, val) {
 }
 
 function onPlayerNameChanged(idx, val) {
-  if (nameSyncTimer) {
-    clearTimeout(nameSyncTimer);
-    nameSyncTimer = null;
-  }
+  if (nameSyncTimer) { clearTimeout(nameSyncTimer); nameSyncTimer = null; }
   initRows();
   const clean = val.trim() || `Player ${idx + 1}`;
   if (S.rows[idx]) S.rows[idx].name = clean;
@@ -297,10 +239,7 @@ function onCharacterPicked(characterId) {
 
 function startOnlineGame() {
   if (!NET.isHost) return;
-  if (nameSyncTimer) {
-    clearTimeout(nameSyncTimer);
-    nameSyncTimer = null;
-  }
+  if (nameSyncTimer) { clearTimeout(nameSyncTimer); nameSyncTimer = null; }
   if (S.n < CONFIG.MIN_PLAYERS) {
     S.msg = `Waiting for at least ${CONFIG.MIN_PLAYERS} players to start.`;
     return drawSetup();
@@ -310,38 +249,23 @@ function startOnlineGame() {
 
 // start(): the Start button. Checks the setup (two players can't share a character: they roll off, the loser picks again), then builds the game and begins play().
 function start() {
-  S.pick = null;
-  const t0 = performance.now(); // (timing: see the console line after render() below)
-  if (!ART.ready) {
-    S.msg = ART.error || "The art is still loading, try again in a moment.";
-    return drawSetup();
-  }
-  const rows = S.rows.slice(0, S.n);
-  S.msg = "";
-  if (rows.some((r) => !r.character)) {
-    S.msg = "Every player needs a character.";
-    return drawSetup();
-  }
+  S.pick = null; const t0 = performance.now();   // (timing: see the console line after render() below)
+  if (!ART.ready) { S.msg = ART.error || "The art is still loading, try again in a moment."; return drawSetup(); }
+  const rows = S.rows.slice(0, S.n); S.msg = "";
+  if (rows.some(r => !r.character)) { S.msg = "Every player needs a character."; return drawSetup(); }
   let conflict = false;
   for (const c of CHARACTERS) {
-    const all = rows.filter((r) => r.character === c.id);
+    const all = rows.filter(r => r.character === c.id);
     if (all.length < 2) continue;
     conflict = true;
     let cand = all;
-    while (cand.length > 1) {
-      // roll-off until one player has the highest roll
+    while (cand.length > 1) {   // roll-off until one player has the highest roll
       const rl = cand.map(() => d6());
       S.msg += `${c.name} roll-off: ${cand.map((r, i) => `${r.name} ${rl[i]}`).join(", ")}. `;
-      const m = Math.max(...rl);
-      cand = cand.filter((_, i) => rl[i] === m);
+      const m = Math.max(...rl); cand = cand.filter((_, i) => rl[i] === m);
     }
     S.msg += `${cand[0].name} keeps ${c.name}; the others pick again. `;
-    all.forEach((r) => {
-      if (r !== cand[0]) {
-        r.character = "";
-        r.locked = false;
-      }
-    });
+    all.forEach(r => { if (r !== cand[0]) { r.character = ""; r.locked = false; } });
     cand[0].locked = true;
   }
   if (conflict) {
@@ -350,39 +274,16 @@ function start() {
   }
   // G = the new game. players: name/character/position(pos)/colour. L = ladders, S = snakes, cobra = long snake's tail.
   // cat = the cat token (or null), catSkin = which cat picture is showing, catNow = true while the cat's own turn is running.
-  G = {
-    players: rows.map((r, i) => ({
-      name: r.name || `Player ${i + 1}`,
-      character: r.character,
-      pos: 1,
-      color: COLORS[i],
-      items: [],
-    })),
-    items: [],
-    turnNo: 0,
-    ...genBoard(),
-    cat: null,
-    catSkin: rnd(0, 5),
-    catNow: false,
-    winner: null,
-    cur: null,
-  };
+  G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, character: r.character, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, 5), catNow: false, winner: null, cur: null };
   assignKinds();
-  const co = G.players.find((p) => p.character === "cat");
-  if (co) {
-    G.cat = { pos: 1 };
-    G.catOwner = co;
-  }
-  $("setup").style.display = "none";
-  $("game").style.display = "block";
+  const co = G.players.find(p => p.character === "cat");
+  if (co) { G.cat = { pos: 1 }; G.catOwner = co; }
+  $("setup").style.display = "none"; $("game").style.display = "block";
   $("log").innerHTML = "";
-  setPrompt("");
-  log("<b>Welcome to Snakes, Ladders and Chaos! May the best player win.</b>");
+  setPrompt(""); log("<b>Welcome to Snakes, Ladders and Chaos! May the best player win.</b>");
   render();
-  console.log(
-    `start(): board generated + drawn in ${Math.round(performance.now() - t0)} ms`,
-  );
-  for (let i = 0; i < ITEM_START; i++) spawnItem(true); // the game starts with a few items lying around
+  console.log(`start(): board generated + drawn in ${Math.round(performance.now() - t0)} ms`);
+  for (let i = 0; i < ITEM_START; i++) spawnItem(true);                       // the game starts with a few items lying around
   log("Items are scattered across the board: step on one to pick it up!");
 
   if (NET.active && NET.isHost) {
@@ -403,7 +304,7 @@ function start() {
       catSkin: G.catSkin,
       catNow: G.catNow,
       winner: null,
-      cur: G.cur,
+      cur: G.cur
     };
     broadcast({ type: "GAME_START", G: snapshot, logHtml: $("log").innerHTML });
     saveSession();
@@ -420,28 +321,15 @@ function openModal(title, html) {
   m.style.display = "block";
 }
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
-const TOP = [
-  ["settings", "Settings"],
-  ["rulebook", "Rulebook"],
-  ["boardlog", "Board log"],
-  ["chat", "Chat"],
-  ["about", "About"],
-];
+const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "About"]];
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML).
 $("rulebook").innerHTML = RULES_HTML();
 // The About tab text (edit here).
-$("about").innerHTML =
-  "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p>";
+$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p>";
 // ---- Settings tab: Sound Effects volume bar (10 steps). Orange = selected volume, blue = the whole bar, lime outline on every step. ----
 // drawSettings(): (re)draw the volume bar from VOLUME (audio.js).
 function drawSettings() {
   let bar = "";
-<<<<<<< HEAD
-  for (let i = 1; i <= 10; i++)
-    bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
-  $("settings").innerHTML =
-    `<p>Sound effects</p><div class="volbar">${bar}</div><p class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</p>`;
-=======
   for (let i = 1; i <= 10; i++) bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
   $("settings").innerHTML = `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>` + (NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : "");
 }
@@ -470,32 +358,24 @@ async function switchDevicePressed() {
     }, 500);
   } catch (e) { XFER_UI.err = (e && e.message) || "Could not make a code."; }
   XFER_UI.busy = false; drawSettings();
->>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
 }
 // setVolume(n): called when step n of the bar is clicked. Clicking step 1 while it is the only one lit mutes; any other step selects that volume.
 function setVolume(n) {
-  VOLUME = n === 1 && VOLUME === 1 ? 0 : n;
-  try {
-    localStorage.setItem("snc_volume", VOLUME);
-  } catch (e) {
-    /* not saved: fine */
-  }
-  drawSettings();
-  sfx("small"); // play a click so you can hear the new level
+  VOLUME = (n === 1 && VOLUME === 1) ? 0 : n;
+  try { localStorage.setItem("snc_volume", VOLUME); } catch (e) { /* not saved: fine */ }
+  drawSettings(); sfx("small");   // play a click so you can hear the new level
 }
 drawSettings();
-let TAB = "boardlog"; // the tab being shown
+let TAB = "boardlog";   // the tab being shown
 // showTab(k): switch the panel to tab k, and update the buttons (active = light + pressed, others = dark + raised).
 function showTab(k) {
   TAB = k;
-  TOP.forEach((b) => {
+  TOP.forEach(b => {
     const on = b[0] === k;
     $("tb_" + b[0]).classList.toggle("on", on);
-    $("tb_" + b[0]).querySelector(".face").src = A(
-      `button_${b[0]}_${on ? "light" : "dark"}.svg`,
-    );
+    $("tb_" + b[0]).querySelector(".face").src = A(`button_${b[0]}_${on ? "light" : "dark"}.svg`);
   });
-  $("ptitle").textContent = TOP.find((b) => b[0] === k)[1];
+  $("ptitle").textContent = TOP.find(b => b[0] === k)[1];
   $("log").style.display = k === "boardlog" ? "block" : "none";
   $("rulebook").style.display = k === "rulebook" ? "block" : "none";
   $("about").style.display = k === "about" ? "block" : "none";
@@ -505,8 +385,7 @@ function showTab(k) {
   $("chatInputBar").style.display = k === "chat" ? "flex" : "none";
   $("prompt").style.display = k === "chat" ? "none" : "flex";
   $("soon").style.display = "none";
-  $("expand").style.display =
-    k === "boardlog" || k === "rulebook" ? "block" : "none"; // only working panels can expand
+  $("expand").style.display = (k === "boardlog" || k === "rulebook") ? "block" : "none";   // only working panels can expand
   if (k === "chat") {
     NET.unreadChat = 0;
     const btn = $("tb_chat");
@@ -522,55 +401,30 @@ function chatSendPressed() {
 }
 // expandPanel(): the Expand button - show the current panel's content in a big pop-up with larger text.
 function expandPanel() {
-  if (TAB === "rulebook")
-    openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`);
-  else {
-    openModal(
-      "Board log",
-      `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`,
-    );
-    $("biglog").scrollTop = 1e6;
-  }
+  if (TAB === "rulebook") openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`);
+  else { openModal("Board log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").scrollTop = 1e6; }
 }
-$("topbtns").innerHTML = TOP.map(
-  (b, i) =>
-    `<button class="ib" id="tb_${b[0]}" style="left:${1484 + i * 84.5}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A("button_" + b[0] + "_dark.svg")}" alt="${b[1]}"></button>`,
-).join("");
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${1484 + i * 84.5}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A("button_" + b[0] + "_dark.svg")}" alt="${b[1]}"></button>`).join("");
 showTab("boardlog");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
-function fit() {
-  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
-  document.documentElement.style.setProperty("--fit", s); // --fit = the stage scale, also used by the character pick panels (css)
-  $("stage").style.transform =
-    `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`;
-}
-addEventListener("resize", fit);
-fit();
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the character pick panels (css)
+  $("stage").style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; }
+addEventListener("resize", fit); fit();
 
 // ---- the three containers behind the sections ----
-$("boxes").innerHTML = BOXES.map(
-  (b) =>
-    `<div class="box" id="${b.id}" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>`,
-).join("");
+$("boxes").innerHTML = BOXES.map(b => `<div class="box" id="${b.id}" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>`).join("");
 
 // ---- start-up ----
-<<<<<<< HEAD
-loadSounds(); // decode the sound effects in the background (see audio.js)
-drawSetup(); // show the setup screen straight away
-loadAssets().then(() => {
-=======
 loadSounds();                   // decode the sound effects in the background (see audio.js)
 drawSetup();                    // show the setup screen straight away
 loadAssets().then(async () => {
->>>>>>> bcfb1b7 (Added Reconnection and Switch Device feature)
   drawSetup();
   if (typeof autoRejoin === "function" && await autoRejoin()) return;   // the page was reloaded or crashed in the middle of an online game: back to the seat
   // Auto-join room from URL query param ?room=CODE
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get("room");
-  if (roomParam && !window.TITLE_ACTIVE) {
-    // (with the new title screen, js/title.js opens the Join screen for invite links instead)
+  if (roomParam && !window.TITLE_ACTIVE) {   // (with the new title screen, js/title.js opens the Join screen for invite links instead)
     setGameMode("online");
     joinRoom(roomParam);
   }
