@@ -467,12 +467,21 @@ body:not(.on-title) #tLoad { display: none; }
 /* ---- Settings tab: Sound effects row + "Switch Device" ---- */
 #settings .sfxrow { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
 #settings .volbar { margin: 6px 0 12px; } #settings .volbar .seg { height: 40px; }
-#settings .swbox { border-top: 2px solid #c3f73a; padding-top: 10px; }
-#settings #swBtn { --s: .85; width: 100%; margin: 0 0 8px; }                  /* the normal orange button */
-#settings .swnote { margin: 0; font-size: 15px; line-height: 1.25; color: #fff3cf; }
+#settings .swbox { margin-top: 10px; }
+#settings .swhead { border-top: 2px solid #c3f73a; padding-top: 8px; }
+#settings .swrow { display: flex; gap: 8px; margin-top: 6px; }
+#settings .swgen, #settings .swcodebox { flex: 1; min-width: 0; height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 0; background: #2f2504; border: 3px solid #c3f73a; border-radius: 12px; font-family: MC, monospace; font-size: 22px; white-space: nowrap; }   /* brown rounded box, lime outline */
+#settings .swgen { color: #c3f73a; cursor: pointer; }
+#settings .swgen:hover { background: #3d3108; } #settings .swgen:active { transform: translateY(2px); }
+#settings .swcodebox { color: #fff3cf; letter-spacing: 1.5px; user-select: all; }   /* the code, centred in the box (one click selects it all) */
+#settings .swx { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }   /* plain lime square with an X: cancels the code */
+#settings .swx svg { width: 20px; height: 20px; } #settings .swx:hover { filter: brightness(1.1); } #settings .swx:active { transform: translateY(2px); }
 #settings .swerr { margin: 6px 0 0; font-size: 15px; color: #ff9a62; }
-#settings .swcode { display: flex; justify-content: center; margin: 0 0 8px; }
-#settings .swc { --f: 2.15; position: relative; width: calc(84.4px * var(--f)); height: calc(49.04px * var(--f)); flex: none; }   /* ONE orange counter holds the whole code */
-#settings .swc img { position: absolute; left: 0; top: 0; width: 100%; }
-#settings .swc img.csh { left: calc(-2.4px * var(--f)); width: calc(89px * var(--f)); }
-#settings .swc span { position: absolute; left: calc(2.4px * var(--f)); top: calc(2.2px * var(--f)); width: calc(79.5px * var(--f)); height: calc(31.7px * var(--f)); line-height: calc(31.7px * var(--f)); text-align: center; white-space: nowrap; color: #fff3cf; font-family: MC, monospace; font-size: 22px; letter-spacing: 1.5px; }
+
+/* ---- title screen: copyright notice (bottom middle) and the "Attempting to reconnect" card (bottom right) ---- */
+#tCopy { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 21; text-align: center; font-family: MC, monospace; font-size: 14px; line-height: 1.35; color: var(--tt-ink); opacity: .85; pointer-events: none; white-space: nowrap; transition: color .35s; }
+#tCopy .tc-sub { display: block; font-size: 12px; opacity: .85; }
+body:not(.on-title) #tCopy { display: none; }
+#tReconn { position: absolute; right: 28px; bottom: 14px; z-index: 22; display: none; align-items: center; gap: 14px; font-family: MC, monospace; font-size: 14px; color: var(--tt-ink); transition: color .35s; }
+#tReconn .rc-time { min-width: 2ch; text-align: right; font-size: 20px; }
+body:not(.on-title) #tReconn { display: none !important; }

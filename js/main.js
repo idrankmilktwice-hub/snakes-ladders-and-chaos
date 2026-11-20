@@ -337,16 +337,24 @@ function drawSettings() {
 const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };
 const fmtLeft = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 function swDeviceHtml() {
-  const x = XFER_UI;
-  if (x.code && performance.now() < x.until) {
-    const code = x.code.room + "-" + x.code.secret;                       // typed exactly as shown, e.g. FGHD5-HHXQC
-    return `<div class="swbox"><div class="swcode"><div class="swc"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_buff.svg")}" alt=""><span>${code}</span></div></div><p class="swnote">Enter this joining code on your other device. Valid for <span id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</span></p></div>`;
-  }
-  return `<div class="swbox"><button id="swBtn" class="cbtn" onclick="switchDevicePressed()"><span>Switch Device</span></button><p class="swnote">Play from a different device with this joining code. Valid for the next 2 minutes</p>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}</div>`;
+  const x = XFER_UI, live = !!(x.code && performance.now() < x.until);
+  // header row: "Switch Device" on the left, the 2-minute countdown on the right (same layout as "Sound effects" / 30%)
+  const head = `<div class="sfxrow swhead"><span>Switch Device</span><span class="volnum" id="swLeft">${live ? fmtLeft(Math.ceil((x.until - performance.now()) / 1000)) : ""}</span></div>`;
+  const body = live
+    ? `<div class="swrow"><div class="swcodebox">${x.code.room}-${x.code.secret}</div><button class="swx" onclick="switchDeviceCancel()" title="Cancel" aria-label="Cancel"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="#2f2504" stroke-width="3.6" stroke-linecap="round"/></svg></button></div>`
+    : `<div class="swrow"><button class="swgen" onclick="switchDevicePressed()">Generate Code</button></div>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}`;
+  return `<div class="swbox">${head}${body}</div>`;
+}
+// switchDeviceCancel(): the X next to the code - the code stops working and the "Generate Code" box comes back
+function switchDeviceCancel() {
+  if (XFER_UI.timer) { clearInterval(XFER_UI.timer); XFER_UI.timer = null; }
+  XFER_UI.code = null; XFER_UI.until = 0; XFER_UI.err = "";
+  cancelTransferCode();
+  drawSettings();
 }
 async function switchDevicePressed() {
   if (XFER_UI.busy) return;
-  XFER_UI.busy = true; XFER_UI.err = ""; sfx("small");
+  XFER_UI.busy = true; XFER_UI.err = "";
   try {
     const c = await requestTransferCode();
     XFER_UI.code = { room: c.room, secret: c.secret }; XFER_UI.until = performance.now() + c.ms;

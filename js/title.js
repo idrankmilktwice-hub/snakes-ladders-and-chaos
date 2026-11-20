@@ -470,6 +470,39 @@ function buildTitle(root, logoSvg, btnSvg, backSvg) {
   }); // click during the intro = skip it
 }
 
+// ---- "Attempting to reconnect to the Lobby" card (bottom right): text + countdown + a small green "Abandon Game" button ----
+function showReconnectCard() {
+  if (!TT.btnSvg) return;                       // the title screen is not built (fallback screen): nothing to show
+  let el = $("tReconn");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "tReconn";
+    el.innerHTML = `<span class="rc-text"></span><span class="rc-time" id="rcTime"></span><button class="gbtn" id="rcBtn"></button>`;
+    $("stage").appendChild(el);
+    gbBuild($("rcBtn"), 44, "Abandon Game");    // the normal green button, just much smaller (the title buttons are 165 high)
+    $("rcBtn").onclick = () => { if (typeof abandonRejoin === "function") abandonRejoin(); };
+  }
+  el.querySelector(".rc-text").textContent = "Attempting to reconnect to the Lobby";
+  $("rcTime").style.display = ""; $("rcBtn").style.display = "";
+  onRejoinTick(window.REJOIN_STATE ? window.REJOIN_STATE.msLeft : 15000);
+  el.style.display = "flex";
+}
+// onRejoinTick(msLeft): called by network.js while it keeps trying
+function onRejoinTick(ms) {
+  const t = $("rcTime");
+  if (t) t.textContent = Math.max(0, Math.ceil(ms / 1000));
+}
+// onRejoinEnd(result): "ok" = back in the game, "abandoned" = the player gave up, "ended" = nobody answered (the lobby is gone)
+function onRejoinEnd(result) {
+  const el = $("tReconn");
+  if (!el) return;
+  if (result === "ended") {                    // say so for a moment, then tidy away
+    el.querySelector(".rc-text").textContent = "The lobby has ended.";
+    $("rcTime").style.display = "none"; $("rcBtn").style.display = "none";
+    setTimeout(() => { el.style.display = "none"; }, 2500);
+  } else el.style.display = "none";
+}
+
 // initTitle(): start-up. An invite link (?room=CODE) skips the title and goes straight to the lobby.
 async function initTitle() {
   const room = new URLSearchParams(location.search).get("room"); // an invite link (?room=CODE) opens the Join screen and joins
@@ -479,7 +512,7 @@ async function initTitle() {
   // A page that is going back into a running game (reload / crash / closed and reopened) never shows the title at all: wait for the rejoin result first.
   if (typeof sessionForAutoRejoin === "function" && sessionForAutoRejoin() && window.REJOIN_P) {
     let back = false;
-    try { back = await Promise.race([window.REJOIN_P, sleep(6000).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 6s the title appears and a late rejoin still takes over)
+    try { back = await Promise.race([window.REJOIN_P, sleep(2000).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 2s the title appears, with a countdown card, and a late rejoin still takes over)
     if (back) return; // the game board is already showing
   }
   root.classList.add("on");
@@ -497,6 +530,7 @@ async function initTitle() {
       /* font not ready: the fallback shows briefly */
     }
     buildTitle(root, logo, btn, back);
+    if (window.REJOIN_STATE && window.REJOIN_STATE.active) showReconnectCard();   // still trying to get back into a game: show the countdown
     if (room) {
       // invite link: no animations at all - jump straight to the Join screen (hidden while it is put in place, so nothing flashes), then join
       root.style.visibility = "hidden";

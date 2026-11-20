@@ -35,6 +35,7 @@ var NET = {
   xferCodes: [],       // host: live "switch device" codes [{idx, secret, exp}]
   xferFails: 0,        // host: wrong transfer-code attempts (locks transfer codes after too many)
   xferLockUntil: 0,
+  abandoned: false,    // the player pressed "Abandon Game" while trying to get back in
   xferWaiter: null,    // guest: waiting for the host to answer a transfer-code request
   pendingXfer: null,   // guest: transfer secret to present while joining
   lastRx: 0,           // guest: when something last arrived from the host
@@ -120,7 +121,8 @@ function makeMsgId() {
 const HB_PING_MS = 1000;          // guests ping the host this often
 const HB_TIMEOUT_MS = 2800;       // nothing heard for this long = disconnected (a closed tab is noticed instantly, this is for dead connections)
 const LOBBY_TIMEOUT_MS = 12000;   // the lobby is more forgiving (nobody is waiting for anybody)
-const RECOVERY_GIVEUP_MS = 20000; // a player that cannot find any host for this long learns the lobby is over
+const RECOVERY_GIVEUP_MS = 15000; // a player that cannot find any host for this long learns the lobby is over
+const REJOIN_GIVEUP_MS = 15000;   // a page that is trying to get back into a game after a reload tries for this long (the countdown at the bottom right of the title screen)
 const ELECT_BASE_MS = 1000;       // new-host election: first candidate takes over this long after the host is lost...
 const ELECT_STEP_MS = 3500;       // ...each next candidate waits this much longer
 const XFER_TTL_MS = 120000;       // a "switch device" code lives 2 minutes
@@ -860,7 +862,9 @@ function initGuest(code, playerName, opts) {
     if (NET.httpEnabled) setTimeout(sendJoinHandshake, 60);
 
     let tries = 0;
-    const maxTries = returning ? 17 : 10;
+    const tickMs = returning ? 500 : 1200;                                       // a returning player knocks faster...
+    const giveUpMs = opts.giveUpMs || (returning ? REJOIN_GIVEUP_MS : 12000);    // ...and gives up after this long
+    const maxTries = Math.ceil(giveUpMs / tickMs);
     joinRetryTimer = setInterval(() => {
       tries++;
       if (NET.joined) { cleanupRetry(); return; }
@@ -869,12 +873,14 @@ function initGuest(code, playerName, opts) {
         if (!settled) { settled = true; reject(new Error("Timed out waiting for Host response. Check room code.")); }
         return;
       }
+      if (opts.onTick) opts.onTick(Math.max(0, giveUpMs - tries * tickMs));      // lets the screen show "15, 14, 13..."
+      if (returning && tries > 4 && tries % 2) return;                           // first 2 seconds: knock every 0.5s, after that every 1s
       sendJoinHandshake();
       if (!hc.isRtcOpen() && !NET.httpEnabled) {
         epochs.forEach(e => wsSend(hostPeerId(NET.roomCode, e), { _mid: makeMsgId(), type: "JOIN_REQ", name: playerName || "Guest", token: opts.token || undefined, xfer: opts.xfer || undefined }));
-        if (tries === 3 || tries === 6) guestConnectRtc();
+        if (tries === 3 || tries === 6 || (returning && tries === 12)) guestConnectRtc();
       }
-    }, 1200);
+    }, tickMs);
 
     if (NET.peer) { try { NET.peer.destroy(); } catch (e) {} }
     NET.peer = new Peer(NET.myId, { debug: 0, config: ICE_CONFIG });
@@ -1537,6 +1543,13 @@ function requestTransferCode() {
   });
 }
 
+// cancelTransferCode(): the player pressed X on the code: it stops working immediately
+function cancelTransferCode() {
+  if (!NET.active || !NET.gameStarted) return;
+  if (NET.isHost) NET.xferCodes = NET.xferCodes.filter(c => c.idx !== NET.myPlayerIndex);
+  else if (NET.hostConn && !NET.hostLost) NET.hostConn.send({ type: "XFER_CANCEL" });
+}
+
 // ---- guest: the host accepted me back (or I just switched device) ----
 function applyRejoinAck(msg) {
   if (NET.isHost || !msg.snap) return;
@@ -1750,6 +1763,10 @@ function handleNetData(msg, fromConn) {
       if (!NET.isHost || !NET.gameStarted || fromConn.playerIndex == null) break;
       const c = makeTransferCode(fromConn.playerIndex);
       fromConn.send({ type: "XFER_CODE", secret: c.secret, ms: c.ms });
+      break;
+    }
+    case "XFER_CANCEL": {
+      if (NET.isHost && fromConn && fromConn.playerIndex != null) NET.xferCodes = NET.xferCodes.filter(c => c.idx !== fromConn.playerIndex);
       break;
     }
     case "XFER_CODE": {
@@ -2251,19 +2268,33 @@ function sessionForAutoRejoin() {
 async function autoRejoin() {
   const sess = sessionForAutoRejoin();
   if (!sess) return false;
-  showNetworkBanner("Rejoining your game...");
+  NET.abandoned = false;
+  // REJOIN_STATE / onRejoinTick / onRejoinEnd are how title.js learns about the attempt (it shows "Attempting to reconnect..." + countdown + Abandon Game)
+  window.REJOIN_STATE = { active: true, msLeft: REJOIN_GIVEUP_MS };
+  const say = (fn, arg) => { try { if (typeof window[fn] === "function") window[fn](arg); } catch (e) { /* the screen is optional */ } };
   try {
     NET.onLobbyUpdate = null;
-    await initGuest(sess.room, "Player", { token: sess.token, epoch: sess.epoch || 0, rejoin: true });
-    hideNetworkBanner();
+    await initGuest(sess.room, "Player", {
+      token: sess.token, epoch: sess.epoch || 0, rejoin: true, giveUpMs: REJOIN_GIVEUP_MS,
+      onTick: ms => { window.REJOIN_STATE.msLeft = ms; say("onRejoinTick", ms); }
+    });
+    window.REJOIN_STATE.active = false;
+    say("onRejoinEnd", "ok");
     return true;
   } catch (err) {
+    const abandoned = !!NET.abandoned;
     clearSession();                                  // the game is gone (everybody left) or this seat is no longer ours
     teardownNet();
-    showNetworkBanner("The game you were in has ended.");
-    setTimeout(hideNetworkBanner, 3500);
+    window.REJOIN_STATE.active = false;
+    say("onRejoinEnd", abandoned ? "abandoned" : "ended");
     return false;
   }
+}
+// abandonRejoin(): the player pressed "Abandon Game": stop trying, forget the saved seat, and let them start something new
+function abandonRejoin() {
+  NET.abandoned = true;
+  if (NET.onJoinDenied) NET.onJoinDenied("Abandoned");   // makes the attempt in autoRejoin() end at once
+  else { clearSession(); teardownNet(); }
 }
 // teardownNet(): drop every connection and timer (no screen changes)
 function teardownNet() {
