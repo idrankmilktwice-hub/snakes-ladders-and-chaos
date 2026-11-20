@@ -339,8 +339,8 @@ const fmtLeft = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 function swDeviceHtml() {
   const x = XFER_UI;
   if (x.code && performance.now() < x.until) {
-    const cnt = n => `<div class="swc"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A(n[0])}" alt=""><span>${n[1]}</span></div>`;
-    return `<div class="swbox"><div class="swcode">${cnt(["counter_buff.svg", x.code.room])}${cnt(["counter_debuff.svg", x.code.secret])}</div><p class="swnote">Enter this joining code on your other device. Valid for <span id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</span></p></div>`;
+    const code = x.code.room + "-" + x.code.secret;                       // typed exactly as shown, e.g. FGHD5-HHXQC
+    return `<div class="swbox"><div class="swcode"><div class="swc"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_buff.svg")}" alt=""><span>${code}</span></div></div><p class="swnote">Enter this joining code on your other device. Valid for <span id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</span></p></div>`;
   }
   return `<div class="swbox"><button id="swBtn" class="cbtn" onclick="switchDevicePressed()"><span>Switch Device</span></button><p class="swnote">Play from a different device with this joining code. Valid for the next 2 minutes</p>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}</div>`;
 }
@@ -418,9 +418,9 @@ $("boxes").innerHTML = BOXES.map(b => `<div class="box" id="${b.id}" style="left
 // ---- start-up ----
 loadSounds();                   // decode the sound effects in the background (see audio.js)
 drawSetup();                    // show the setup screen straight away
-loadAssets().then(async () => {
+window.REJOIN_P = loadAssets().then(async () => {
   drawSetup();
-  if (typeof autoRejoin === "function" && await autoRejoin()) return;   // the page was reloaded or crashed in the middle of an online game: back to the seat
+  if (typeof autoRejoin === "function" && await autoRejoin()) return true;   // the page was reloaded or crashed in the middle of an online game: back to the seat (title.js waits for this, so the title animations never play)
   // Auto-join room from URL query param ?room=CODE
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get("room");
@@ -428,4 +428,5 @@ loadAssets().then(async () => {
     setGameMode("online");
     joinRoom(roomParam);
   }
+  return false;
 });

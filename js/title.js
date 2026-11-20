@@ -24,6 +24,7 @@ const EASE_IN = "cubic-bezier(.55,0,.9,.4)",
 
 // TT = the live state of the title screen. state: "intro" (animating in) | "home" (waiting for a click) | "busy" (a transition is playing) | "page" (Play/Options/About is open)
 const TT = {
+  instant: false, // true = every slide / pop below jumps straight to its end position (used when an invite link opens the lobby)
   state: "intro",
   btns: [],
   logo: null,
@@ -144,6 +145,12 @@ function gbLabel(btn, text) {
 function glide(el, to, ms, ease, delay) {
   const tf = (p) => `translate(${p.x || 0}px,${p.y || 0}px)`,
     from = { x: el._x || 0, y: el._y || 0 }; // (missing numbers count as 0, so a slide can never be invalid)
+  if (TT.instant) {
+    el._x = to.x || 0;
+    el._y = to.y || 0;
+    el.style.transform = tf(to);
+    return Promise.resolve();
+  }
   const a = el.animate([{ transform: tf(from) }, { transform: tf(to) }], {
     duration: ms,
     easing: ease,
@@ -162,6 +169,10 @@ function glide(el, to, ms, ease, delay) {
 }
 // pop(el, show): fade/slide a little element in or out (back button, page card). Resolves when finished.
 function pop(el, show, dx, dy) {
+  if (TT.instant) {
+    el.style.display = show ? "block" : "none";
+    return Promise.resolve();
+  }
   if (show) el.style.display = "block";
   const hide = { opacity: 0, transform: `translate(${dx}px,${dy}px)` },
     shown = { opacity: 1, transform: "none" };
@@ -465,6 +476,12 @@ async function initTitle() {
   window.TITLE_ACTIVE = true;
   const root = $("title");
   $("setup").style.display = "none";
+  // A page that is going back into a running game (reload / crash / closed and reopened) never shows the title at all: wait for the rejoin result first.
+  if (typeof sessionForAutoRejoin === "function" && sessionForAutoRejoin() && window.REJOIN_P) {
+    let back = false;
+    try { back = await Promise.race([window.REJOIN_P, sleep(6000).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 6s the title appears and a late rejoin still takes over)
+    if (back) return; // the game board is already showing
+  }
   root.classList.add("on");
   document.body.classList.add("on-title");
   document.documentElement.classList.add("on-title");
@@ -481,12 +498,20 @@ async function initTitle() {
     }
     buildTitle(root, logo, btn, back);
     if (room) {
+      // invite link: no animations at all - jump straight to the Join screen (hidden while it is put in place, so nothing flashes), then join
+      root.style.visibility = "hidden";
+      TT.instant = true;
+      root.getAnimations({ subtree: true }).forEach((a) => { try { a.finish(); } catch (e) { /* already done */ } });
       enterHome();
       await openPage("play");
       await openSub(2);
+      TT.instant = false;
+      root.style.visibility = "";
       autoJoin(room);
     }
   } catch (e) {
+    TT.instant = false;
+    root.style.visibility = "";
     console.warn("Title screen could not start:", e);
     showSetup();
     if (room) {

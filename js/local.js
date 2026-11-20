@@ -117,6 +117,7 @@ async function showLocal(mode) {
   L.style.display = "block"; layoutRows(); syncRows();
   const grp = { local: $("tCnt"), host: $("tHost"), join: $("tJoin") }[mode];
   const items = [...L.querySelectorAll(".lrow")].slice(0, S.n).map(r => r.firstChild).concat([grp, $("tStart")]);
+  if (TT.instant) return;   // invite link: the lines are simply there
   await Promise.race([Promise.all(items.map((el, k) => slideIn(el, 160, k * 60).finished)), sleep(1200)]);
 }
 // hideLocal(): back - the lines slide out the way they came, last first. Leaving an online lobby disconnects.

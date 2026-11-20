@@ -244,6 +244,8 @@ b, strong { font-weight: normal; }
   width: 80px;
   height: 48px;
 }
+#chatSendBtn span { padding-top: 0; }
+#chatSendBtn span svg { height: 62%; width: auto; flex: none; }   /* the > chevron: always a fixed share of the button face, so it grows and shrinks with the button */
 
 /* ---- Mode & Lobby Selection ---- */
 .mode-toggle {
@@ -466,12 +468,11 @@ body:not(.on-title) #tLoad { display: none; }
 #settings .sfxrow { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
 #settings .volbar { margin: 6px 0 12px; } #settings .volbar .seg { height: 40px; }
 #settings .swbox { border-top: 2px solid #c3f73a; padding-top: 10px; }
-#settings #swBtn { --s: .85; --img: var(--btn-orange); width: 100%; margin: 0 0 8px; }
-html[data-theme=dark] #settings #swBtn { --img: var(--btn-blue); }            /* the orange button by day, the blue one at night */
+#settings #swBtn { --s: .85; width: 100%; margin: 0 0 8px; }                  /* the normal orange button */
 #settings .swnote { margin: 0; font-size: 15px; line-height: 1.25; color: #fff3cf; }
 #settings .swerr { margin: 6px 0 0; font-size: 15px; color: #ff9a62; }
-#settings .swcode { display: flex; gap: 10px; justify-content: center; margin: 0 0 8px; }
-#settings .swc { --f: 1.75; position: relative; width: calc(84.4px * var(--f)); height: calc(49.04px * var(--f)); flex: none; }
+#settings .swcode { display: flex; justify-content: center; margin: 0 0 8px; }
+#settings .swc { --f: 2.15; position: relative; width: calc(84.4px * var(--f)); height: calc(49.04px * var(--f)); flex: none; }   /* ONE orange counter holds the whole code */
 #settings .swc img { position: absolute; left: 0; top: 0; width: 100%; }
 #settings .swc img.csh { left: calc(-2.4px * var(--f)); width: calc(89px * var(--f)); }
-#settings .swc span { position: absolute; left: calc(2.4px * var(--f)); top: calc(2.2px * var(--f)); width: calc(79.5px * var(--f)); height: calc(31.7px * var(--f)); line-height: calc(31.7px * var(--f)); text-align: center; white-space: nowrap; color: #fff3cf; font-family: MC, monospace; font-size: 27px; letter-spacing: 2px; }
+#settings .swc span { position: absolute; left: calc(2.4px * var(--f)); top: calc(2.2px * var(--f)); width: calc(79.5px * var(--f)); height: calc(31.7px * var(--f)); line-height: calc(31.7px * var(--f)); text-align: center; white-space: nowrap; color: #fff3cf; font-family: MC, monospace; font-size: 22px; letter-spacing: 1.5px; }

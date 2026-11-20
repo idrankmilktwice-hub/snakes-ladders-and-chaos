@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -26,7 +26,7 @@
         <div id="chatView" class="view" style="display:none"></div>  <!-- Real-time chat -->
         <div id="chatInputBar" style="display:none">
           <input type="text" id="chatInput" placeholder="Message..." maxlength="100" onkeydown="if(event.key==='Enter')chatSendPressed()">
-          <button class="cbtn" id="chatSendBtn" onclick="chatSendPressed()"><span>Send</span></button>
+          <button class="cbtn" id="chatSendBtn" title="Send" aria-label="Send" onclick="chatSendPressed()"><span><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         </div>
         <div id="soon" class="view">Coming soon.</div> <!-- Fallback -->
         <div id="prompt"><div id="ptxt"></div><div id="btns"></div></div>
@@ -46,18 +46,18 @@
   </div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=8"></script>
-  <script src="js/board.js?v=8"></script>
-  <script src="js/art.js?v=8"></script>
-  <script src="js/audio.js?v=8"></script>
-  <script src="js/preload.js?v=8"></script>
-  <script src="js/render.js?v=8"></script>
-  <script src="js/network.js?v=8"></script>
-  <script src="js/input.js?v=8"></script>
-  <script src="js/rules.js?v=8"></script>
-  <script src="js/rulebook.js?v=8"></script>
-  <script src="js/main.js?v=8"></script>
-  <script src="js/title.js?v=8"></script>
-  <script src="js/local.js?v=8"></script>
+  <script src="js/config.js?v=9"></script>
+  <script src="js/board.js?v=9"></script>
+  <script src="js/art.js?v=9"></script>
+  <script src="js/audio.js?v=9"></script>
+  <script src="js/preload.js?v=9"></script>
+  <script src="js/render.js?v=9"></script>
+  <script src="js/network.js?v=9"></script>
+  <script src="js/input.js?v=9"></script>
+  <script src="js/rules.js?v=9"></script>
+  <script src="js/rulebook.js?v=9"></script>
+  <script src="js/main.js?v=9"></script>
+  <script src="js/title.js?v=9"></script>
+  <script src="js/local.js?v=9"></script>
 </body>
 </html>

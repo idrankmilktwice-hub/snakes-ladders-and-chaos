@@ -2239,8 +2239,17 @@ function applyStateSync(msg) {
 
 // ------------------------------------------------------------------ 8. AUTOMATIC REJOIN AFTER A RELOAD / CRASH
 // autoRejoin(): called once at start-up. If this page holds a seat in a game that is still going, take it back (no clicks needed).
-async function autoRejoin() {
+// sessionForAutoRejoin(): the saved seat this page should take back right now (null = start normally). An invite link to a different room wins over an old seat.
+function sessionForAutoRejoin() {
   const sess = pickAutoSession();
+  if (!sess) return null;
+  let room = null;
+  try { room = new URLSearchParams(location.search).get("room"); } catch (e) {}
+  if (room && room.toUpperCase() !== sess.room) return null;
+  return sess;
+}
+async function autoRejoin() {
+  const sess = sessionForAutoRejoin();
   if (!sess) return false;
   showNetworkBanner("Rejoining your game...");
   try {
