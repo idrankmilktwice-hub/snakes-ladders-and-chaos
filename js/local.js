@@ -180,6 +180,7 @@ async function joinPressed() {
     $("jCode").disabled = true; gbLabel($("jBtn"), "Joined"); onlineLobbyUpdate();
     toast($("jBtn"), "Room Found!", true, "right");
   } catch (err) {
+    if (G) { TT.net = false; return; }     // the answer arrived after all and we are in the game: leave it alone
     if (NET.active) leaveOnlineLobby();
     S.mode = "online"; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate; onlineLobbyUpdate();
     gbLabel($("jBtn"), "Join Lobby"); $("jBtn").disabled = false;

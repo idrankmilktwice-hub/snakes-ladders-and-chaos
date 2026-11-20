@@ -35,6 +35,7 @@ var NET = {
   xferCodes: [],       // host: live "switch device" codes [{idx, secret, exp}]
   xferFails: 0,        // host: wrong transfer-code attempts (locks transfer codes after too many)
   xferLockUntil: 0,
+  xferUsed: [],        // host: switch-device codes that were just used, and what the new device was answered (so repeats get the same answer)
   abandoned: false,    // the player pressed "Abandon Game" while trying to get back in
   xferWaiter: null,    // guest: waiting for the host to answer a transfer-code request
   pendingXfer: null,   // guest: transfer secret to present while joining
@@ -1449,11 +1450,25 @@ function hostRejoin(msg, hc) {
   if (!G || NET.retired) return;
   const now = performance.now();
   let idx = -1, viaXfer = false;
+  let rec = null;                                   // remembers how a used code was answered (see below)
   if (msg.xfer) {                                   // "switch device" code
-    if (now < NET.xferLockUntil) { hc.send({ type: "JOIN_DENIED", reason: "Too many wrong codes. Try again in a moment." }); return; }
     const secret = String(msg.xfer).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    // A joining page keeps knocking every half second until it gets an answer, and the code is single use. When its first knock was already
+    // accepted but the (big) answer is still on its way, the repeat knock must get the SAME answer again - NOT "wrong code".
+    NET.xferUsed = (NET.xferUsed || []).filter(u => u.exp > Date.now());
+    const used = NET.xferUsed.find(u => u.secret === secret && u.peer === hc.peer);
+    if (used) {
+      if (used.handover) { if (used.reply) hc.send(Object.assign({}, used.reply, { _mid: undefined })); }   // host seat: send the hand-over again
+      else seatTakeover(used.idx, hc, false, used);                                                           // normal seat: answer again with the same token
+      return;
+    }
+    if (now < NET.xferLockUntil) { hc.send({ type: "JOIN_DENIED", reason: "Too many wrong codes. Try again in a moment." }); return; }
     const k = NET.xferCodes.findIndex(c => c.secret === secret && c.exp > Date.now());
-    if (k >= 0) { idx = NET.xferCodes[k].idx; NET.xferCodes.splice(k, 1); viaXfer = true; NET.xferFails = 0; }
+    if (k >= 0) {
+      idx = NET.xferCodes[k].idx; NET.xferCodes.splice(k, 1); viaXfer = true; NET.xferFails = 0;
+      rec = { secret, idx, peer: hc.peer, exp: Date.now() + 60000, token: null, reply: null, handover: idx === NET.myPlayerIndex };
+      NET.xferUsed.push(rec);
+    }
     else {
       if (++NET.xferFails >= 6) { NET.xferCodes = []; NET.xferFails = 0; NET.xferLockUntil = now + 30000; }
       hc.send({ type: "JOIN_DENIED", reason: "That code is wrong or has expired." });
@@ -1467,14 +1482,14 @@ function hostRejoin(msg, hc) {
     return;
   }
   if (idx === NET.myPlayerIndex && hc.peer !== NET.myId) {     // somebody claims the HOST's own seat from another page/device: the host role moves there
-    hostHandover(hc, viaXfer);
+    hostHandover(hc, viaXfer, rec);
     return;
   }
-  seatTakeover(idx, hc, viaXfer);
+  seatTakeover(idx, hc, viaXfer, rec);
 }
 
 // seatTakeover(idx, hc, viaXfer): connection hc is now the one and only connection of seat idx
-function seatTakeover(idx, hc, viaXfer) {
+function seatTakeover(idx, hc, viaXfer, rec) {
   const now = performance.now();
   const old = NET.connections.find(c => c.playerIndex === idx && c !== hc);
   if (old) {                                        // two pages for one seat: the NEWEST wins, the older one is told to stop
@@ -1491,8 +1506,9 @@ function seatTakeover(idx, hc, viaXfer) {
   if (viaXfer) {                                    // the new device gets its own token; the old device's token stops working
     newToken = makeToken();
     NET.seatHash[idx] = sha256hex(newToken);
+    if (rec) rec.token = newToken;
     broadcast({ type: "SEAT_HASHES", hashes: NET.seatHash.slice(0, G.players.length) });
-  }
+  } else if (rec && rec.token) newToken = rec.token;   // the same device asking again: the token it was already given
   const p = G.players[idx];
   const wasDown = !!p.disconnected;
   p.disconnected = false;
@@ -1511,7 +1527,7 @@ function seatTakeover(idx, hc, viaXfer) {
 }
 
 // ---- the host's own seat is claimed from another page/device: hand the host role over ----
-function hostHandover(hc, viaXfer) {
+function hostHandover(hc, viaXfer, rec) {
   const idx = NET.myPlayerIndex;
   const newEpoch = NET.epoch + 1;
   let newToken = null;
@@ -1519,7 +1535,9 @@ function hostHandover(hc, viaXfer) {
   const snap = buildSnapshot();
   snap.epoch = newEpoch;
   snap.hostIdx = idx;
-  hc.send({ type: "HOST_HANDOVER", snap, token: newToken, yourIndex: idx, epoch: newEpoch });
+  const reply = { type: "HOST_HANDOVER", snap, token: newToken, yourIndex: idx, epoch: newEpoch };
+  if (rec) { rec.token = newToken; rec.reply = reply; }   // kept so a repeat knock can be answered again
+  hc.send(Object.assign({}, reply));
   broadcast({ type: "HOST_MOVED", epoch: newEpoch, hostId: hostPeerId(NET.roomCode, newEpoch), hostIdx: idx });
   setTimeout(() => retireSelf(viaXfer ? "This game continues on your other device." : "This game was opened in another tab or device.", viaXfer ? { clear: true } : { button: "Play here instead" }), 700);
   if (viaXfer) clearSession();
