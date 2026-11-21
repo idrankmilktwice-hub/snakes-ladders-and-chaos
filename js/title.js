@@ -200,7 +200,7 @@ function pageHtml(id) {
   if (id === "options") {
     let bar = "";
     for (let i = 1; i <= 10; i++)
-      bar += `<div class="tt-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`;
+      bar += `<div class="tt-seg sfx-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`;   // "sfx-seg" marks the SOUND EFFECTS bar only (the music bar from audio.js has its own class and click code)
     // Sound effects bar, then the music controls (music volume, now playing, mute switch) from audio.js
     return `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
   }
@@ -240,12 +240,12 @@ async function openPage(id) {
     return;
   }
   TT.card.firstChild.innerHTML = pageHtml(id);
-  TT.card.querySelectorAll(".tt-seg").forEach(
+  TT.card.querySelectorAll(".sfx-seg").forEach(
     (s) =>
       (s.onclick = () => {
         setVolume(+s.dataset.v);
         TT.card
-          .querySelectorAll(".tt-seg")
+          .querySelectorAll(".sfx-seg")
           .forEach((q) => q.classList.toggle("on", +q.dataset.v <= VOLUME));
         $("ttVolNum").textContent = VOLUME ? VOLUME * 10 + "%" : "Muted";
       }),
