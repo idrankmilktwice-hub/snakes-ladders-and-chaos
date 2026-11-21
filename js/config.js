@@ -21,8 +21,39 @@ const SOUNDS = {
   press: { file: "sounds/button_sound_medium_1.mp3", skip: 0.120 },   // the big choice buttons in the board log
   tock:  { file: "sounds/button_sound_medium_2.mp3", skip: 0.060 },   // a piece landing / being dropped on a square
   big:   { file: "sounds/button_sound_big.mp3",      skip: 0.045 },   // Start game, winning
-  dice:  { file: "sounds/sound_dice_roll.mp3",       skip: 0.028 }    // the dice roll (its last bounce is at ~0.93s, so a roll lasts ROLL_MS = 930)
+  dice:  { file: "sounds/sound_dice_roll.mp3",       skip: 0.028 },   // the dice roll (its last bounce is at ~0.93s, so a roll lasts ROLL_MS = 930)
+
+  // ---- game-event sounds. Several files that share a name + number (snake_1, snake_2...) are ONE group: the game picks one of them at random each time. To add a variation, add a line like stone_3 (same name, next number).
+  //   volume evens out the clips so they are about equally loud (it is a multiplier on top of the Settings volume).
+  // energy drink used
+  drink: { file: "sounds/sound_energy_drink.mp3", skip: 0.064, volume: 0.87 },
+  // stick nudges a snake head / the Charmer moves one
+  snake_1: { file: "sounds/sound_snake_1.mp3", skip: 0.070, volume: 0.64 },
+  snake_2: { file: "sounds/sound_snake_2.mp3", skip: 0.045, volume: 1.5 },
+  // a thrown stone hits a pawn
+  stone_1: { file: "sounds/sound_stone_1.mp3", skip: 0.062, volume: 0.7 },
+  stone_2: { file: "sounds/sound_stone_2.mp3", skip: 0.078, volume: 0.6 },
+  // the cat knocks a player down
+  cat_1: { file: "sounds/sound_cat_1.mp3", skip: 0.029, volume: 1.3 },
+  // someone wins (plays once)
+  win: { file: "sounds/sound_win.mp3", skip: 0.003, volume: 1.21 },
+  // BAD sounds: the character's reaction when snake / stone / toy brick / Bully push or pull hits them
+  bad_bully_1: { file: "sounds/sound_bully_bad_1.mp3", skip: 0.081, volume: 0.77 },
+  bad_gambler_1: { file: "sounds/sound_gambler_bad_1.mp3", skip: 0.077, volume: 1.16 },
+  bad_cat_1: { file: "sounds/sound_catlady_bad_1.mp3", skip: 0.081, volume: 0.89 },
+  bad_cat_2: { file: "sounds/sound_catlady_bad_2.mp3", skip: 0.046, volume: 0.91 },
+  bad_cat_3: { file: "sounds/sound_catlady_bad_3.mp3", skip: 0.050, volume: 0.84 },
+  bad_struggler_1: { file: "sounds/sound_struggler_bad_1.mp3", skip: 0.085, volume: 1.5 },
+  bad_struggler_2: { file: "sounds/sound_struggler_bad_2.mp3", skip: 0.070, volume: 1.15 },
+  bad_struggler_3: { file: "sounds/sound_struggler_bad_3.mp3", skip: 0.074, volume: 1.5 },
+  bad_oracle_1: { file: "sounds/sound_oracle_bad_1.mp3", skip: 0.086, volume: 1.06 },
+  bad_oracle_2: { file: "sounds/sound_oracle_bad_2.mp3", skip: 0.058, volume: 0.99 },
+  bad_oracle_3: { file: "sounds/sound_oracle_bad_3.mp3", skip: 0.055, volume: 0.9 },
+  bad_charmer_1: { file: "sounds/sound_charmer_bad_1.mp3", skip: 0.028, volume: 0.69 },
+  bad_charmer_2: { file: "sounds/sound_charmer_bad_2.mp3", skip: 0.061, volume: 1.5 },
+  bad_charmer_3: { file: "sounds/sound_charmer_bad_3.mp3", skip: 0.037, volume: 0.93 }
 };
+const STONE_BAD_DELAY = 450;   // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
 
 const LIME = "#c3f73a";   // the bright lime used by the art (taken from tile_dark.svg). Used for the active-turn ring and tile highlights.

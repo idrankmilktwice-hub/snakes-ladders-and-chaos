@@ -83,6 +83,27 @@ function sfx(name, delayMs) {
   src.start(ACTX.currentTime + (delayMs || 0) / 1000, s.skip || 0);
 }
 
+// ---- GAME-EVENT SOUNDS ----
+// Sounds whose names share a prefix and a number (snake_1, snake_2, bad_cat_1 ...) form a GROUP named by the prefix ("snake", "bad_cat"). SFX_GROUPS is built from SOUNDS (config.js),
+// so adding a new variation only needs a new line there. A name with no number (drink, win) is a group of one.
+const SFX_GROUPS = {};
+for (const n of Object.keys(SOUNDS)) {
+  const m = n.match(/^(.+)_(\d+)$/);
+  if (m) (SFX_GROUPS[m[1]] = SFX_GROUPS[m[1]] || []).push(n);
+}
+// sfxPick(group, delayMs): play ONE random sound of the group (or the sound itself if it has no variations) on this device only. Returns the name that was played.
+function sfxPick(group, delayMs) {
+  const list = SFX_GROUPS[group], name = list ? pick(list) : group;
+  sfx(name, delayMs);
+  return name;
+}
+// gameSfx(group, delayMs): a sound for something that happened IN the game (drink, snake, stone, cat, a character reaction...).
+// It plays here, and when this page is HOSTING an online game it also tells the guests to play the SAME variation (guests do not run the rules themselves, so they cannot trigger it).
+function gameSfx(group, delayMs) {
+  const name = sfxPick(group, delayMs);
+  if (typeof NET !== "undefined" && NET.active && NET.isHost && typeof broadcast === "function") broadcast({ type: "GAME_SFX", name, delay: delayMs || 0 });
+}
+
 // ---- button sounds: ONE listener plays the right sound for every kind of button (so new buttons only need the right CSS class) ----
 // pointerdown (not click) so the sound is instant. See SOUNDS in config.js for which file is which.
 addEventListener("pointerdown", (e) => {

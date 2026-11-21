@@ -59,7 +59,7 @@ function syncGameState() {
   }
 }
 // win(p): mark player p as the winner.
-function win(p) { sfx("big"); G.winner = p; log(`<b>${FLAVOR.win(p.name)}</b>`); syncGameState(); }
+function win(p) { sfx("win"); G.winner = p; log(`<b>${FLAVOR.win(p.name)}</b>`); syncGameState(); }
 
 // selfMove(p, t): the player moves THEIR OWN pawn to square t. They drag the pawn onto the glowing square, or press "Move for me".
 // (Used for the move a roll decides - never for snakes, ladders, pushes or the cat.)
@@ -92,7 +92,7 @@ async function slide(p) {
       const r = await rollCheck(p, "roll against the snake (even = escape)"); log(`${p.name} rolls ${r} against the snake.`);
       if (r % 2 === 0) { log("Even! " + p.name + " wriggles out of the snake\u2019s jaws."); return; }
     }
-    log(FLAVOR.snake(p.name, n, Sn)); await set(p, Sn);
+    log(FLAVOR.snake(p.name, n, Sn)); gameSfx("bad_" + p.character); await set(p, Sn);   // the character yelps as the snake takes them
   }
 }
 // go(p, t): normal move for a roll - drag to t, win if t is 100, otherwise take any snake/ladder.
@@ -112,6 +112,8 @@ async function hit(v, np, why) {
     log("Odd. It lands.");
   }
   log(`${v.name} is ${why}: ${v.pos} to ${np}.`);
+  if (why === "knocked down by the cat") gameSfx("cat");                      // the cat knocks someone down
+  else if (why === "pushed" || why === "pulled") gameSfx("bad_" + v.character);   // the Bully shoves or drags them (a 1-square nudge makes no sound)
   await set(v, np);
   if (np === 100) { win(v); return true; }
   await slide(v);
@@ -269,6 +271,7 @@ LOGIC.charmer = async p => {
         if (res) {
           const h = res.key, n = res.to, t = G.S[h];
           delete G.S[h]; G.S[n] = t; p.cd = 1;   // the snake keeps its tail; its head (and body) move
+          gameSfx("snake");   // the Charmer drops the head on its new square
           log(`${p.name} plays a tune and the snake from ${h} slithers its head over to ${n}. The body follows!`);
           render(); syncGameState(); await sleep(CONFIG.STEP_MS);
         }
@@ -358,7 +361,7 @@ async function landOn(p) {
   const it = itemAt(p.pos);
   if (!it || p.disconnected) return;                                // a disconnected pawn picks nothing up and trips nothing
   if (it.trap) {                                                    // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
-    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); render(); syncGameState(); return;
+    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, 150); render();   // ouch: the character reacts just after the thud syncGameState(); return;
   }
   const name = ITEMS[it.type].name;
   if (p.items.length < ITEM_MAX) { G.items.splice(G.items.indexOf(it), 1); p.items.push(it.type); log(FLAVOR.pickup(p.name, name)); sfx("small"); render(); syncGameState(); return; }
@@ -381,6 +384,7 @@ async function useItem(p, i) {
   if (type === "drink") {                                           // +3 for you; the can is tossed to your pawn
     p.items.splice(i, 1); render(); syncGameState();
     await flyItem("drink", from, elCenter($("pw" + pi)), "toss");
+    gameSfx("drink");   // glug!
     p.cb = (p.cb || 0) + 3; p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
   } else if (type === "stone") {                                    // -1 for another player (never the cat)
     const others = G.players.filter(q => q !== p);
@@ -394,7 +398,8 @@ async function useItem(p, i) {
       v = G.players[vIdx] || here[0];
     }
     p.items.splice(i, 1); render(); syncGameState();
-    await flyItem("stone", from, xy(sq), "toss");
+    await flyItem("stone", from, xy(sq), "toss");   // (the stone impact sound plays as it lands, see flyItem in input.js)
+    gameSfx("bad_" + v.character, STONE_BAD_DELAY);   // then the victim reacts, a moment after the impact
     v.pen = (v.pen || 0) + 1; log(FLAVOR.stone(p.name, v.name)); render(); syncGameState();
   } else if (type === "brick") {                                    // a trap in your row or the rows above/below
     const targets = [], row = rowOf(p.pos);
@@ -416,6 +421,7 @@ async function useItem(p, i) {
     if (!res) return;
     p.items.splice(i, 1); render(); syncGameState();
     await flyItem("stick", from, xy(res.key), "toss");
+    gameSfx("snake");   // the snake is poked
     const h = res.key, n = res.to, t = G.S[h];
     delete G.S[h]; G.S[n] = t; log(FLAVOR.stick(p.name, h, n)); render(); syncGameState(); await sleep(CONFIG.STEP_MS);
   }

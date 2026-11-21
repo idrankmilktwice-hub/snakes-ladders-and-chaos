@@ -317,7 +317,7 @@ async function awaitTarget({ targets, text, label }) {
 // elCenter(el): centre of a page element in stage coordinates (to launch or land flying items on pawns).
 function elCenter(el) { const r = el.getBoundingClientRect(), s = $("stage").getBoundingClientRect(); return [(r.x + r.width / 2 - s.left) * 1920 / s.width, (r.y + r.height / 2 - s.top) * 1080 / s.height]; }
 // flyItem(type, from, to, mode): animate a copy of an item picture from one stage position to another. mode "toss" = a spinning arc (stone, stick, drink),
-// "slide" = a flat glide (toy brick). Resolves when it lands (with the landing "tock" sound).
+// "slide" = a flat glide (toy brick). Resolves when it lands (a stone plays its impact sound, a toy brick the landing "tock").
 function flyItem(type, from, to, mode, isRemote) {
   if (NET.active && NET.isHost && !isRemote) {
     broadcast({ type: "FLY_ITEM", itemType: type, from, to, mode });
@@ -333,7 +333,7 @@ function flyItem(type, from, to, mode, isRemote) {
     { duration: dur, easing: toss ? "ease-in-out" : "cubic-bezier(.45,.05,.4,1)", fill: "forwards" });
   sfx("small");
   // Race against sleep(dur + 80) so backgrounded tabs never hang awaiting Web Animations!
-  return Promise.race([anim.finished.catch(() => {}), sleep(dur + 80)]).then(() => { el.remove(); sfx("tock"); });
+  return Promise.race([anim.finished.catch(() => {}), sleep(dur + 80)]).then(() => { el.remove(); if (type === "stone") sfxPick("stone"); else if (type === "brick") sfx("tock"); });   // stone: its impact sound (random of 2); brick: the landing tock. The drink and the stick get their sounds from rules.js (useItem) right after they land
 }
 
 // ------------------------------------------------------------------ 3. THE DICE

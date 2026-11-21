@@ -1935,6 +1935,10 @@ function handleNetData(msg, fromConn) {
       }
       break;
     }
+    case "GAME_SFX": {                                               // the host says a game sound happened (drink, snake, a character reaction...): guests play the same one
+      if (!NET.isHost && typeof msg.name === "string") sfx(msg.name, +msg.delay || 0);
+      break;
+    }
     case "FLY_ITEM": {
       if (!NET.isHost) {
         flyItem(msg.itemType, msg.from, msg.to, msg.mode, true);
@@ -1949,7 +1953,7 @@ function handleNetData(msg, fromConn) {
       if (!NET.isHost && G) {
         if (msg.winnerIndex != null && G.players[msg.winnerIndex]) {
           G.winner = G.players[msg.winnerIndex];
-          sfx("big");
+          sfx("win");
         }
         render();
         showLocalGameOverPrompt();
