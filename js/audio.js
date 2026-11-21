@@ -91,17 +91,70 @@ for (const n of Object.keys(SOUNDS)) {
   const m = n.match(/^(.+)_(\d+)$/);
   if (m) (SFX_GROUPS[m[1]] = SFX_GROUPS[m[1]] || []).push(n);
 }
-// sfxPick(group, delayMs): play ONE random sound of the group (or the sound itself if it has no variations) on this device only. Returns the name that was played.
-function sfxPick(group, delayMs) {
+// ---- THE VOICE CHANNEL: game-event sounds never overlap ----
+// Every game-event sound (the group sounds above, the stone impact, the win jingle) goes through ONE channel that holds a single sound at a time. UI clicks and the dice use sfx() directly and are not part of it.
+//   * A NEW event always wins: the sound that is still playing is not chopped off, it is played out quickly (sped up, about VOICE_WRAP_S seconds), and the new sound starts right after it.
+//   * Only the newest waiting sound is kept: if events pile up (the player taps Space very fast), the ones in between are dropped and the latest one plays.
+//   * A "chained" sound (chain = true) is a follow-up of the SAME event (the victim's reaction after a stone impact). It waits for the current sound to finish normally instead of cutting it,
+//     and is dropped if a newer event arrives first.
+const VOICE_WRAP_S = 0.12; // how long (seconds) a cut-off sound takes to play out
+let VOICE = null; // the sound playing now: { src, ends: audio-clock time when it will be over, wrapping }
+let VOICE_NEXT = null; // name of the one sound waiting for the voice channel to become free
+// voice(name, delayMs, chain): ask the channel to play sound `name` after delayMs. The decision is taken when the sound is due, not when it was asked for.
+function voice(name, delayMs, chain) {
+  if (delayMs > 0) setTimeout(() => voiceNow(name, chain), delayMs);
+  else voiceNow(name, chain);
+}
+function voiceNow(name, chain) {
+  if (MUTED || !ACTX || !BUF[name]) return;
+  if (VOICE && VOICE.ends + 0.5 < ACTX.currentTime) VOICE = null; // (safety: a sound that should long be over never blocks the channel)
+  if (!VOICE) return startVoice(name); // channel free: play right away
+  if (chain) { if (!VOICE_NEXT) VOICE_NEXT = name; return; } // same event: wait for the current sound to end by itself
+  VOICE_NEXT = name; // a new event replaces whatever was waiting...
+  wrapUpVoice(); // ...and the old sound is played out quickly; the new one starts when it is over (see startVoice)
+}
+// startVoice(name): play the sound now and remember it as the current voice. When it ends, the waiting sound (if any) starts.
+function startVoice(name) {
+  const buf = BUF[name], s = SOUNDS[name], skip = s.skip || 0;
+  const src = ACTX.createBufferSource(), gain = ACTX.createGain(), t0 = ACTX.currentTime;
+  src.buffer = buf;
+  gain.gain.value = ((s.volume || 1) * VOLUME) / 10;
+  src.connect(gain);
+  gain.connect(ACTX.destination);
+  const v = { src, ends: t0 + Math.max(0.01, buf.duration - skip), wrapping: false };
+  VOICE = v;
+  src.onended = () => {
+    if (VOICE === v) VOICE = null;
+    if (!VOICE && VOICE_NEXT) { const n = VOICE_NEXT; VOICE_NEXT = null; startVoice(n); }
+  };
+  src.start(t0, skip);
+}
+// wrapUpVoice(): play the rest of the current sound quickly (faster playback) so it finishes in about VOICE_WRAP_S seconds instead of being cut off.
+function wrapUpVoice() {
+  const v = VOICE;
+  if (!v || v.wrapping) return;
+  v.wrapping = true;
+  const now = ACTX.currentTime, left = Math.max(0.02, v.ends - now); // seconds of sound still to come at normal speed
+  const rate = Math.min(8, Math.max(1.5, left / VOICE_WRAP_S));
+  try { v.src.playbackRate.cancelScheduledValues(now); v.src.playbackRate.setValueAtTime(rate, now); } catch (e) { /* old browser: it simply plays on */ }
+  v.ends = now + left / rate;
+}
+// stopVoice(): silence the voice channel at once (used by the mute switch).
+function stopVoice() {
+  VOICE_NEXT = null;
+  if (VOICE) { try { VOICE.src.onended = null; VOICE.src.stop(); } catch (e) { /* already over */ } VOICE = null; }
+}
+// sfxPick(group, delayMs, chain): pick ONE random sound of the group (or the sound itself if it has no variations) and play it through the voice channel on this device only. Returns the name picked.
+function sfxPick(group, delayMs, chain) {
   const list = SFX_GROUPS[group], name = list ? pick(list) : group;
-  sfx(name, delayMs);
+  voice(name, delayMs, chain);
   return name;
 }
-// gameSfx(group, delayMs): a sound for something that happened IN the game (drink, snake, stone, cat, a character reaction...).
+// gameSfx(group, delayMs, chain): a sound for something that happened IN the game (drink, snake, stone, cat, a character reaction...).
 // It plays here, and when this page is HOSTING an online game it also tells the guests to play the SAME variation (guests do not run the rules themselves, so they cannot trigger it).
-function gameSfx(group, delayMs) {
-  const name = sfxPick(group, delayMs);
-  if (typeof NET !== "undefined" && NET.active && NET.isHost && typeof broadcast === "function") broadcast({ type: "GAME_SFX", name, delay: delayMs || 0 });
+function gameSfx(group, delayMs, chain) {
+  const name = sfxPick(group, delayMs, chain);
+  if (typeof NET !== "undefined" && NET.active && NET.isHost && typeof broadcast === "function") broadcast({ type: "GAME_SFX", name, delay: delayMs || 0, chain: !!chain });
 }
 
 // ---- button sounds: ONE listener plays the right sound for every kind of button (so new buttons only need the right CSS class) ----
@@ -185,6 +238,7 @@ function setMusicVol(n) {
 // toggleMute(): the mute switch. Silences music and effects; the volume bars keep their positions.
 function toggleMute() {
   MUTED = !MUTED;
+  if (MUTED) stopVoice(); // silence a game sound that is playing right now
   try { localStorage.setItem("snc_muted", MUTED ? "1" : "0"); } catch (e) { /* not saved: fine */ }
   applyMusicVolume();
   refreshMusicUi();

@@ -29,7 +29,7 @@ const SOUNDS = {
   drink: { file: "sounds/sound_energy_drink.mp3", skip: 0.064, volume: 0.87 },
   // stick nudges a snake head / the Charmer moves one
   snake_1: { file: "sounds/sound_snake_1.mp3", skip: 0.070, volume: 0.64 },
-  snake_2: { file: "sounds/sound_snake_2.mp3", skip: 0.045, volume: 1.5 },
+  snake_2: { file: "sounds/sound_snake_2.mp3", skip: 0.045, volume: 1.76 },
   // a thrown stone hits a pawn
   stone_1: { file: "sounds/sound_stone_1.mp3", skip: 0.062, volume: 0.7 },
   stone_2: { file: "sounds/sound_stone_2.mp3", skip: 0.078, volume: 0.6 },
@@ -43,15 +43,25 @@ const SOUNDS = {
   bad_cat_1: { file: "sounds/sound_catlady_bad_1.mp3", skip: 0.081, volume: 0.89 },
   bad_cat_2: { file: "sounds/sound_catlady_bad_2.mp3", skip: 0.046, volume: 0.91 },
   bad_cat_3: { file: "sounds/sound_catlady_bad_3.mp3", skip: 0.050, volume: 0.84 },
-  bad_struggler_1: { file: "sounds/sound_struggler_bad_1.mp3", skip: 0.085, volume: 1.5 },
+  bad_struggler_1: { file: "sounds/sound_struggler_bad_1.mp3", skip: 0.085, volume: 1.88 },
   bad_struggler_2: { file: "sounds/sound_struggler_bad_2.mp3", skip: 0.070, volume: 1.15 },
-  bad_struggler_3: { file: "sounds/sound_struggler_bad_3.mp3", skip: 0.074, volume: 1.5 },
+  bad_struggler_3: { file: "sounds/sound_struggler_bad_3.mp3", skip: 0.074, volume: 2.0 },
   bad_oracle_1: { file: "sounds/sound_oracle_bad_1.mp3", skip: 0.086, volume: 1.06 },
   bad_oracle_2: { file: "sounds/sound_oracle_bad_2.mp3", skip: 0.058, volume: 0.99 },
   bad_oracle_3: { file: "sounds/sound_oracle_bad_3.mp3", skip: 0.055, volume: 0.9 },
   bad_charmer_1: { file: "sounds/sound_charmer_bad_1.mp3", skip: 0.028, volume: 0.69 },
-  bad_charmer_2: { file: "sounds/sound_charmer_bad_2.mp3", skip: 0.061, volume: 1.5 },
-  bad_charmer_3: { file: "sounds/sound_charmer_bad_3.mp3", skip: 0.037, volume: 0.93 }
+  bad_charmer_2: { file: "sounds/sound_charmer_bad_2.mp3", skip: 0.061, volume: 2.6 },
+  bad_charmer_3: { file: "sounds/sound_charmer_bad_3.mp3", skip: 0.037, volume: 0.93 },
+  // the Bully nudges someone 1 square (2 variations)
+  bully_nudge_1: { file: "sounds/sound_bully_nudge_1.mp3", skip: 0.106, volume: 1.05 },
+  bully_nudge_2: { file: "sounds/sound_bully_nudge_2.mp3", skip: 0.083, volume: 1.25 },
+  // HAPPY sounds: a ladder is climbed, an item is picked up, a 6 is rolled (not if it ends on a snake), the Struggler survives a forced effect
+  happy_bully_1: { file: "sounds/sound_bully_happy_1.mp3", skip: 0.068, volume: 2.85 },
+  happy_cat_1: { file: "sounds/sound_catlady_happy_1.mp3", skip: 0.109, volume: 0.99 },
+  happy_charmer_1: { file: "sounds/sound_charmer_happy_1.mp3", skip: 0.072, volume: 1.25 },
+  happy_gambler_1: { file: "sounds/sound_gambler_happy_1.mp3", skip: 0.116, volume: 0.65 },
+  happy_oracle_1: { file: "sounds/sound_oracle_happy_1.mp3", skip: 0.056, volume: 0.94 },
+  happy_struggler_1: { file: "sounds/sound_struggler_happy_1.mp3", skip: 0.062, volume: 0.82 }
 };
 const STONE_BAD_DELAY = 450;   // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
