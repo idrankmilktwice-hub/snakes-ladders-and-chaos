@@ -333,7 +333,7 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 #tPage { display: none; position: absolute; left: 260px; top: 270px; width: 1400px; height: 740px; }
 .tp-card { width: 100%; height: 100%; box-sizing: border-box; padding: 44px 64px; overflow: auto; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; }
 .tp-card h2 { margin: 0 0 18px; font-family: LM, MC, monospace; font-weight: normal; font-size: 64px; text-transform: uppercase; } .tp-card p { margin: 0 0 16px; }
-.tt-vol { display: flex; gap: 6px; margin: 14px 0; } .tt-seg { flex: 1; height: 70px; box-sizing: border-box; border: 4px solid var(--tt-ink); border-radius: 8px; background: var(--tt-seg); cursor: pointer; } .tt-seg.on { background: #ff7529; } .tt-seg:hover { filter: brightness(1.15); }
+.tt-vol { display: flex; gap: 6px; margin: 8px 0 20px; } .tt-seg { flex: 1; height: 54px; box-sizing: border-box; border: 4px solid var(--tt-ink); border-radius: 8px; background: var(--tt-seg); cursor: pointer; } .tt-seg.on { background: #ff7529; } .tt-seg:hover { filter: brightness(1.15); }
 
 /* light / dark switch (top right): orange sun, the switch, orange moon */
 #tSun, #tMoon { position: absolute; fill: #ff7529; stroke: #ff7529; } #tMoon { stroke: none; }
@@ -485,3 +485,35 @@ body:not(.on-title) #tCopy { display: none; }
 #tReconn { position: absolute; right: 28px; bottom: 14px; z-index: 22; display: none; align-items: center; gap: 14px; font-family: MC, monospace; font-size: 14px; color: var(--tt-ink); transition: color .35s; }
 #tReconn .rc-time { min-width: 2ch; text-align: right; font-size: 20px; }
 body:not(.on-title) #tReconn { display: none !important; }
+
+/* ============================================================================================================
+   MUSIC + MUTE (js/audio.js builds the HTML). Used on the title screen's Options page (.tp-card) and in the Settings tab (#settings).
+   ============================================================================================================ */
+/* the mute switch: same shape as the light/dark switch. Knob left = sound on, knob right = muted. Colours come from the two variables. */
+.msw { --ms-rim: var(--tt-trackrim); --ms-trk: var(--tt-track); flex: none; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 36px; }
+#settings .msw { --ms-rim: #c3f73a; --ms-trk: #2f2504; }   /* the board screen does not change with light/dark mode */
+.msw svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.msw:focus-visible, .mu-btn:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 4px; }
+.ms-rim { fill: var(--ms-rim); transition: fill .35s; } .ms-trk { fill: var(--ms-trk); transition: fill .35s; } .ms-ring { stroke: var(--ms-trk); transition: stroke .35s; }
+.ms-knob { transition: transform .3s cubic-bezier(.3,1.5,.5,1); } .msw[aria-checked=true] .ms-knob { transform: translateX(59px); }
+.mu-ico { flex: none; fill: #ff7529; stroke: #ff7529; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.mu-head { display: flex; justify-content: space-between; align-items: baseline; }
+.mu-now { display: flex; align-items: center; gap: 14px; }
+.mu-song { flex: 1; min-width: 0; line-height: 1.15; } .mu-song small { display: block; opacity: .75; } .mu-name { display: block; font-weight: normal; }
+.mu-btn { flex: none; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+.mu-btn svg { height: 55%; width: auto; } .mu-btn:hover { filter: brightness(1.12); } .mu-btn:active { transform: translateY(2px); }
+.mu-mute { display: flex; align-items: center; gap: 14px; } .mu-mlabel { flex: 1; }
+
+/* ---- title screen Options page ---- */
+.tp-card .mu-head { margin: 0; } .tp-card .mu-title { font-family: LM, MC, monospace; font-size: 48px; text-transform: uppercase; }
+.tp-card .mu-head > span:last-child { font-size: 30px; }
+.tp-card .mu-btn { width: 64px; height: 64px; border: 4px solid var(--tt-ink); border-radius: 14px; background: var(--tt-seg); color: var(--tt-ink); }
+.tp-card .mu-song small { font-size: 22px; } .tp-card .mu-name { font-size: 34px; }
+.tp-card .mu-mute { margin-top: 26px; } .tp-card .mu-ico { width: 44px; height: 44px; } .tp-card .msw { width: 97px; height: 58px; }
+
+/* ---- Settings tab (board screen) ---- */
+#settings .mu-head { margin: 8px 0 0; } #settings .mu-num { color: #fff3cf; }
+#settings .mu-now { margin-top: 4px; }
+#settings .mu-btn { width: 44px; height: 44px; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; }
+#settings .mu-song small { font-size: 15px; color: #fff3cf; opacity: .75; } #settings .mu-name { font-size: 21px; color: #fff3cf; }
+#settings .mu-mute { margin-top: 12px; } #settings .mu-ico { width: 28px; height: 28px; } #settings .msw { width: 66px; height: 40px; }
