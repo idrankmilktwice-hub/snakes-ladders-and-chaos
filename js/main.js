@@ -87,8 +87,9 @@ function drawSetup() {
   }
 
   if (S.pick != null) {   // the character chooser
+    const takenIds = S.rows.slice(0, S.n).filter((r, i) => i !== S.pick && r.character).map(r => r.character);   // characters other players already have: shown faded and cannot be clicked
     h += `<div id="chooser" onclick="if(event.target===this){S.pick=null;drawSetup()}"><div class="grid">` +
-      CHARACTERS.map(c => `<button class="card" onclick="onCharacterPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`).join("") + `</div></div>`;
+      CHARACTERS.map(c => `<button class="card${takenIds.includes(c.id) ? " taken" : ""}" ${takenIds.includes(c.id) ? "disabled" : ""} onclick="onCharacterPicked('${c.id}')"><img src="${A(PORT[c.id] + ".svg")}" alt=""><div><b>${c.name}</b><span>${c.text}</span></div></button>`).join("") + `</div></div>`;
   }
   setupEl.innerHTML = h;
 
@@ -247,31 +248,15 @@ function startOnlineGame() {
   start();
 }
 
-// start(): the Start button. Checks the setup (two players can't share a character: they roll off, the loser picks again), then builds the game and begins play().
+// start(): the Start button. Checks the setup (every player has a character, nobody shares one), then builds the game and begins play().
 function start() {
   S.pick = null; const t0 = performance.now();   // (timing: see the console line after render() below)
   if (!ART.ready) { S.msg = ART.error || "The art is still loading, try again in a moment."; return drawSetup(); }
   const rows = S.rows.slice(0, S.n); S.msg = "";
   if (rows.some(r => !r.character)) { S.msg = "Every player needs a character."; return drawSetup(); }
-  let conflict = false;
-  for (const c of CHARACTERS) {
-    const all = rows.filter(r => r.character === c.id);
-    if (all.length < 2) continue;
-    conflict = true;
-    let cand = all;
-    while (cand.length > 1) {   // roll-off until one player has the highest roll
-      const rl = cand.map(() => d6());
-      S.msg += `${c.name} roll-off: ${cand.map((r, i) => `${r.name} ${rl[i]}`).join(", ")}. `;
-      const m = Math.max(...rl); cand = cand.filter((_, i) => rl[i] === m);
-    }
-    S.msg += `${cand[0].name} keeps ${c.name}; the others pick again. `;
-    all.forEach(r => { if (r !== cand[0]) { r.character = ""; r.locked = false; } });
-    cand[0].locked = true;
-  }
-  if (conflict) {
-    if (NET.active && NET.isHost) broadcastLobby();
-    return drawSetup();
-  }
+  // Two players can never hold the same character: the pick screens fade out characters that are already taken.
+  // This check is only a safety net (it should never trigger); it stops the game instead of letting two players share a character.
+  if (new Set(rows.map(r => r.character)).size < rows.length) { S.msg = "Two players have the same character."; return drawSetup(); }
   // G = the new game. players: name/character/position(pos)/colour. L = ladders, S = snakes, cobra = long snake's tail.
   // cat = the cat token (or null), catSkin = which cat picture is showing, catNow = true while the cat's own turn is running.
   G = { players: rows.map((r, i) => ({ name: r.name || `Player ${i + 1}`, character: r.character, pos: 1, color: COLORS[i], items: [] })), items: [], turnNo: 0, ...genBoard(), cat: null, catSkin: rnd(0, ART.cats.length - 1), catNow: false, winner: null, cur: null };

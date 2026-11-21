@@ -50,7 +50,9 @@ function buildLocal() {
     if (online && S.n < CONFIG.MIN_PLAYERS) return toast($("tStart"), "Need 2 players!", false, "above");
     const missing = [...L.querySelectorAll(".lrow")].slice(0, S.n).filter((el, i) => !S.rows[i].character);
     if (missing.length) { missing.forEach(el => el.classList.add("need")); setTimeout(() => missing.forEach(el => el.classList.remove("need")), 1500); return; }   // shine + chevron on whoever has not picked yet
-    leaveTitle(); online ? startOnlineGame() : start();   // the game's own Start (handles two players picking the same character)
+    const chosen = S.rows.slice(0, S.n).map(r => r.character);
+    if (new Set(chosen).size < chosen.length) return toast($("tStart"), "Two players share a character!", false, "above");   // safety net: the pick screen already stops this
+    leaveTitle(); online ? startOnlineGame() : start();
   };
   $("hGen").onclick = hostGenerate; $("hCopy").onclick = copyLink; $("jBtn").onclick = joinPressed;
   $("jCode").addEventListener("input", () => { const n = $("jCode").value.length; $("jCode").style.fontSize = n > 6 ? Math.min(56, Math.floor((232 / n - 4) / 0.6)) + "px" : ""; });   // a long (switch-device) code shrinks to fit the box
@@ -102,6 +104,7 @@ function syncRows() {
   });
   $("tStart").style.display = (S.mode === "join" || (online && !NET.isHost)) ? "none" : "";
   $("tWait").style.display = online && NET.active && !NET.isHost ? "block" : "none";
+  if (TT.pickOpen) refreshTaken();   // someone else picked while this player has the pick screen open
 }
 function onlineLobbyUpdate() { layoutRows(); syncRows(); }
 
@@ -203,11 +206,23 @@ function layoutPanels() {
   TT.pkScale = p; TT.pkGap = gap;
   TT.pkPanels.forEach((pn, k) => { const s = pn.parentElement; s.style.left = (gap + k * (PK.w * p + gap)) + "px"; s.style.transform = `scale(${p})`; });
 }
+// takenIds(row): the characters already chosen by the OTHER players. The row being edited does not count, so a player can pick their own character again.
+// Only the players actually in the game count (rows past S.n are ignored).
+function takenIds(row) { return S.rows.slice(0, S.n).filter((r, i) => i !== row && r && r.character).map(r => r.character); }
+// refreshTaken(): fade out the panels of characters that someone else already has, and switch their PICK button off.
+// Runs when the pick screen opens, and again whenever the online lobby changes while it is open (so a character taken a moment ago fades out live).
+function refreshTaken() {
+  const t = takenIds(TT.pkRow);
+  TT.pkPanels.forEach((p, k) => {
+    const gone = t.includes(CHARACTERS[k].id), btn = p.querySelector(".pk-pick");
+    p.classList.toggle("taken", gone); btn.disabled = gone; btn.title = gone ? "Already taken" : "";
+  });
+}
 // openPick(i): player i pressed "Pick a Character": the screen goes dark and the panels fly up from the bottom, one by one, very quickly.
 async function openPick(i) {
   if (TT.pickOpen) return;
   TT.pickOpen = true; TT.pkRow = i; TT.pkBusy = true;
-  layoutPanels();
+  layoutPanels(); refreshTaken();   // (characters other players already have are faded out)
   const P = $("tPick"); P.style.display = "block"; $("tFull").style.display = "none";
   P.querySelector(".pk-dim").animate([{ opacity: 0 }, { opacity: .5 }], { duration: 150, fill: "backwards" });
   TT.pkPanels.forEach(p => { p._x = 0; p._y = PK.off; p.style.transform = `translate(0,${PK.off}px)`; });
@@ -220,7 +235,7 @@ function closePickNow() { $("tPick").style.display = "none"; $("tFull").style.di
 async function closePick() { if (!TT.pickOpen || TT.pkBusy) return; TT.pkBusy = true; await exitPanels(-1); closePickNow(); }   // X button / click outside
 // pickCharacter(k): PICK pressed on panel k - the others leave first, the chosen one shines, slides to the centre and off the screen; the dark layer vanishes instantly.
 async function pickCharacter(k) {
-  if (TT.pkBusy) return; TT.pkBusy = true;
+  if (TT.pkBusy || TT.pkPanels[k].classList.contains("taken")) return; TT.pkBusy = true;   // (a taken character cannot be picked)
   const p = TT.pkPanels[k];
   await exitPanels(k);
   p.classList.add("shining"); await sleep(220); p.classList.remove("shining");

@@ -1722,7 +1722,9 @@ function handleNetData(msg, fromConn) {
         const idx = fromConn ? fromConn.playerIndex : null;       // a player can only change their OWN row
         if (idx != null && S.rows[idx]) {
           if (msg.name !== undefined && msg.name !== null) S.rows[idx].name = msg.name;
-          if (msg.character !== undefined && msg.character !== null) S.rows[idx].character = msg.character;
+          // the host decides who gets a character: if another player already has it (two picked at nearly the same moment), the request is ignored
+          // and the broadcast below puts the sender's line back to what the host has
+          if (msg.character !== undefined && msg.character !== null && !charTakenByOther(msg.character, idx)) S.rows[idx].character = msg.character;
           broadcastLobby();
           if (NET.onLobbyUpdate) NET.onLobbyUpdate();
         }
@@ -2114,6 +2116,11 @@ function broadcastLobby() {
   if (NET.isHost) {
     broadcast({ type: "LOBBY_STATE", rows: S.rows, n: S.n, smsg: S.msg || "" });
   }
+}
+
+// charTakenByOther(id, idx): true if a player other than number idx already has character id.
+function charTakenByOther(id, idx) {
+  return S.rows.slice(0, S.n).some((r, i) => i !== idx && r && r.character === id);
 }
 
 function sendLobbyUpdate(name, character) {

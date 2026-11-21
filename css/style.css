@@ -517,3 +517,9 @@ body:not(.on-title) #tReconn { display: none !important; }
 #settings .mu-btn { width: 44px; height: 44px; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; }
 #settings .mu-song small { font-size: 15px; color: #fff3cf; opacity: .75; } #settings .mu-name { font-size: 21px; color: #fff3cf; }
 #settings .mu-mute { margin-top: 12px; } #settings .mu-ico { width: 28px; height: 28px; } #settings .msw { width: 66px; height: 40px; }
+
+/* ---- characters another player already has: faded out on the pick screens (js/local.js refreshTaken, js/main.js old chooser) ---- */
+.pk-panel { transition: opacity .25s, filter .25s; }
+.pk-panel.taken { opacity: .3; filter: grayscale(1); }
+.pk-panel.taken .pk-pick { cursor: not-allowed; }
+#chooser .card.taken { opacity: .3; filter: grayscale(1); cursor: not-allowed; } #setup .card.taken:hover { filter: grayscale(1); }
