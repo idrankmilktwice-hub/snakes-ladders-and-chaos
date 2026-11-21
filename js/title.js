@@ -420,7 +420,9 @@ function buildTitle(root, logoSvg, btnSvg, backSvg) {
     // the light/dark switch (top right): sun, the switch, moon
     `<svg id="tSun" viewBox="0 0 54 54"><circle cx="27" cy="27" r="12" fill="none" stroke-width="3"/><path d="M27 2L34 13H20Z M27 52L20 41H34Z M52 27L41 20V34Z M2 27L13 20V34Z" fill="none" stroke-width="2.5" stroke-linejoin="round"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(45 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(135 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(225 27 27)"/><path d="M27 8L30.5 14H23.5Z" transform="rotate(315 27 27)"/></svg>` +
     `<button id="tSwitch" role="switch" aria-label="Light or dark mode" aria-checked="false"><svg viewBox="0 0 121 72"><rect class="tt-trkrim" width="121" height="72" rx="36"/><rect class="tt-trk" x="6" y="6" width="109" height="60" rx="30"/><g class="tt-knob"><circle cx="31" cy="39" r="23.5" fill="#e2330a"/><circle class="tt-knobring" cx="31" cy="32" r="23.5" fill="#ff7529" stroke-width="3"/><circle cx="24" cy="22" r="11" fill="#fff" opacity=".5"/></g></svg></button>` +
-    `<svg id="tMoon" viewBox="0 0 38 46"><path d="M24 3C11 6 4 19 8 31C12 41 24 45 35 40C20 40 13 28 17 16C19 10 22 6 24 3Z"/></svg>`;
+    `<svg id="tMoon" viewBox="0 0 38 46"><path d="M24 3C11 6 4 19 8 31C12 41 24 45 35 40C20 40 13 28 17 16C19 10 22 6 24 3Z"/></svg>` +
+    // the mute switch (just under the light/dark switch): speaker with waves = sound on, speaker with a cross = muted (audio.js builds the pieces)
+    `<div id="tMuteRow">${speakerHtml(false)}${muteSwitchHtml()}${speakerHtml(true)}</div>`;
   // logo words: sort the logo's pieces top to bottom and give each its own delay, so they pop in one after another
   const svg = root.querySelector("#tLogo svg");
   [...svg.children]

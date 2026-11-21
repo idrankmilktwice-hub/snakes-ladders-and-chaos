@@ -170,6 +170,14 @@ function toggleMute() {
 }
 
 // ---- the music controls on screen (the same block is used on the title screen's Options page and in the Settings tab) ----
+// speakerHtml(off): the small orange speaker picture. off = false: sound waves (sound on); off = true: a cross (muted).
+function speakerHtml(off) {
+  return `<svg class="mu-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 18h8l10-8v28l-10-8H4z"/>${off ? '<path d="M30 18l12 12M42 18L30 30" fill="none"/>' : '<path d="M29 17c3 4 3 10 0 14M34 12c6 7 6 17 0 24" fill="none"/>'}</svg>`;
+}
+// muteSwitchHtml(): the mute switch (same shape as the light/dark switch). Knob left = sound on, knob right = muted. Its click is handled by the listener at the bottom of this file.
+function muteSwitchHtml() {
+  return `<button class="msw" data-mu="mute" role="switch" aria-label="Mute all sound" aria-checked="${MUTED}"><svg viewBox="0 0 121 72"><rect class="ms-rim" width="121" height="72" rx="36"/><rect class="ms-trk" x="6" y="6" width="109" height="60" rx="30"/><g class="ms-knob"><circle cx="31" cy="39" r="23.5" fill="#e2330a"/><circle class="ms-ring" cx="31" cy="32" r="23.5" fill="#ff7529" stroke-width="3"/><circle cx="24" cy="22" r="11" fill="#fff" opacity=".5"/></g></svg></button>`;
+}
 // musicPanelHtml(kind): the HTML for: Music volume bar, "Now playing" with previous / next buttons, and the mute switch.
 // kind = "tt" for the title screen Options page, anything else for the Settings tab (only the look differs, see css/style.css "MUSIC").
 function musicPanelHtml(kind) {
@@ -178,8 +186,8 @@ function musicPanelHtml(kind) {
   for (let i = 1; i <= 10; i++)
     bar += `<div class="${tt ? "tt-seg" : "seg"} mu-seg${i <= MUSIC_VOL ? " on" : ""}" data-mu="vol" data-v="${i}" title="${i * 10}%"></div>`;
   const chev = (d) => `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const speaker = (off) => `<svg class="mu-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 18h8l10-8v28l-10-8H4z"/>${off ? '<path d="M30 18l12 12M42 18L30 30" fill="none"/>' : '<path d="M29 17c3 4 3 10 0 14M34 12c6 7 6 17 0 24" fill="none"/>'}</svg>`;
-  const sw = `<button class="msw" data-mu="mute" role="switch" aria-label="Mute all sound" aria-checked="${MUTED}"><svg viewBox="0 0 121 72"><rect class="ms-rim" width="121" height="72" rx="36"/><rect class="ms-trk" x="6" y="6" width="109" height="60" rx="30"/><g class="ms-knob"><circle cx="31" cy="39" r="23.5" fill="#e2330a"/><circle class="ms-ring" cx="31" cy="32" r="23.5" fill="#ff7529" stroke-width="3"/><circle cx="24" cy="22" r="11" fill="#fff" opacity=".5"/></g></svg></button>`;
+  const speaker = speakerHtml;
+  const sw = muteSwitchHtml();
   return `<div class="mu-wrap">
     <div class="mu-head"><span class="mu-title">Music</span><span class="mu-num">${MUSIC_VOL ? MUSIC_VOL * 10 + "%" : "Off"}</span></div>
     <div class="${tt ? "tt-vol" : "volbar"}">${bar}</div>

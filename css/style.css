@@ -308,7 +308,7 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 /* menu buttons: a rounded shadow slab (.tb-rim) that stays put, and the face (.tb-face) that sinks onto it when pressed */
 #tMenu { position: absolute; inset: 0; pointer-events: none; }
 .tbtn { position: absolute; width: 323px; height: 165px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--tt-ink); font-family: LM, monospace; }
-.tbtn:focus-visible, #tBack:focus-visible, #tSwitch:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 6px; }
+.tbtn:focus-visible, #tBack:focus-visible, #tSwitch:focus-visible { outline: 3px dashed var(--tt-ink); outline-offset: 4px; }
 .tb-rim { position: absolute; inset: 0; border-radius: 11px; background: var(--tt-rim); transition: background-color .35s; }
 .tb-face { position: absolute; left: 6px; top: 5px; width: 309.39px; height: 139.57px; transition: transform .07s; }
 .tb-face svg { width: 309.39px; height: 139.57px; }
@@ -337,9 +337,12 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 
 /* light / dark switch (top right): orange sun, the switch, orange moon */
 #tSun, #tMoon { position: absolute; fill: #ff7529; stroke: #ff7529; } #tMoon { stroke: none; }
-#tSun { left: 1647px; top: 103px; width: 54px; height: 54px; } #tMoon { left: 1844px; top: 107px; width: 38px; height: 46px; }
-#tSwitch { position: absolute; left: 1712px; top: 94px; width: 121px; height: 72px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 36px; }
-#tSwitch svg { width: 121px; height: 72px; }
+#tSun { left: 1764px; top: 116px; width: 27px; height: 27px; } #tMoon { left: 1863px; top: 118px; width: 19px; height: 23px; }   /* half the old size, same right edge */
+#tSwitch { position: absolute; left: 1797px; top: 112px; width: 60px; height: 36px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; }
+#tSwitch svg { width: 60px; height: 36px; }
+/* the mute switch sits directly under it, same width: speaker, switch, muted speaker (the switch itself is styled in the MUSIC + MUTE section below) */
+#tMuteRow { position: absolute; left: 1764px; top: 160px; width: 118px; height: 36px; display: flex; align-items: center; justify-content: space-between; }
+#tMuteRow .mu-ico { width: 24px; height: 24px; } #tMuteRow .msw { width: 60px; height: 36px; border-radius: 18px; }
 .tt-trkrim { fill: var(--tt-trackrim); transition: fill .35s; } .tt-trk { fill: var(--tt-track); transition: fill .35s; } .tt-knobring { stroke: var(--tt-track); transition: stroke .35s; }
 .tt-knob { transition: transform .3s cubic-bezier(.3,1.5,.5,1); } html[data-theme=dark] .tt-knob { transform: translateX(59px); }
 
