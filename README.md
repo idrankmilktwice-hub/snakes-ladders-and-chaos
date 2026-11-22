@@ -1,12 +1,7 @@
 # Snakes, Ladders and Chaos!
 
-A browser board game: Snakes and Ladders with six character classes that bend the rules, local play and
-online multiplayer (2 to 6 players) with automatic reconnecting.
-Plain HTML, CSS and JavaScript - no frameworks, no build step. The only outside script is PeerJS (loaded from unpkg in `index.html`).
-
-Copyright (c) 2026 Hafiz Shaikh. All Rights Reserved. See `LICENSE.md`.
-
-Live site: https://idrankmilktwice-hub.github.io/snakes-ladders-and-chaos/
+A browser board game: Snakes and Ladders with six character classes that bend the rules.
+Plain HTML, CSS and JavaScript - no frameworks, no build step. Play on one screen (Local) or online (Host / Join).
 
 ## Run it
 
@@ -14,106 +9,102 @@ Live site: https://idrankmilktwice-hub.github.io/snakes-ladders-and-chaos/
 2. In this folder run `python serve.py` - it opens http://localhost:8000.
 
 (Opening `index.html` by double-click will not work: browsers block reading the `assets/` folder from a file.)
-The live site is GitHub Pages (Settings > Pages publishes the branch). After pushing, wait a minute or two and hard-refresh (Ctrl+Shift+R).
 
 ## Project layout
 
 ```
-index.html          page structure: every element the code looks up by id, and the script load order
-LICENSE.md          the copyright / all-rights-reserved notice (the same text is shown at the bottom of the title screens)
-README.md           this file
-RULES.txt           the full rules: every class, items, bonus-roll rules
-serve.py            tiny local web server; also relays online-game messages over HTTP/SSE when you play on your own network
+index.html          page structure (what elements exist and where scripts load)
 css/
-  style.css         all styling and screen positions (palette variables, buttons, panels, title screens, reconnect UI)
-js/                 game code, loaded in THIS order by index.html (each file may only use things from the files above it)
-  config.js         settings, class descriptions, colours, layout numbers, SOUNDS, helpers ($, d6, rnd, sleep, esc, log)   <- start here for small changes
-  board.js          square numbering (rc, toN, xy, squareAt) and random snake/ladder generation (genBoard)
-  art.js            loading the SVG art from assets/manifest.json (A(), T(), ART, loadAssets, assignKinds)
-  audio.js          sound effects: sfx("name") (which file is which: SOUNDS in config.js); VOLUME
-  preload.js        starts loading art / fonts / sounds at page open and drives the loading bar (list new art files in PRELOAD_SVGS)
-  render.js         drawing: tiles, snakes, ladders, pawns, player panels, disconnected icon (render, buildBoard, buildPanels, placePawns, updateDisconnectLook, switchCat)
-  network.js        ALL online multiplayer: connections, lobby, game sync, heartbeat, reconnect, host migration, switch-device codes (see "Online play" below)
-  input.js          prompts/buttons, drag and drop, the dice, Space bar (rollDice, choose, awaitMove, awaitItemChoice, awaitTarget, launch, setPrompt)
-  rules.js          class rules (LOGIC), items, flavour text (FLAVOR), snakes/ladders (slide), pushes (hit), the turn loop (play), state sync to guests (syncGameState)
+  style.css         all styling and screen positions
+js/                 game code, loaded in this order by index.html
+  config.js         settings, character descriptions, colours, layout numbers, the SOUNDS list   <- start here for small changes
+  board.js          square numbering and random snake/ladder generation
+  art.js            loading the SVG art (assets/manifest.json)
+  audio.js          sound effects, the game-event "voice channel", the music player and the mute / music controls
+  preload.js        starts loading art / fonts / sounds at page open and drives the loading bar
+  render.js         drawing: snakes, ladders, tiles, pawns, player panels
+  network.js        online play (PeerJS): lobby, the host runs the game and sends the state and sounds to the guests
+  input.js          prompts/buttons, drag and drop, the dice, Space bar, clicking the cat
+  rules.js          character rules, ITEMS, flavour text, the turn loop, character reactions   <- edit character and item behaviour here
   rulebook.js       the Rulebook tab text (RULES_HTML), built from config.js numbers
-  main.js           start(), tabs (log / rulebook / chat / settings / about), Settings tab (volume + Switch Device), chat, window scaling (fit), start-up
-  title.js          the title screen (logo, Play / Options / About, light/dark switch), its animations (TT, glide, pop), green buttons (gbBuild), the "Attempting to reconnect" card
-  local.js          the Local, Host and Join screens (player lines), the class pick panels, joinPressed, leaveTitle; loads last
-assets/             all SVG art (tiles, snake heads/bodies, ladders, 10 cats cat_1..cat_10, items, buttons, panels, disconnected.svg), the font, sounds/ (mp3), manifest.json
-docs/               design mockups, title-screen references, colour palette (palette.svg)
-tools/
-  build_standalone.py   packs everything into one self-contained dist/snakes-ladders-and-chaos.html
+  main.js           start screen, tabs (log / rulebook / settings / about), window scaling
+  title.js          the title screen (logo, Play / Options / About, light/dark switch, mute switch); loads after main.js
+  local.js          the Local, Host and Join screens (player lines) and the character pick panels; loads after title.js
+assets/             all SVG art, the font and manifest.json, plus:
+  sounds/           mp3 sound effects (buttons, dice, game events, character reactions)
+  music/            the songs (song_<Name_With_Underscores>.mp3)
+docs/mockup.jpg     the first design mockup
+docs/mockup_v2.jpg  the mockup with the three containers and item slots
+docs/Title_Screen.jpg, Play_Screen.jpg, Local_Screen.jpg  the title screen reference; docs/palette.svg  the colour palette
+RULES.txt           the full rules: every class, items, bonus-roll rules
+serve.py            tiny local web server
 ```
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-Cache busting: `index.html` loads every file as `file.js?v=NN`. When you change a file, raise the number (all of them is fine) so browsers do not keep the old copy.
-Some files use Windows line endings (CRLF); keep the file's existing line endings when editing.
-
-## The big pieces of live data (globals)
-
-| Name   | Defined in  | What it is |
-|--------|-------------|------------|
-| `G`    | config.js   | the running game: `players`, `items`, `L` (ladders), `S` (snakes), `cobra`, `kind`, `cat`, `catSkin`, `catNow`, `cur` (whose turn), `order`, `turnNo`, `winner`. `null` until a game starts |
-| `S`    | config.js   | the setup/lobby screen state: `n` (players), `rows` (name + character per line), `mode` ("local" / "online"), `netState` |
-| `NET`  | network.js  | everything about the online connection (see below). `NET.active` is true during an online game or lobby |
-| `ART`  | art.js      | the loaded art: tiles, heads, cobra, digits, `cats` (list from manifest.json), items, ladders |
-| `DICE` | input.js    | the dice currently on the rolling board |
-| `TT`   | title.js    | the title screen state (`TT.instant` = skip animations) |
-
-Each player in `G.players` is a plain object: `name, character, pos, color, items, cb` (buff), `pen` (debuff), `big`, `cd` (Charmer recharge), and online only `disconnected` / `missed`.
-
-## Turn flow (rules.js)
-
-`play()` loops over `G.order` (Snake Charmer first, cat owner last). For each player: item phase, then their class's `LOGIC` function (roll, move, abilities), then the cat's turn for the cat owner.
-Player input is awaited through `rollDice`, `choose`/`ask`, `awaitMove`, `awaitItemChoice`, `awaitTarget` (input.js). Forced-effect rolls (Struggler, Bully) use `rollCheck` so the player throws the die themselves.
-In online games only the host runs `play()`; guests mirror the state.
-
-## Online play (network.js)
-
-**Model.** One host runs the game and is the only authority. Guests send their actions (`ACTION_REQ`) and receive state (`STATE_SYNC`, `ACTION_SYNC`, `WAIT_*` prompts, `LOG_LINE`). The host only accepts an action from the seat the game is currently waiting for, identified by its connection, never by what the message claims.
-
-**Transports (tried together, the first that works carries the traffic).** Direct WebRTC via PeerJS; the local `serve.py` HTTP/SSE relay; public MQTT-over-WebSocket brokers; the PeerJS socket relay. `createHybridConn(...).send()` picks the path. There is no TURN server, so some strict networks cannot connect at all.
-
-**Addresses.** The room code is 5 letters. The host's address is `hostPeerId(code, epoch)`; epoch 0 is the original host and every host change gets the next epoch.
-
-**Seats and tokens.** Each seat has a secret token, made by the host. Every player keeps only the sha256 hash of every seat's token (`NET.seatHash`), so any player can verify a returning player without learning anyone's secret. A player's own token and room are saved in the browser (`snc_session` in sessionStorage and localStorage: `saveSession`, `loadSession`, `pickAutoSession`, `clearSession`).
-
-**Disconnects.**
-- Guests ping the host every second (`startHeartbeat`); nothing heard for 2.8 s = lost (`monitorTick`). A closed tab says goodbye (`BYE` / `HOST_LEFT`) and is noticed at once.
-- The host keeps a lost player's seat and marks `p.disconnected = true` (`onSeatLost`), unblocks anything waiting on them (`hostAutoResolve`) and tells everyone (`PLAYER_LEFT`).
-- A disconnected player behaves like an ordinary pawn: no abilities, no prompts, no item pickups (checks of `p.disconnected` throughout rules.js).
-- At the start of a disconnected player's turn the game waits `CONFIG.RECONNECT_MS` (5 s, config.js) with a countdown (`waitForReconnect`), then skips them; later turns are skipped at once until they return. The cat owner's cat is skipped too.
-
-**Coming back.** A page that is reloaded or closed and reopened takes its seat back by itself (`autoRejoin`, called from main.js; the title screen waits up to 2 s for it, so the title animations never play). Otherwise typing the room code on the Join screen works, and so does the room box in the reconnect banner. Strangers are refused once a game has started (`hostRejoin`). Two pages for one seat: the newest wins and the older one is told to stop (`SEAT_TAKEN`).
-
-**Host leaves.** Guests keep knocking on every possible host address (`recoveryTick`); the first connected seat in seat order becomes the new host (`maybeElect`, `becomeHost`) from the last state it received and resumes the interrupted turn (`play({ resume: true })`). If two hosts ever exist at once they compare notes and one steps down (`answerHostProbe`, `stepDown`). If nobody is hosting for 15 s the lobby is over (`endLobby`).
-
-**Switch Device.** Settings tab > Switch Device > Generate Code shows `ROOM-SECRET` (for example `FGHD5-HHXQC1`, valid 2 minutes, one use). Typing it on another device's Join screen moves the seat there and stops the old device. The host's own seat can move too (`hostHandover`). Codes: `makeTransferCode`, `requestTransferCode`, `cancelTransferCode`, `hostRejoin`, `seatTakeover`. A device that repeats its already-used code gets the same answer again, never "wrong code".
-
-**Reconnect screens.** Top banner while in a game (`showNetworkBanner`, `manualRejoin`); full-screen notice when a page gives up its seat (`retireSelf`); on the title screen a small card at the bottom right shows "Attempting to reconnect to the Lobby", a 15 s countdown and a green "Abandon Game" button (`showReconnectCard` in title.js, driven by `REJOIN_STATE`, `onRejoinTick`, `onRejoinEnd`, `abandonRejoin`).
-
-**Screens and links.** An invite link `?room=CODE` opens the Join screen with no animations and joins (`initTitle` in title.js, `TT.instant`). The copyright notice sits at the bottom of the title screens (`#tCopy` in index.html).
+`index.html` loads every script and the stylesheet with a version number (`?v=21`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
 | I want to...                         | Edit                                             |
 |--------------------------------------|--------------------------------------------------|
 | change number of snakes/ladders      | `CONFIG` in `js/config.js`                       |
-| change how long a disconnected player's turn waits | `CONFIG.RECONNECT_MS` in `js/config.js`     |
-| change a class description           | `CHARACTERS` (and `CHARACTER_BRIEF`) in `js/config.js`, rule text in `js/rulebook.js` |
+| change a character description       | `CHARACTERS` in `js/config.js`                   |
 | change item numbers (3 slots, start count, spawn every N turns) | `ITEM_*` in `js/config.js`      |
 | change where the three containers / panels sit | `BOXES`, `BOARD_BOX`, `PANEL`, `BX0`.. in `js/config.js` |
 | change what the board log says       | `FLAVOR` in `js/rules.js`                        |
-| change how a class plays             | `LOGIC` in `js/rules.js`                         |
-| change pawn / snake / number sizes   | `js/render.js` (`placePawns`, `SW`, `NUM_H`)     |
+| change how a character plays         | `LOGIC` in `js/rules.js`                         |
+| change pawn / snake / number sizes   | `render.js` (`placePawns`, `SW`, `NUM_H`)        |
 | change which sound plays             | `SOUNDS` in `js/config.js` (and `ROLL_MS` for the dice roll length) |
-| swap or add art                      | put the SVG in `assets/`, list it in `assets/manifest.json` and in `PRELOAD_SVGS` in `js/preload.js` |
-| add a cat picture                    | add `cat_N.svg` to `assets/`, list it under `"cats"` in `assets/manifest.json` and in `js/preload.js` (the code uses however many are listed) |
-| change online timing (ping, timeout, give-up, election, code lifetime) | the constants near the top of `js/network.js` (`HB_*`, `RECOVERY_GIVEUP_MS`, `REJOIN_GIVEUP_MS`, `ELECT_*`, `XFER_TTL_MS`) |
-| change the copyright text            | `#tCopy` in `index.html` and `LICENSE.md`        |
-| change the Settings tab / Switch Device look | `drawSettings`, `swDeviceHtml` in `js/main.js`, `#settings ...` rules in `css/style.css` |
+| add a variation of a sound           | add a line to `SOUNDS` with the same name and the next number, e.g. `stone_4` (the game picks one at random) |
+| change when a sound plays            | the `gameSfx(...)` / `cheer(...)` calls in `js/rules.js`, `flyItem` in `js/input.js` |
+| change how loud one sound is         | its `volume` in `SOUNDS` (a multiplier on top of the player's Settings volume) |
+| change the delay before a stone victim reacts | `STONE_BAD_DELAY` in `js/config.js`    |
+| change the cat click cooldown        | `CAT_CLICK_COOLDOWN` in `js/config.js`           |
+| add or rename a song                 | put the mp3 in `assets/music/` and edit `MUSIC` at the top of `js/audio.js` |
+| change how loud the music is compared with the effects | `MUSIC_GAIN` in `js/audio.js`  |
+| change how fast an interrupted sound finishes | `VOICE_WRAP_S` in `js/audio.js`         |
+| swap or add art                      | put the SVG in `assets/`, list it in `assets/manifest.json` |
+
+## Sound and music
+
+**Sound effects** are short mp3 files in `assets/sounds/`, listed in `SOUNDS` in `js/config.js`. Each entry has the file, `skip` (seconds of leading silence to cut so the sound lands exactly on the action) and an optional `volume`. They are decoded once at start-up and played with the Web Audio API. `sfx("name")` plays one directly (buttons, dice and the landing sounds use this).
+
+**Sound groups.** Sounds whose names share a prefix and a number form a group (`snake_1`, `snake_2` = the group `snake`). Asking for the group plays one at random. A name without a number (`drink`, `win`) is a group of one.
+
+**Game-event sounds**
+
+| Event | Sound |
+|-------|-------|
+| Energy drink used | `drink` |
+| A stick pokes a snake, or the Snake Charmer drops a head | `snake` (2 variations) |
+| A thrown stone hits a pawn | `stone` (3 variations), then the victim's `bad_<character>` 450 ms later |
+| The cat knocks a player down | `cat` |
+| Something bad happens to a character: bitten by a snake, hit by a stone, steps on a toy brick, pushed or pulled by the Bully | `bad_<character>` (the character's own reaction) |
+| The Bully nudges someone | `bully_nudge` (2 variations) |
+| A character climbs a ladder, picks up or swaps an item, or rolls a 6 | `happy_<character>` |
+| The Struggler survives a forced effect (dodges a snake, push, nudge or the cat's charm) | `happy_struggler` |
+| Someone wins | `win` (plays once) |
+| Clicking the cat | `cat`, at most once every `CAT_CLICK_COOLDOWN`, only when no other game sound is playing |
+
+Rules for the reactions: a character cheers at most once per turn; a 6 cheers only after the move finishes and only if no snake bit that character (then the sad sound plays instead); the Gambler counts double 6s as his 6. `<character>` is `bully`, `gambler`, `cat`, `struggler`, `oracle` or `charmer`.
+
+**The voice channel (no overlapping sounds).** All game-event sounds go through one channel that plays a single sound at a time (button clicks and the dice are separate). A newer event always wins: the sound still playing is sped up so it finishes in about a tenth of a second instead of being cut off, then the new sound starts. If several events pile up (the player taps Space very fast), only the newest waiting sound is kept. A "chained" sound (the victim's reaction after a stone) waits for the current sound to end normally and is dropped if a newer event arrives first. Muting stops the current sound at once.
+
+**Online.** Guests do not run the rules, so the host picks each variation and sends it (`GAME_SFX` message in `js/network.js`); everyone hears the same sound. The stone's impact sound and the win sound are played by each guest's own page.
+
+**Music.** The songs in `assets/music/` are streamed (not decoded up front) and play one after another through the whole game, starting on the player's first click (browsers block audio before that). Controls, on the title screen's Options page and in the board's Settings tab:
+
+- **Mute** (the first setting) silences everything: music, effects and reactions. The same switch is under the light/dark switch on every title-side screen. All the mute switches stay in sync.
+- **Sound effects** volume and **Music** volume are separate 10-step bars.
+- **Now playing** shows the song name, with previous / next buttons.
+- **Play / pause**, **loop** (repeat the current song) and **shuffle** (random next song, on by default).
+
+The player's choices (effects volume, music volume, mute, loop, shuffle) are remembered in the browser (`snc_volume`, `snc_music_vol`, `snc_muted`, `snc_loop`, `snc_shuffle`).
+
+## Character pick
+
+Two players can never hold the same character. On the pick screens (and the old setup chooser) a character another player already has is faded out and cannot be chosen. Online, the host decides: if two players pick the same character at almost the same moment, the first request wins and the other player's line goes back to "Pick a Character".
 
 ## Notes
 
@@ -121,11 +112,5 @@ In online games only the host runs `play()`; guests mirror the state.
 - Snake bodies and ladders use the art in `assets/`; a snake with no body picture falls back to a flat placeholder.
 - Every snake gets its own head design (8 heads + the cobra = 9 snakes). If you raise `CONFIG.SNAKES`, add heads to `assets/manifest.json` first.
 - The background is the flat blue with `assets/pattern.svg` (a square tile, 1 viewBox unit = 1 pixel) repeated over it. Replace that file with your design; no code change needed.
-- Online messages are plain JSON with a `type` (for example `JOIN_REQ`, `GAME_START`, `STATE_SYNC`, `WAIT_ROLL`, `ACTION_REQ`, `PING`, `REJOIN_ACK`, `HOST_HANDOVER`, `HOST_MOVED`, `XFER_REQ`); the routing is one big `switch` in `handleNetData` (network.js).
-- There is no automated test suite in the repo. After changes, check that the browser console is empty on load, then play a local game and a two-device online game, including a reload mid-game.
-- A merge conflict once left `<<<<<<<` markers in the deployed files and broke the whole game. Before pushing, search the project for lines starting with `<<<<<<<`, `=======` or `>>>>>>>`; there must be none.
-- `python tools/build_standalone.py` packs everything into one self-contained `dist/snakes-ladders-and-chaos.html` for quick sharing or previewing.
-
-## Working on this project with Claude
-
-When asking for a change, say which screen or feature it is about and attach the files named in the layout above that are involved (for example `network.js` + `title.js` + `local.js` for join/lobby behaviour). Ask for only the changed files back, in the repo's folder layout, and paste them over the existing ones.
+- Online play uses PeerJS, loaded from unpkg in `index.html`.
+- `python tools/build_standalone.py` packs everything into one self-contained `dist/snakes-ladders-and-chaos.html` for quick sharing or previewing. The songs are large: if that script embeds everything in `assets/`, leave `assets/music/` out of it.
