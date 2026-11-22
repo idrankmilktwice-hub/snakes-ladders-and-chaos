@@ -1,6 +1,6 @@
 // =====================================================================================
 //  input.js  -  everything the PLAYER does with the mouse/finger:
-//    1. the prompt box + choice buttons (bottom of the board log panel)
+//    1. the prompt box + choice buttons (floating over the board: a small banner at the top, or a dialog in the middle while the board is darkened)
 //    2. drag-and-drop of pawns and snake heads
 //    3. the dice: grab, throw, bounce around the rolling board (or just press ROLL)
 //    4. clicking the cat to change its picture
@@ -14,8 +14,10 @@ function stagePt(e) {
 }
 
 // ------------------------------------------------------------------ 1. PROMPT BOX + BUTTONS
-// setPrompt(text): show a message in the prompt box (empty text clears it) and remove old buttons.
-function setPrompt(t) { $("ptxt").textContent = t; $("btns").innerHTML = ""; $("prompt").classList.remove("choice"); }
+// setPrompt(text): show a message in the prompt box (empty text clears it and hides the box) and remove old buttons.
+// The box has two looks (css/style.css): a small BANNER at the top of the board (plain messages, the board stays clear), and a DIALOG in the middle of the board
+// (CSS class "choice": used while the active player must pick something, hit Roll or throw the dice). The dialog darkens the board behind it - only on the screen of the player who has to act.
+function setPrompt(t) { $("ptxt").textContent = t; $("btns").innerHTML = ""; $("prompt").classList.remove("choice", "roll"); $("prompt").classList.toggle("has", !!t); }
 // makeBtn(label, alt): a button drawn with the counter art (see .cbtn in css/style.css). alt = true gives the blue (debuff) version.
 function makeBtn(label, alt) {
   const b = document.createElement("button");
@@ -24,7 +26,7 @@ function makeBtn(label, alt) {
   return b;
 }
 // choose(msg, opts, p): show msg with one big button per option. Resolves with the clicked option's value.
-// opts are strings or {label, value, alt}. While buttons are showing, the prompt grows to cover most of the log (CSS class "choice").
+// opts are strings or {label, value, alt}. While buttons are showing, the prompt is a dialog in the middle of a darkened board (CSS class "choice").
 function choose(msg, opts, p) {
   const actor = p || (G && G.cur);
   if (actor && actor.disconnected) {
@@ -266,7 +268,7 @@ async function awaitItemChoice(p, text, label) {
   const idx = pIdx;
   const slots = [...document.querySelectorAll(`.slot[data-p="${idx}"]`)].filter(s => s.dataset.t);
   slots.forEach(s => s.classList.add("usable"));                  // pulse + lime glow (CSS .slot.usable)
-  setPrompt(text);
+  setPrompt(text); $("prompt").classList.add("choice");           // dialog in the middle of the darkened board; it clears as soon as an item is picked (then the board is clear for the item's target / animation)
   const pressed = new Promise(res => showHelper(label, () => {
     if (NET.active) sendAction({ type: "ITEM_CHOICE", val: null });
     res(null);
@@ -347,11 +349,15 @@ function flyItem(type, from, to, mode, isRemote) {
 // A throw is PRE-CALCULATED: the game first simulates the whole roll (movement, wall bounces, dice bumping each other, tumbling) and decides
 // the result, then adjusts the tumbling so the cube arrives exactly on the result as it stops - no snapping at the end.
 // The roll is then played back over ROLL_MS milliseconds (config.js), matching the dice sound.
-const DICE = { list: [], waiting: false, flying: false, canInteract: false, done: null, loop: false, play: null, slideTimer: null, finishTimer: null };
+// The dice roll over the whole BOARD AREA (the #tray layer, see TRAY / DICE_AREA in config.js). While the active player waits to throw, the board is darkened and a dialog + ROLL button sit in the middle.
+const DICE = { list: [], waiting: false, flying: false, canInteract: false, done: null, loop: false, play: null, slideTimer: null, finishTimer: null, hideTimer: null };
 let DD = null;   // DD = the die being held by the mouse: { i, samples:[{t,x,y}] }
 // FACE_ANGLES[v] = the [rx, ry] rotation that turns face v towards the player (opposite faces add up to 7).
 const FACE_ANGLES = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
 
+// trayShow() / trayHide(): fade the dice layer (#tray, which covers the board) in and out. The dark layer behind the prompt is separate (see "#prompt.choice ~ #shade" in css/style.css).
+function trayShow() { $("tray").classList.add("on"); }
+function trayHide() { $("tray").classList.remove("on"); }
 // trayPt(e): mouse position relative to the top-left of the rolling board.
 function trayPt(e) { const [x, y] = stagePt(e); return [x - TRAY.x, y - TRAY.y]; }
 // dieClamp(d): keep a die fully inside the rolling board.
@@ -406,10 +412,14 @@ function rollDice(n, who) {
     if (DICE.finishTimer) { clearTimeout(DICE.finishTimer); DICE.finishTimer = null; }
     DICE.play = null;
     DD = null;
+    if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
     spawnDiceElements(n, isMyTurn);
+    trayShow();                                       // the dice appear on the board (everybody sees them)
     DICE.waiting = true; DICE.flying = false; DICE.canInteract = isMyTurn;
 
     if (isMyTurn) {
+      if (!$("ptxt").textContent) setPrompt(`${roller ? roller.name : "Player"}: grab the die and throw it, or press ROLL / Space.`);
+      $("prompt").classList.add("choice", "roll");    // the board darkens (for the player who must throw only) and the prompt sits in the middle
       $("rollBtn").classList.add("ready");   // the ROLL button appears only for the active player
     } else {
       $("rollBtn").classList.remove("ready");
@@ -465,6 +475,7 @@ function finishRollPlayback(P) {
       const cb = DICE.done;
       DICE.done = null;
       NET.pendingActorIdx = null;
+      DICE.hideTimer = setTimeout(() => { DICE.hideTimer = null; trayHide(); }, 1100);   // the result stays in view a moment, then the dice fade away
       cb(P.vals);
     }
   }, 280);
@@ -490,7 +501,7 @@ function diceTick(now) {
 // slideDiceToCenter(): after a roll, glide the resting dice to the middle of the rolling board so the result stays in plain view
 // while the "Move for me" button sits at the bottom. DICE_GAP apart if there are two dice.
 function slideDiceToCenter() {
-  const n = DICE.list.length, cx = (DICE_AREA.x1 + DICE_AREA.x2) / 2, cy = 235;
+  const n = DICE.list.length, cx = (DICE_AREA.x1 + DICE_AREA.x2) / 2, cy = DICE_REST_Y;
   DICE.list.forEach((d, i) => { d.x = cx + (i - (n - 1) / 2) * DICE_GAP; d.y = cy; d.el.style.transition = "transform .55s cubic-bezier(.4, 0, .2, 1)"; });
 }
 
@@ -562,6 +573,8 @@ function launch(vx, vy, forceVals, startDice) {
   DICE.waiting = false; DICE.flying = true; DICE.canInteract = false;
   DICE.list.forEach(d => { d.el.style.pointerEvents = "none"; d.el.style.cursor = "default"; });
   $("rollBtn").classList.remove("ready");
+  if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
+  trayShow(); setPrompt("");                                   // the dice tumble over a CLEAR board: the dark layer and the roll prompt go away
 
   if (Array.isArray(startDice)) {
     DICE.list.forEach((d, idx) => {

@@ -1,6 +1,6 @@
 // =====================================================================================
 //  art.js  -  loading the SVG art from the assets/ folder
-//  assets/manifest.json says which file is which (tiles, snake heads, digits). Everything else is loaded by file name.
+//  assets/manifest.json says which file is which (tiles, snake heads, bodies, ladders, cats, items). Everything else is loaded by file name.
 // =====================================================================================
 
 // A("x.svg") = web address of an asset (used in <img src=...>). When the game is packed into one single page,
@@ -22,14 +22,12 @@ async function T(f) {
   return r.text();
 }
 
-// ART holds everything loaded: tiles, shadow, snake heads, cobra, number digits, and bookkeeping.
+// ART holds everything loaded: tiles, snake heads, cobra, cats, items, ladders and bookkeeping. (The old number-picture digits and the tile shadow art are gone: numbers are the Blustrue font now, see render.js.)
 const ART = {
   heads: [], // the six ordinary snake heads (from manifest "heads")
   cobra: null, // the special long-snake head
   kinds: [], // heads + cobra, each with its colour and drawing scale (built by buildKinds)
   tiles: { dark: [], light: [] }, // tile art lists (blue = dark, orange = light)
-  shadow: null, // the shadow drawn beneath tiles
-  digits: [], // number glyphs 0-9: { f: file, w: width, h: height }
   cats: [], // cat pictures: { f: file, w, h }
   items: {}, // item pictures by type: { stick: { f, w, h }, ... }
   ladder: {}, // ladder pictures as bitmaps: { straight, slanted } (see loadBody)
@@ -114,8 +112,7 @@ function buildKinds() {
 function artDefs() {
   let d = "";
   for (const k of ART.kinds) d += k.head.defs;
-  for (const a of [...ART.tiles.dark, ...ART.tiles.light, ART.shadow])
-    d += a.defs;
+  for (const a of [...ART.tiles.dark, ...ART.tiles.light]) d += a.defs;
   return d;
 }
 
@@ -171,11 +168,19 @@ async function initPatternArt() {
   }
 }
 
+// loadNumberFont(): the square numbers on the board are drawn with the Blustrue font (assets/Blustrue.otf, declared by @font-face in css/style.css).
+// Browsers only fetch a font when something uses it, so this asks for it up front; the board is then drawn with the real font from the first frame.
+// If the font file is missing the game still works (the numbers fall back to a plain bold font).
+async function loadNumberFont() {
+  try { await document.fonts.load("40px Blustrue", "0123456789"); } catch (e) { console.warn("Blustrue font not loaded:", e); }
+}
+
 // loadAssets(): reads manifest.json and every SVG it names. Called once when the page opens (see main.js).
 async function loadAssets() {
   try {
     await initButtonArt();
     await initPatternArt();
+    await loadNumberFont();
     let M;
     try {
       M = JSON.parse(await T("manifest.json"));
@@ -192,7 +197,6 @@ async function loadAssets() {
     ART.tiles.light = await all(
       M.tiles.light.map(async (f) => prep(await T(f), K)),
     );
-    ART.shadow = prep(await T(M.tiles.shadow), K);
     ART.heads = await all(
       M.heads.map(async (h) => ({
         art: prep(await T(h.file), { main: h.color }),
@@ -210,7 +214,7 @@ async function loadAssets() {
       straight: await loadBody(M.ladders.straight),
       slanted: await loadBody(M.ladders.slanted),
     };
-    // size of a file from its viewBox text (used for digits and cats, which are drawn as plain images)
+    // size of a file from its viewBox text (used for cats, which are drawn as plain images)
     const size = async (f) => {
       const v = ((await T(f)).match(/viewBox="([^"]+)"/) || [])[1]
         .trim()
@@ -218,7 +222,6 @@ async function loadAssets() {
         .map(Number);
       return { f, w: v[2], h: v[3] };
     };
-    ART.digits = await all((M.digits || []).map(size));
     ART.cats = await all((M.cats || []).map(size));
     for (const [k, f] of Object.entries(M.items)) ART.items[k] = await size(f);
     buildKinds();

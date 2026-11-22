@@ -96,33 +96,41 @@ const CHARACTER_BRIEF = {
 // Player colours (player 1 first). Each pawn gets a disc of its player's colour behind the face.
 const COLORS = ["#d64545", "#3b82c4", "#e0a82e", "#8b5cc7", "#2f9e8f", "#e07a2e", "#c44a96", "#6b7280"];
 
-// ---- Screen layout numbers (the screen is a fixed 1920x1080 canvas). The board sits in a red container on the blue background; the player panels (left) and tabs/log/dice (right) sit directly on the blue:
-//      LEFT (player panels)  |  MIDDLE (the board)  |  RIGHT (tab buttons + board log + rolling board)  ----
-const BOXES = [                                   // the red container drawn behind the board (container_red.svg, stretched). The left and right sections sit straight on the blue background.
-  { id: "boxM", x: 412,  y: 10, w: 1050, h: 1060 }
+// ---- Screen layout numbers (the screen is a fixed 1920x1080 canvas). NEW LAYOUT:
+//      LEFT = the board (a big container) | RIGHT = player panels (top), the brown Settings / Chat / Info box, and the round tab buttons (bottom right) ----
+const BOXES = [                                   // the container drawn behind the board (container_red.svg, 9-slice stretched; its thin frame width is set in .box in style.css)
+  { id: "boxM", x: 8, y: 8, w: 1276, h: 1064 }
 ];
-const BOARD_BOX = { x: 412, y: 10, w: 1050, h: 1060 };   // the board SVG / canvases cover the whole middle container (stage coordinates)
-const BX0 = 449;          // left edge of the first board column
-const BY0 = 50;           // top edge of the first board row
-const CX = 99;            // horizontal distance between the left edges of two neighbouring tiles
-const CY = 99;            // vertical distance between the tops of two neighbouring tiles
-const TW = 85;            // drawn width (and height of the top face) of one tile
-const TK = TW / 115.17;   // scale factor from the tile SVG's own size to its drawn size
-const BS = TW / 88.7;     // BS = "board scale": everything drawn on the board (snakes, pawns, numbers, items) is sized relative to this
-// Player panels (left): panel art is 376.23 x 160.98. Slots/field/portrait are measured from the art (panel coordinates).
-// The shadow under each panel (player_panel_shadow.svg, art size 394.74 x 173.45) is stretched to hang off the panel exactly like the Buff/Debuff counters' shadow does
-// (counter_shadow.svg sits 2.4px left of its counter, 4.6px wider, and ends 9px below it): x = left offset, w/h = drawn size. The shadow never moves; on its turn the panel sinks 3px straight down onto it (.pp.cur in style.css).
-const PANEL_SHADOW = { x: -2.4, w: 376.23 + 4.6, h: 160.98 + 9.04, artW: 394.74, artH: 173.45 };
-const PANEL = { x: 12, y0: 30, pitch: 172, w: 376.23, h: 160.98,
-  field: { x: 155.6, y: 12.3, w: 192.4, h: 33.5 },                       // the lime player-name box
-  portrait: { cx: 73.6, cy: 74.8, size: 116 },                           // the halftone square for the face
-  slots: [{ x: 161.2, y: 53.8, w: 47, h: 33.6 }, { x: 228.3, y: 54.3, w: 47, h: 33.6 }, { x: 295.4, y: 53.8, w: 47, h: 33.6 }] };   // the 3 item slots
-// Rolling board (the dice tray) on the right: its position on screen and the area dice may roll in (relative to the tray's top-left)
-const TRAY = { x: 1485, y: 540, w: 409, h: 515 };
-const DICE_AREA = { x1: 28, y1: 30, x2: 381, y2: 485 };   // dice stay inside this rectangle
-const DICE_GAP = 76;                                        // dice are never allowed closer than this (centre to centre), so they cannot overlap
-const DICE_SIZE = 60;                                       // drawn size of a die (a 3D cube) in pixels
-const DICE_IDLE = [[320, 352], [250, 352]];                // where waiting dice sit and spin (one or two dice), just above the ROLL button
+const BOARD_BOX = { x: 8, y: 8, w: 1276, h: 1064 };   // the board SVG / canvases cover the whole container (stage coordinates). The roll overlay (#tray) covers the same area.
+// Tiles are RECTANGULAR now (wider than tall): the tile art (tile_dark.svg / tile_light.svg) is 113.48 x 95.54 with a 86.52-high top face and a ~9-high edge underneath.
+const TW = 120;                 // drawn width of one tile (pixels)
+const TK = TW / 113.48;         // scale from the tile SVG's own size to its drawn size (1.0575): every tile is drawn at exactly this scale
+const TH = 86.52 * TK;          // drawn height of the TOP FACE of a tile (about 91.5). Pawns, numbers and highlights are centred on / fitted to the face.
+const CX = 126;                 // horizontal distance between the left edges of two neighbouring tiles (tile width + a small gap)
+const CY = 105;                 // vertical distance between the tops of two neighbouring tiles (face + edge + a small gap)
+const BX0 = 19;                 // left edge of the first board column
+const BY0 = 16;                 // top edge of the first board row
+const BS = 1.1;                 // BS = "board scale": everything drawn on the board (snakes, pawns, items) is sized relative to this
+// ---- Player panels (right side). ONE panel art (assets/player_panel.svg, 510 x 220.89) is used for every panel and drawn at two sizes:
+//      the ACTIVE player is big on top, everyone else is small and sits in a ring below, see panelSlot() in render.js. All numbers below are measured from the art (panel units). ----
+const PANEL = { w: 510, h: 220.89,
+  field: { x: 214.27, y: 40.18, w: 279.4, h: 59.88 },                       // the dark name box
+  portrait: { cx: 105.44, cy: 108, size: 200 },                              // the round portrait area (the head may stick out of the circle a little)
+  slots: [{ x: 214.27, y: 110.84, w: 59.88, h: 59.88 }, { x: 287.45, y: 110.84, w: 59.88, h: 59.88 }, { x: 360.63, y: 110.84, w: 59.88, h: 59.88 }],   // the 3 item slots
+  counter: { x: 433.8, y: 110.84, w: 59.88, h: 59.88 } };                    // the 4th square: the buff / debuff number
+const PANEL_ZONE = { bigX: 1329, bigY: 16, bigScale: 1.07,                   // the big (active) panel: top-left corner and size (1.07 x the art)
+  smallScale: 0.51, colL: 1330, colR: 1615, midX: 1472, rowY: 268, rowPitch: 124 };   // small panels: size, left column x, right column x, centred x, first row y, distance between rows
+const COUNTER_ORANGE = "#ff7529", COUNTER_BLUE = "#1b84b8", COUNTER_BROWN = "#2f2504";   // buff (positive) / debuff (negative) / zero colours of the number square
+// ---- The brown box on the right that shows Settings, Chat or Info (one at a time) and the strip of round tab buttons below it ----
+const SIDEBOX = { x: 1318, y: 652, w: 590, h: 336 };
+const DOCK = { x: 1506, y: 1000, pitch: 80 };           // x of the first tab button (dock strip starts here), y of the buttons' strip, distance between buttons
+// ---- Roll overlay: while a player rolls, the board area becomes the dice tray. TRAY = its position on screen; DICE_AREA = where dice may roll (relative to the tray's top-left) ----
+const TRAY = { x: 8, y: 8, w: 1276, h: 1064 };
+const DICE_AREA = { x1: 70, y1: 70, x2: 1206, y2: 994 };   // dice stay inside this rectangle
+const DICE_GAP = 116;                                       // dice are never allowed closer than this (centre to centre), so they cannot overlap
+const DICE_SIZE = 90;                                       // drawn size of a die (a 3D cube) in pixels
+const DICE_IDLE = [[696, 430], [580, 430]];                // where waiting dice sit and spin (one or two dice), just above the ROLL button
+const DICE_REST_Y = 520;                                    // after a roll the dice glide to this height (centre of the board) so the result is in plain view
 
 // ---- Items (see the Items section of rules.js). file = art in assets/, w/h = art size (used to fit it in slots and on tiles) ----
 const ITEMS = {

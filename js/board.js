@@ -13,7 +13,8 @@ const rc = (n) => {
 // toN(r,c): the opposite - [row, column] -> square number.
 const toN = (r, c) => r * 10 + (r % 2 ? 9 - c : c) + 1;
 // cellPx(c, vr): on-screen pixel centre of the tile in column c, "visual row" vr (0 = TOP row of the screen).
-const cellPx = (c, vr) => [BX0 + c * CX + TW / 2, BY0 + vr * CY + 46 * BS];
+// Tiles are rectangular now: the centre is half a tile width across and half the TOP FACE height (TH) down (see config.js).
+const cellPx = (c, vr) => [BX0 + c * CX + TW / 2, BY0 + vr * CY + TH / 2];
 // xy(n): on-screen pixel centre of square n. Used by pawns, ladders, snakes.
 function xy(n) {
   const [r, c] = rc(n);

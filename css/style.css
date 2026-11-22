@@ -1,5 +1,6 @@
 /* Snakes, Ladders and Chaos! - styles. The game is a fixed 1920x1080 stage (see fit() in js/main.js) so it matches the mockup at any window size. */
 @font-face { font-family: MC; src: url(../assets/Minecraft.ttf); }
+@font-face { font-family: Blustrue; src: url(../assets/Blustrue.otf); }   /* the font of the square numbers on the board (drawn in js/render.js) */
 html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
 #stage {
   position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
@@ -10,22 +11,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
 img { display: block; user-select: none; -webkit-user-drag: none; }
 
 /* ---- the three red containers behind the sections (container_red.svg stretched like a 9-slice picture; positions come from BOXES in js/config.js) ---- */
-.box { position: absolute; box-sizing: border-box; border-style: solid; border-width: 24px; border-image: var(--box-img) 24 fill / 24px stretch; }
+.box { position: absolute; box-sizing: border-box; border-style: solid; border-width: 12px; border-image: var(--box-img) 24 fill / 12px stretch; }   /* the board container has a thin frame (12px) */
 
-/* ---- player panels (left). The panel art + everything on it sits in .pbody, which SINKS a little into the shadow (.psh) on that player's turn ---- */
-.pp { position: absolute; width: 376.23px; height: 160.98px; }
+/* ---- player panels (right). Every .pp is the full-size panel art (510 x 220.89); js/render.js (placePanels) moves and scales it to its place with a CSS transform.
+   When the turn changes the transform changes and the panel glides there (and grows / shrinks): that is the rotation animation. #panels gets the class "anim" after the first placement. ---- */
+#panels { position: absolute; inset: 0; pointer-events: none; }   /* (the panels themselves take clicks, for the item slots) */
+.pp { position: absolute; left: 0; top: 0; width: 510px; height: 220.89px; transform-origin: 0 0; pointer-events: auto; }
+#panels.anim .pp { transition: transform .7s cubic-bezier(.45, .05, .25, 1); }
 .pp img { position: absolute; }
-.pp .psh { left: 0; top: 0; }   /* position and size are set in buildPanels from PANEL_SHADOW (config.js) */
-.pp .pbody { position: absolute; left: 0; top: 0; width: 376.23px; height: 160.98px; transition: transform .22s ease-out; }
-.pp.cur .pbody { transform: translateY(3px); }   /* on its turn only the panel itself sinks, straight down 3px; its shadow and the Buff/Debuff counters stay put */
-.pp .pbg { left: 0; top: 0; width: 376.23px; }
-.pp .port { width: auto; transform: translate(-50%, -50%); }          /* position + height are set inline from PANEL in config.js (centre of the halftone square) */
-.pp .fld { position: absolute; display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; padding-top: 3px; box-sizing: border-box; color: #2f2504; }
-.pp .ctr { position: absolute; top: 112px; width: 84px; height: 49px; }
-.pp .ctr img { left: 0; top: 0; width: 84.4px; }
-.pp .ctr .csh { left: -2.4px; width: 89px; }
-/* the dark rounded rectangle inside the counter art: x 2.4, y 2.2, 79.5 x 31.7; number is right-aligned */
-.pp .ctr span { position: absolute; left: 2.4px; top: 2.2px; width: 79.5px; height: 31.7px; line-height: 31.7px; padding-right: 9px; box-sizing: border-box; text-align: right; color: #fff3cf; font-size: 18px; white-space: nowrap; }
+.pp .pbody { position: absolute; left: 0; top: 0; width: 510px; height: 220.89px; }
+/* the brown outline round the panel, shifted down: four hard drop-shadows (top, right, left, and a deeper one at the bottom) */
+.pp .pbg { left: 0; top: 0; width: 510px; filter: drop-shadow(0 -3px 0 #2f2504) drop-shadow(3px 0 0 #2f2504) drop-shadow(-3px 0 0 #2f2504) drop-shadow(0 9px 0 #2f2504); }
+.pp .port { width: auto; transform: translate(-50%, -50%); }          /* position + height are set inline from PANEL in config.js (centre of the round portrait window) */
+.pp .fld { position: absolute; display: flex; align-items: center; justify-content: flex-start; white-space: nowrap; overflow: hidden; padding: 3px 0 0 16px; box-sizing: border-box; color: #fff; }   /* the player's name, white on the dark box */
+/* the 4th square: buff / debuff number. Colour is set from JS (orange = positive, blue = negative, brown = zero). Minecraft font, white with a brown outline, no sign. */
+.pp .cnt { position: absolute; border-radius: 5px; background: #2f2504; display: flex; align-items: center; justify-content: center; padding-top: 4px; box-sizing: border-box; font-size: 44px; line-height: 1; color: #fff; -webkit-text-stroke: 7px #2f2504; paint-order: stroke fill; }
+.pp .cnt.two { font-size: 34px; }
 /* item slots: the three dark rectangles; the item picture is centred in each */
 .pp .slot { position: absolute; display: flex; align-items: center; justify-content: center; }
 .pp .slot img { position: static; display: block; pointer-events: none; }
@@ -33,6 +34,9 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .pp .slot.usable img { filter: drop-shadow(0 0 5px #c3f73a) drop-shadow(0 0 2px #c3f73a); animation: itempulse .7s ease-in-out infinite alternate; }   /* usable items pulse in size with a lime glow */
 @keyframes itempulse { from { transform: scale(1); } to { transform: scale(1.22); } }
 .pp .slot.usable:hover img { filter: drop-shadow(0 0 9px #c3f73a) drop-shadow(0 0 4px #c3f73a); }
+/* the chevron above the NEXT player's panel: it bobs up and down (js/render.js placePanels puts it in place) */
+#chev { display: none; position: absolute; top: 240px; width: 44px; height: 26px; z-index: 4; pointer-events: none; animation: chevbob .8s ease-in-out infinite alternate; }
+@keyframes chevbob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
 /* items lying on the board; a placed toy brick (trap) glows red */
 .gitem { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); pointer-events: none; }
 .gitem.trap { filter: drop-shadow(0 0 5px #e2330a) drop-shadow(0 0 2px #e2330a); }
@@ -41,8 +45,8 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 #fly .fly { position: absolute; left: 0; top: 0; transform-origin: center; }
 
 /* ---- board ---- */
-#board { position: absolute; left: 412px; top: 10px; width: 1050px; height: 1060px; }
-#board svg { width: 1050px; height: 1060px; display: block; overflow: visible; }
+#board { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; }
+#board svg { width: 1276px; height: 1064px; display: block; overflow: visible; }
 .tile { transform: translateY(-5px); transition: transform .18s ease-out; }
 .tile.occ { transform: none; }
 
@@ -100,41 +104,56 @@ b, strong { font-weight: normal; }
 #chooser .card img { height: 220px; width: 190px; object-fit: contain; flex: none; }
 #chooser .card b { display: block; font-weight: normal; font-size: 46px; margin-bottom: 8px; } #chooser .card span { display: block; font-size: 21px; line-height: 1.3; }
 .dot { display: inline-block; width: 40px; height: 40px; border-radius: 50%; border: 3px solid #000; flex: none; }
-#modal { display: none; position: absolute; inset: 0; background: rgba(20, 14, 2, .6); }   /* clicking this dark area (outside the window) closes the pop-up */
-#modal > div { position: absolute; left: 460px; top: 80px; width: 1000px; max-height: 920px; overflow: auto; padding: 26px; font-size: 18px; line-height: 1.45; }
+#modal { display: none; position: absolute; inset: 0; background: rgba(20, 14, 2, .6); align-items: center; justify-content: center; z-index: 60; }   /* the window is centred on the SCREEN; JS shows it with display:flex */   /* clicking this dark area (outside the window) closes the pop-up */
+#modal > div { position: relative; width: 1000px; max-height: 960px; overflow: auto; padding: 26px 34px; font-size: 18px; line-height: 1.45; }
+/* the small X at the top right of a big window (clicking outside the window also closes it) */
+.mclose { position: sticky; top: 0; float: right; width: 44px; height: 44px; margin: -6px -14px 0 12px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: 700px; overflow-y: auto; } #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
-/* ---- board log (right) with the prompt box at its bottom ---- */
-#logpanel { position: absolute; left: 1489px; top: 90px; width: 400px; height: 438px; }
-#logpanel > img { width: 400px; }
-#ptitle { position: absolute; left: 26px; top: 22px; color: #c3f73a; font-size: 24px; }
-#expand { position: absolute; right: 26px; top: 18px; width: 34px; height: 30px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 5px; background: #ff7529; cursor: pointer; display: block; }
+/* ---- the brown box on the right: Settings / Chat / Information (one at a time), and the strip of tab buttons below it ---- */
+#sidebox { position: absolute; left: 1318px; top: 652px; width: 590px; height: 336px; box-sizing: border-box; background: #2f2504; border: 5px solid #2f2504; box-shadow: inset 0 0 0 3px #7d9926; border-radius: 6px; }
+#dock { position: absolute; left: 1506px; top: 1000px; width: 430px; height: 100px; box-sizing: border-box; background: #ff7529; border: 5px solid #e2330a; border-radius: 16px 16px 0 0; box-shadow: 0 -3px 0 #2f2504; }
+#expand { position: absolute; right: 20px; top: 14px; width: 34px; height: 30px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 5px; background: #ff7529; cursor: pointer; display: none; z-index: 3; }
 #expand svg { display: block; margin: 0 auto; } #expand:active { transform: translateY(2px); border-bottom-width: 2px; }
-.view { position: absolute; left: 26px; top: 62px; width: 350px; height: 232px; overflow-y: auto; color: #d8f58c; font-size: 23px; line-height: 1.28; scrollbar-width: thin; scrollbar-color: #c3f73a #2f2504; }
-#rulebook, #soon, #about, #settings { display: none; font-size: 21px; } #rulebook p { margin: 0 0 6px; } #rulebook h3 { margin: 10px 0 2px; color: #ffa42c; font-weight: normal; font-size: 23px; }
-#log div { margin-bottom: 5px; } #log b { color: #fff3cf; }   /* the log uses two colours: lime (events) and cream (turn headings), never bold */
-#prompt { position: absolute; left: 26px; top: 302px; width: 350px; height: 112px; box-sizing: border-box; padding-bottom: 2px; border-top: 2px solid #c3f73a; color: #fff3cf; font-size: 20px; line-height: 1.25; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }   /* text sits at the BOTTOM of the panel, inside the lime border */
-#btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-#btns .cbtn { --s: 1.45; flex: 1 1 30%; }                 /* 3 per row; 2 options share the row; a single button takes the full width */
+.view { position: absolute; left: 24px; top: 20px; width: 536px; height: 286px; overflow-y: auto; overflow-x: hidden; color: #d8f58c; font-size: 23px; line-height: 1.28; scrollbar-width: thin; scrollbar-color: #c3f73a #2f2504; }
+#about, #settings { display: none; font-size: 21px; }
+#about { padding-right: 50px; }
+#log div { margin-bottom: 5px; } #log b { color: #fff3cf; }   /* the log uses two colours: lime (events) and cream (turn headings), never bold. (#log itself is hidden: it collects the lines for the Combat log window.) */
+/* Settings layout: Mute row on top, then two columns (left: sound effects + switch device, right: music). Headings use the condensed Little Monster font in capitals. */
+#settings .st-mute { margin-bottom: 4px; }
+#settings .st-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+#settings .st-col { min-width: 0; }
+#settings .mu-title, #settings .sfxrow span:first-child, #settings .swhead span:first-child { font-family: LM, MC, monospace; text-transform: uppercase; font-size: 38px; line-height: 1.1; color: #c3f73a; }
+/* ---- the prompt over the board. Two looks: a small BANNER at the top of the board (plain messages: the board stays clear), and a DIALOG in the middle (class "choice": the board
+   behind it is darkened by #shade, but only on the screen of the player who has to act). "roll" moves the dialog above the dice. ---- */
+#prompt { display: none; position: absolute; left: 146px; top: 24px; width: 1000px; box-sizing: border-box; padding: 10px 22px 12px; background: #2f2504; border: 4px solid #c3f73a; border-radius: 16px; color: #fff3cf; font-size: 26px; line-height: 1.25; text-align: center; z-index: 8; pointer-events: none; }
+#prompt.has { display: flex; flex-direction: column; align-items: center; }
+#prompt.choice { top: 540px; left: 296px; width: 700px; transform: translateY(-50%); padding: 26px 32px 30px; font-size: 32px; border-width: 5px; pointer-events: auto; }
+#prompt.choice.roll { top: 120px; transform: none; }
+#prompt.choice ~ #shade { opacity: 1; }
+#btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; pointer-events: auto; }
+#btns:empty { display: none; }
+#btns .cbtn { --s: 1.6; flex: 1 1 30%; }                 /* 3 per row; 2 options share the row; a single button takes the full width */
 #btns .cbtn:only-child { flex-basis: 100%; }
-/* while buttons are showing the prompt grows over the log (hiding some of it) so the choices can be big */
-#prompt.choice { top: auto; bottom: 23px; height: auto; max-height: 330px; background: #2f2504; padding-top: 10px; font-size: 22px; z-index: 3; }
+#shade { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; box-sizing: border-box; background: rgba(15, 10, 0, .7); border-radius: 10px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; }
 
-/* ---- rolling board (dice tray) ---- */
-#tray { position: absolute; left: 1485px; top: 540px; width: 409px; height: 515px; touch-action: none; }
-#tray .bg { width: 409px; }
-#dice { position: absolute; left: 0; top: 0; width: 409px; height: 515px; }
-/* each die is a 3D cube: six faces placed around the middle (turned by multiples of 90 degrees and pushed out 30px) */
-.die { position: absolute; left: 0; top: 0; width: 60px; height: 60px; cursor: grab; touch-action: none; perspective: 420px; }
-.cube { position: relative; width: 60px; height: 60px; transform-style: preserve-3d; pointer-events: none; }
-.cube .df { position: absolute; left: 0; top: 0; width: 60px; height: 60px; backface-visibility: hidden; display: block; }
-.df1 { transform: translateZ(30px); } .df6 { transform: rotateY(180deg) translateZ(30px); } .df3 { transform: rotateY(90deg) translateZ(30px); }
-.df4 { transform: rotateY(-90deg) translateZ(30px); } .df2 { transform: rotateX(90deg) translateZ(30px); } .df5 { transform: rotateX(-90deg) translateZ(30px); }
-#moveBtn { --s: 1.15; display: none; position: absolute; left: 153px; top: 425px; width: 222px; z-index: 2; }   /* bottom-right of the rolling board, exactly where the ROLL button is (they are never shown together) */
-#rollBtn { display: none; position: absolute; left: 263px; top: 425px; width: 112px; height: 56px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 2; }   /* hidden except while a roll is waiting */
+/* ---- the dice layer: it covers the whole board area while the dice are on the table (js/input.js trayShow / trayHide) ---- */
+#tray { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; pointer-events: none; touch-action: none; z-index: 6; }
+#tray.on { opacity: 1; visibility: visible; transition: opacity .15s; }
+#dice { position: absolute; left: 0; top: 0; width: 1276px; height: 1064px; }
+/* each die is a 3D cube: six faces placed around the middle (turned by multiples of 90 degrees and pushed out 45px) */
+.die { position: absolute; left: 0; top: 0; width: 90px; height: 90px; cursor: grab; touch-action: none; perspective: 630px; }
+.cube { position: relative; width: 90px; height: 90px; transform-style: preserve-3d; pointer-events: none; }
+.cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; }
+.df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
+.df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
+#moveBtn { --s: 1.15; display: none; margin-top: 12px; width: 230px; pointer-events: auto; }   /* helper button inside the prompt: "Move for me" / "Roll" / "Cancel" */
+#prompt.choice #moveBtn { --s: 1.6; width: 320px; }
+#rollBtn { --k: 1.9; display: none; position: absolute; left: 540px; top: 600px; width: calc(112px * var(--k)); height: calc(56px * var(--k)); padding: 0; border: 0; background: none; cursor: pointer; z-index: 8; }   /* the big ROLL button under the dice (centre of the board); hidden except while the active player waits to throw */
 #rollBtn img { position: absolute; left: 0; top: 0; }
-#rollBtn .rsh { width: 113.4px; left: -2px; } #rollBtn .rface { width: 108.7px; }
+#rollBtn .rsh { width: calc(113.4px * var(--k)); left: calc(-2px * var(--k)); } #rollBtn .rface { width: calc(108.7px * var(--k)); }
 #rollBtn.ready { display: block; animation: rdy .7s ease-in-out infinite alternate; }
 #rollBtn.ready:active .rface { transform: translateY(3px); }
 @keyframes rdy { to { transform: scale(1.08); } }
@@ -164,7 +183,7 @@ b, strong { font-weight: normal; }
 .volnum { color: #fff3cf; }
 
 /* ---- Buff / Debuff counter: when the number changes it sinks, comes back up and glows lime ---- */
-.pp .ctr.pop { animation: ctrpop .75s ease-out; }
+.pp .cnt.pop { animation: ctrpop .75s ease-out; }
 @keyframes ctrpop {
   0%   { transform: translateY(0); filter: none; }
   15%  { transform: translateY(6px); filter: drop-shadow(0 0 6px #c3f73a) drop-shadow(0 0 3px #c3f73a); }
@@ -212,7 +231,7 @@ b, strong { font-weight: normal; }
 /* ---- In-game Chat Tab ---- */
 #chatView {
   display: none;
-  height: 236px;
+  height: 240px;
 }
 .cmsg {
   margin-bottom: 6px;
@@ -221,9 +240,9 @@ b, strong { font-weight: normal; }
 }
 #chatInputBar {
   position: absolute;
-  left: 26px;
-  top: 310px;
-  width: 350px;
+  left: 24px;
+  top: 276px;
+  width: 536px;
   display: flex;
   gap: 8px;
 }
@@ -449,7 +468,7 @@ body:not(.on-title) #tLoad { display: none; }
    RECONNECT SYSTEM (online games)
    ===================================================================================== */
 /* ---- disconnected player: red icon centred on the portrait square, faded head and pawn ---- */
-.pp .dcicon { width: 84px; height: auto; transform: translate(-50%, -50%) scale(.5); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s cubic-bezier(.3, 1.5, .5, 1); z-index: 2; }
+.pp .dcicon { width: 130px; height: auto; transform: translate(-50%, -50%) scale(.5); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s cubic-bezier(.3, 1.5, .5, 1); z-index: 2; }
 .pp.dc .dcicon { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .pp.dc .port { filter: grayscale(.85) opacity(.55); }
 .pw.dc { opacity: .4; }

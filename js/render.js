@@ -272,20 +272,24 @@ function renderItems() {
 
 // ------------------------------------------------------------------ BOARD
 // ---- square numbers ----
-// NUM_H = height of the number pictures (bigger = more readable). Numbers sit in a corner of their tile; placeNumbers() picks a corner no snake or ladder covers.
-const NUM_H = 24 * BS;
-// numWidth(n): how wide the number n is when drawn from the digit pictures (falls back to a text estimate).
-function numWidth(n) {
-  const gs = [...String(n)].map(c => ART.digits[+c]);
-  return gs.some(g => !g) ? String(n).length * 14 : gs.reduce((a, g) => a + g.w / g.h * NUM_H + 1, -1);
-}
-// numSvg(n,x,y): SVG text that draws number n with its top-left corner at (x,y), using the digit pictures (plain text if they're missing).
+// ---- SQUARE NUMBERS ----
+// The numbers are TEXT in the Blustrue font (assets/Blustrue.otf, loaded by loadNumberFont in art.js): white with a brown outline that sits a little lower than the letters.
+// (The old number pictures no_0_B.svg ... no_9_B.svg are no longer used by any code.)
+// Numbers sit in a corner of their tile; placeNumbers() picks a corner no snake or ladder covers.
+const NUM_FS = 40;                                                              // font size of the numbers in pixels (bigger = more readable)
+const NUM_ADV = [.6985, .3735, .699, .6885, .6295, .686, .703, .6395, .687, .702];   // width of digits 0-9 as a fraction of the font size (measured from Blustrue.otf, so no measuring is needed at run time)
+const NUM_H = NUM_FS * .94;                                                     // height of a digit in pixels (from the top of the digit to the bottom of its lowest curve)
+const NUM_TOP = NUM_FS * .725;                                                  // how far a digit's top is above the text baseline
+const NUM_OUT = 3;                                                              // the brown outline is shifted this many pixels DOWN
+// numWidth(n): how wide the number n is in pixels.
+function numWidth(n) { return [...String(n)].reduce((a, c) => a + NUM_ADV[+c] * NUM_FS, 0) - NUM_FS * .05; }
+// numSvg(n,x,y): SVG text that draws number n with the top-left corner of its digits at (x,y): first a thick brown copy shifted down (the offset outline),
+// then the white digits on top with a thinner brown outline all round.
 function numSvg(n, x, y) {
-  const gs = [...String(n)].map(c => ART.digits[+c]);
-  if (gs.some(g => !g)) return `<text x="${x}" y="${y + NUM_H}" font-size="22" fill="#fff" stroke="#000" stroke-width="3" paint-order="stroke">${n}</text>`;
-  let o = "", cx = x;
-  for (const g of gs) { const w = g.w / g.h * NUM_H; o += `<image href="${A(g.f)}" x="${f1(cx)}" y="${f1(y)}" width="${f1(w)}" height="${NUM_H}"/>`; cx += w + 1; }
-  return o;
+  const bx = x - NUM_FS * .02, by = y + NUM_TOP;                                // text start and baseline
+  const t = (dy, attrs) => `<text x="${f1(bx)}" y="${f1(by + dy)}" ${attrs}>${n}</text>`;
+  return `<g font-family="Blustrue, Impact, sans-serif" font-size="${NUM_FS}" stroke-linejoin="round">` +
+    t(NUM_OUT, `fill="${BROWN}" stroke="${BROWN}" stroke-width="8"`) + t(0, `fill="#fff" stroke="${BROWN}" stroke-width="4" paint-order="stroke"`) + `</g>`;
 }
 // segDist(px,py, ax,ay, bx,by): shortest distance from point (px,py) to the line segment a-b.
 function segDist(px, py, ax, ay, bx, by) {
@@ -300,8 +304,8 @@ function placeNumbers() {
     return [x1 + ux * 22, y1 + uy * 22, x2 - ux * 22, y2 - uy * 22];
   });
   for (let n = 1; n <= 100; n++) {
-    const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (9 - r0) * CY, w = numWidth(n), pad = 8;
-    const corners = [[x + TW - pad - w, y + pad], [x + pad, y + pad], [x + TW - pad - w, y + TW - pad - NUM_H], [x + pad, y + TW - pad - NUM_H]];   // TR, TL, BR, BL
+    const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (9 - r0) * CY, w = numWidth(n), pad = 6;
+    const corners = [[x + TW - pad - w, y + pad], [x + pad, y + pad], [x + TW - pad - w, y + TH - pad - NUM_H], [x + pad, y + TH - pad - NUM_H]];   // TR, TL, BR, BL
     let chosen = corners[0];
     if (!SNK.headSq.has(n)) {
       for (const c of corners) {
@@ -321,13 +325,12 @@ const catHref = () => A(ART.cats[G.catSkin % ART.cats.length].f);
 // snake heads, items, highlight outlines, the Charmer's glowing heads, drag ghost, pawns.
 function buildBoard() {
   let sh = "", tl = "", hl = "";
-  const S0 = ART.shadow;
   for (let n = 1; n <= 100; n++) {
     const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (9 - r0) * CY;
     const L = ART.tiles[(r0 + c0) % 2 === 0 ? "dark" : "light"], T = L[(n * 37 % 11) % L.length];   // checkerboard colours
-    sh += `<use href="#${S0.p}all" transform="translate(${f1(x - (S0.vb[2] * TK - TW) / 2)} ${f1(y + .5)}) scale(${TK})"/>`;
+    sh += `<rect x="${f1(x + 2)}" y="${f1(y + 6)}" width="${TW - 4}" height="${f1(TH)}" rx="8" fill="#1d1500" opacity=".55"/>`;   // a dark shadow under the tile: it shows when the tile hovers (empty) and is hidden when the tile sinks (someone stands on it)
     tl += `<g class="tile" id="tl${n}"><use href="#${T.p}all" transform="translate(${f1(x)} ${f1(y)}) scale(${TK})"/><g class="nm" id="nm${n}"></g></g>`;
-    hl += `<rect class="hl" id="hl${n}" x="${f1(x)}" y="${f1(y)}" width="${TW}" height="${TW}" rx="7"/>`;   // the pulsing lime outline (hidden until needed)
+    hl += `<rect class="hl" id="hl${n}" x="${f1(x)}" y="${f1(y)}" width="${TW}" height="${f1(TH)}" rx="8"/>`;   // the pulsing lime outline (hidden until needed)
   }
   // pawns: one group per player, plus one for the cat. Their position/size is set by placePawns().
   let pw = "";
@@ -368,25 +371,66 @@ function placePawns() {
   }
 }
 
-// ------------------------------------------------------------------ LEFT-HAND PLAYER PANELS
-// Each panel: the panel art, the portrait on the halftone square, the player's name in the lime box, three item slots in the dark rectangles,
-// and the Buff / Debuff counters hanging underneath. On the player's turn the panel (.pbody) "sinks" a little into its static shadow (CSS .cur); the counters and shadow do not move.
+// ------------------------------------------------------------------ PLAYER PANELS (right side)
+// One panel per player, all made from the same art (assets/player_panel.svg): the portrait in the round window, the name in the dark box, three item slots
+// and a 4th square with the buff/debuff number. The ACTIVE player's panel is big on top; the others are small and sit in a ring below it.
+// When the turn changes every panel glides one place round the ring (counter-clockwise) and grows / shrinks on the way (CSS transition on .pp in css/style.css).
 // fitPx(text, width, max): font size that makes the text fit inside a field.
 const fitPx = (t, w, mx) => Math.max(9, Math.min(mx, w / (Math.max(1, t.length) * .62)));
-// panelPos(i): stage coordinates of the top-left of the panel for player i.
-const panelPos = i => [PANEL.x, PANEL.y0 + i * PANEL.pitch];
-// slotCenter(i, j): stage coordinates of the centre of item slot j on player i's panel (used to launch thrown items from the slot).
-function slotCenter(i, j) { const [px, py] = panelPos(i), s = PANEL.slots[j]; return [px + s.x + s.w / 2, py + s.y + s.h / 2]; }
-// buildPanels(): one panel per player. Panels alternate orange / blue.
+// turnOrder(): the players in TURN order (Snake Charmer first, cat owner last, everyone else as set up). Same rule as play() in rules.js.
+function turnOrder() { const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0; return [...G.players].sort((a, b) => rk(a) - rk(b)); }
+// ringSlots(m): where the m small panels sit, in the order the turns come, starting right after the big panel and going CLOCKWISE round the ring
+// (so each panel moves up into the next place counter-clockwise). Each entry is [column, row]: "R" right column, "L" left column, "M" centred; row 1 is the top row.
+// An ODD number of small panels makes a circle like the mockup (right side down, centre bottom, left side up). An EVEN number makes a triangle with the big panel (pairs of panels).
+function ringSlots(m) {
+  const out = [], k = Math.floor(m / 2);
+  for (let r = 1; r <= k; r++) out.push(["R", r]);
+  if (m % 2) out.push(["M", k + 1]);
+  for (let r = k; r >= 1; r--) out.push(["L", r]);
+  return out;
+}
+// panelSlot(rank, n): position and size of the panel that is `rank` turns away from the active player (0 = the active player) when n players are in the game.
+function panelSlot(rank, n) {
+  const Z = PANEL_ZONE;
+  if (rank === 0) return { x: Z.bigX, y: Z.bigY, s: Z.bigScale, z: 3 };
+  const [col, row] = ringSlots(n - 1)[rank - 1];
+  return { x: col === "R" ? Z.colR : col === "L" ? Z.colL : Z.midX, y: Z.rowY + (row - 1) * Z.rowPitch, s: Z.smallScale, z: 2 };
+}
+// slotCenter(i, j): stage coordinates of the centre of item slot j on player i's panel, wherever that panel is right now (used to launch thrown items from the slot).
+function slotCenter(i, j) { const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`); return el ? elCenter(el) : [1600, 140]; }
+// buildPanels(): one panel per player (made once at game start; placePanels() moves them).
 function buildPanels() {
+  const f = PANEL.field, pt = PANEL.portrait, c = PANEL.counter;
   $("panels").innerHTML = G.players.map((p, i) => {
-    const [px, py] = panelPos(i), f = PANEL.field, pt = PANEL.portrait;
     const slots = PANEL.slots.map((s, j) => `<div class="slot" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
-    return `<div class="pp" id="pp${i}" style="left:${px}px;top:${py}px" title="${esc(CHARACTERS.find(c => c.id === p.character).name)}"><img class="psh" src="${A("player_panel_shadow.svg")}" alt="" style="left:${PANEL_SHADOW.x}px;width:${PANEL_SHADOW.artW}px;transform-origin:0 0;transform:scale(${PANEL_SHADOW.w / PANEL_SHADOW.artW},${PANEL_SHADOW.h / PANEL_SHADOW.artH})"><div class="pbody"><img class="pbg" src="${A("player_panel_" + (i % 2 ? "dark" : "light") + ".svg")}" alt=""><img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size + 16}px"><img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">
-<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - 12, 24)}px">${esc(p.name)}</div>${slots}</div>
-<div class="ctr" style="left:168px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_buff.svg")}" alt=""><span id="bf${i}">+0</span></div>
-<div class="ctr" style="left:272px"><img class="csh" src="${A("counter_shadow.svg")}" alt=""><img src="${A("counter_debuff.svg")}" alt=""><span id="df${i}">-0</span></div></div>`;
+    return `<div class="pp" id="pp${i}" title="${esc(CHARACTERS.find(ch => ch.id === p.character).name)}"><div class="pbody">` +
+      `<img class="pbg" src="${A("player_panel.svg")}" alt="">` +
+      `<img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size}px">` +
+      `<img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">` +
+      `<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - 32, 40)}px">${esc(p.name)}</div>${slots}` +
+      `<div class="cnt" id="cn${i}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px"></div></div></div>`;
   }).join("");
+  placePanels();
+  requestAnimationFrame(() => requestAnimationFrame(() => $("panels").classList.add("anim")));   // switch the glide animation on only AFTER the first placement, so panels don't fly in from the corner
+}
+// placePanels(): move every panel to the place that matches its distance (in turn order) from the active player, and put the bouncing chevron above the NEXT player's panel.
+function placePanels() {
+  const order = turnOrder(), n = order.length, cur = Math.max(0, order.indexOf(G.cur));   // (before the first turn the first player in turn order is shown on top)
+  G.players.forEach((p, i) => {
+    const el = $("pp" + i);
+    if (!el) return;
+    const rank = (order.indexOf(p) - cur + n) % n, sl = panelSlot(rank, n);
+    el.style.transform = `translate(${f1(sl.x)}px,${f1(sl.y)}px) scale(${sl.s})`;
+    el.style.zIndex = sl.z;
+    el.classList.toggle("big", rank === 0);
+  });
+  const ch = $("chev");
+  if (ch) {
+    if (n < 2) { ch.style.display = "none"; return; }
+    const nx = panelSlot(1, n);
+    ch.style.display = "block";
+    ch.style.left = f1(nx.x + PANEL.w * nx.s / 2 - 22) + "px";   // centred above the next player's panel
+  }
 }
 // updateSlots(): show each player's items in their three slots (an item picture fitted to the slot, centred).
 function updateSlots() {
@@ -396,24 +440,25 @@ function updateSlots() {
       if (el.dataset.t === t) return;
       el.dataset.t = t;
       if (!t) { el.innerHTML = ""; return; }
-      const f = itemFit(t, 56, 40);
+      const f = itemFit(t, 54, 50);
       el.innerHTML = `<img src="${A(ITEMS[t].file)}" alt="${ITEMS[t].name}" title="${ITEMS[t].name}" style="width:${f.w}px;height:${f.h}px">`;
     });
   });
 }
-
-// setCounter(id, text): show text on a Buff/Debuff counter. When the number CHANGES the whole counter animates: it sinks, comes back up with a lime
-// glow (CSS class "pop") and plays a small click. G.ctrPrev remembers the last text of every counter; the first call for a counter never animates.
-function setCounter(id, text) {
-  const el = $(id), prev = G.ctrPrev || (G.ctrPrev = {});
+// setNet(i, net): show player i's buff/debuff number in the 4th square. net = buffs minus debuffs: positive = orange, negative = blue, zero = plain brown.
+// The number is shown without a + or - sign. When it CHANGES the square sinks, comes back up with a lime glow (CSS class "pop") and plays a small click.
+// G.ctrPrev remembers the last value of every square; the first call for a square never animates.
+function setNet(i, net) {
+  const el = $("cn" + i), prev = G.ctrPrev || (G.ctrPrev = {});
   if (!el) return;
-  el.textContent = text;
-  if (prev[id] !== undefined && prev[id] !== text) {
-    const box = el.parentElement;
-    box.classList.remove("pop"); void box.offsetWidth; box.classList.add("pop");   // (reading offsetWidth lets the animation restart if it is already running)
+  el.textContent = Math.abs(net);
+  el.style.background = net > 0 ? COUNTER_ORANGE : net < 0 ? COUNTER_BLUE : COUNTER_BROWN;
+  el.classList.toggle("two", Math.abs(net) >= 10);       // two digits: a slightly smaller font so they fit
+  if (prev[i] !== undefined && prev[i] !== net) {
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");   // (reading offsetWidth lets the animation restart if it is already running)
     sfx("small");
   }
-  prev[id] = text;
+  prev[i] = net;
 }
 
 // ------------------------------------------------------------------ MAIN DRAW FUNCTION
@@ -430,7 +475,7 @@ function render() {
     const el = $("tl" + n);
     if (el) el.classList.toggle("occ", occ.has(n));   // occupied tiles sink
   }
-  placePawns(); updateSlots();
+  placePawns(); updateSlots(); placePanels();                                      // panels glide to their place for the current turn
   G.players.forEach((p, i) => {
     const act = G.cur === p && !G.winner && !G.catNow;                               // is it this player's own turn?
     const pw = $("pw" + i);
@@ -439,10 +484,8 @@ function render() {
       if (act && $("gPawn").lastChild !== pw) $("gPawn").appendChild(pw);   // bring the active pawn to the front
     }
     const pp = $("pp" + i);
-    if (pp) pp.classList.toggle("cur", act || (G.catNow && G.catOwner === p));      // the active panel sinks into its shadow
     updateDisconnectLook(p, i, pp, pw);                                              // red "disconnected" icon on the head, faded pawn, glow when it changes
-    setCounter("bf" + i, `+${p.cb || 0}`);                                           // buff counter
-    setCounter("df" + i, `-${p.pen || 0}`);                                          // debuff counter
+    setNet(i, (p.cb || 0) - (p.pen || 0));                                           // buff minus debuff in the 4th square
   });
   if (G.cat && $("pwc")) $("pwc").classList.toggle("act", !!G.catNow && !G.winner);
 }

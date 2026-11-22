@@ -1,5 +1,5 @@
 // =====================================================================================
-//  main.js  -  the setup screen, the Start button, the top-right icon buttons, and window scaling.
+//  main.js  -  the setup screen, the Start button, the bottom-right tab buttons (Settings / Chat / Info panel + Rulebook / Combat log pop-ups), and window scaling.
 //  This file runs LAST. At the very bottom it draws the setup screen and starts loading the art.
 // =====================================================================================
 
@@ -298,25 +298,29 @@ function start() {
   play();
 }
 
-// ---- the five round buttons at the top right. They are TABS: the selected one (light, pressed down) decides what the panel below shows. ----
-// openModal(title, html): show a big pop-up window with a Close button (used by the Expand button).
+// ---- the five round buttons at the bottom right. Settings, Chat and Info are TABS: the selected one (light, pressed down) decides what the brown box above them shows.
+//      Rulebook and Combat log are not tabs: they open straight into a big window in the middle of the screen. ----
+// openModal(title, html): show a big pop-up window centred on the SCREEN. It closes with the small X at its top right or by clicking anywhere outside the window.
 function openModal(title, html) {
   const m = $("modal");
-  m.innerHTML = `<div><h2>${title}</h2>${html}<p style="margin-top:18px"><button class="cbtn" style="--s:1.5;width:220px" onclick="$('modal').style.display='none'"><span>Close</span></button></p></div>`;
-  m.style.display = "block";
+  m.innerHTML = `<div><button class="mclose" onclick="$('modal').style.display='none'" title="Close" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button><h2>${title}</h2>${html}</div>`;
+  m.style.display = "flex";
 }
+// openRulebook() / openLog(): the Rulebook and Combat log icons. (The log window keeps filling live: log() in config.js also writes to #biglog.)
+function openRulebook() { openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`); }
+function openLog() { openModal("Combat log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").scrollTop = 1e6; }
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
-const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "About"]];
-// The rulebook text itself lives in js/rulebook.js (RULES_HTML).
-$("rulebook").innerHTML = RULES_HTML();
-// The About tab text (edit here).
+const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Combat log"], ["chat", "Chat"], ["about", "Information"]];
+// The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
 $("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p>";
 // ---- Settings tab: Sound Effects volume bar (10 steps). Orange = selected volume, blue = the whole bar, lime outline on every step. ----
-// drawSettings(): (re)draw the volume bar from VOLUME (audio.js).
+// drawSettings(): (re)draw the Settings panel from VOLUME (audio.js): the Mute switch on top, then two columns:
+// left = Sound effects bar (+ Switch Device in online games), right = Music (volume, song name, play / loop / shuffle). The two columns are laid out by css/style.css (".st-cols").
 function drawSettings() {
   let bar = "";
   for (let i = 1; i <= 10; i++) bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
-  $("settings").innerHTML = muteRowHtml() + `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>` + musicPanelHtml("tab") + (NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : "");
+  const sfxHtml = `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>`;
+  $("settings").innerHTML = `<div class="st-mute">${muteRowHtml()}</div><div class="st-cols"><div class="st-col">${sfxHtml}${NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : ""}</div><div class="st-col">${musicPanelHtml("tab")}</div></div>`;
 }
 // ---- Switch Device (online games): a one-time code that lets this player carry on from another device ----
 const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };
@@ -359,26 +363,23 @@ function setVolume(n) {
   drawSettings(); sfx("small");   // play a click so you can hear the new level
 }
 drawSettings();
-let TAB = "boardlog";   // the tab being shown
-// showTab(k): switch the panel to tab k, and update the buttons (active = light + pressed, others = dark + raised).
+let TAB = "settings";   // the tab being shown in the brown box (Settings is the default until the new "latest event" panel exists)
+// showTab(k): switch the brown box to tab k (settings / chat / about), and update the buttons (active = light + pressed, others = dark + raised).
+// Other code (network.js, input.js) still calls showTab("boardlog") to leave the Chat tab; that is no longer needed (choices now appear over the board), so it does nothing.
 function showTab(k) {
+  if (k !== "settings" && k !== "chat" && k !== "about") return;
   TAB = k;
-  TOP.forEach(b => {
-    const on = b[0] === k;
-    $("tb_" + b[0]).classList.toggle("on", on);
-    $("tb_" + b[0]).querySelector(".face").src = A(`button_${b[0]}_${on ? "light" : "dark"}.svg`);
+  ["settings", "chat", "about"].forEach(t => {
+    const on = t === k;
+    $("tb_" + t).classList.toggle("on", on);
+    $("tb_" + t).querySelector(".face").src = A(`button_${t}_${on ? "light" : "dark"}.svg`);
   });
-  $("ptitle").textContent = TOP.find(b => b[0] === k)[1];
-  $("log").style.display = k === "boardlog" ? "block" : "none";
-  $("rulebook").style.display = k === "rulebook" ? "block" : "none";
   $("about").style.display = k === "about" ? "block" : "none";
   $("settings").style.display = k === "settings" ? "block" : "none";
   if (k === "settings") drawSettings();                       // (the Switch Device part only exists during an online game)
   $("chatView").style.display = k === "chat" ? "block" : "none";
   $("chatInputBar").style.display = k === "chat" ? "flex" : "none";
-  $("prompt").style.display = k === "chat" ? "none" : "flex";
-  $("soon").style.display = "none";
-  $("expand").style.display = (k === "boardlog" || k === "rulebook") ? "block" : "none";   // only working panels can expand
+  $("expand").style.display = k === "about" ? "block" : "none";   // only the Information panel can expand
   if (k === "chat") {
     NET.unreadChat = 0;
     const btn = $("tb_chat");
@@ -392,13 +393,12 @@ function chatSendPressed() {
   sendChatMessage(inp.value);
   inp.value = "";
 }
-// expandPanel(): the Expand button - show the current panel's content in a big pop-up with larger text.
-function expandPanel() {
-  if (TAB === "rulebook") openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`);
-  else { openModal("Board log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").scrollTop = 1e6; }
-}
-$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${1484 + i * 84.5}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A("button_" + b[0] + "_dark.svg")}" alt="${b[1]}"></button>`).join("");
-showTab("boardlog");
+// expandPanel(): the Expand button of the Information panel - show its text in a big window.
+function expandPanel() { if (TAB === "about") openModal("Information", `<div class="big">${$("about").innerHTML}</div>`); }
+// The five buttons: Rulebook and Combat log open their big window directly, the other three switch the brown box.
+const TAB_ACTION = { rulebook: "openRulebook()", boardlog: "openLog()" };
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.x + 14 + i * DOCK.pitch}px;top:${DOCK.y + 8}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A("button_" + b[0] + "_dark.svg")}" alt="${b[1]}"></button>`).join("");
+showTab("settings");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
 function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the character pick panels (css)
