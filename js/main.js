@@ -316,7 +316,7 @@ $("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz
 function drawSettings() {
   let bar = "";
   for (let i = 1; i <= 10; i++) bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
-  $("settings").innerHTML = `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>` + musicPanelHtml("tab") + (NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : "");
+  $("settings").innerHTML = muteRowHtml() + `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>` + musicPanelHtml("tab") + (NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : "");
 }
 // ---- Switch Device (online games): a one-time code that lets this player carry on from another device ----
 const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };

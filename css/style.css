@@ -510,24 +510,32 @@ body:not(.on-title) #tReconn { display: none !important; }
 .mu-song { flex: 1; min-width: 0; line-height: 1.15; } .mu-song small { display: block; opacity: .75; } .mu-name { display: block; font-weight: normal; }
 .mu-btn { flex: none; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
 .mu-btn svg { height: 55%; width: auto; } .mu-btn:hover { filter: brightness(1.12); } .mu-btn:active { transform: translateY(2px); }
-.mu-mute { display: flex; align-items: center; gap: 14px; } .mu-mlabel { flex: 1; }
+.mu-mute { display: flex; align-items: center; gap: 14px; } .mu-mute .mu-title { flex: 1; }
 
 /* ---- title screen Options page ---- */
 .tp-card .mu-head { margin: 0; } .tp-card .mu-title { font-family: LM, MC, monospace; font-size: 48px; text-transform: uppercase; }
 .tp-card .mu-head > span:last-child { font-size: 30px; }
 .tp-card .mu-btn { width: 64px; height: 64px; border: 4px solid var(--tt-ink); border-radius: 14px; background: var(--tt-seg); color: var(--tt-ink); }
 .tp-card .mu-song small { font-size: 22px; } .tp-card .mu-name { font-size: 34px; }
-.tp-card .mu-mute { margin-top: 26px; } .tp-card .mu-ico { width: 44px; height: 44px; } .tp-card .msw { width: 97px; height: 58px; }
+.tp-card .mu-mute { margin: 0 0 14px; } .tp-card .mu-ico { width: 44px; height: 44px; } .tp-card .msw { width: 97px; height: 58px; }
 
 /* ---- Settings tab (board screen) ---- */
 #settings .mu-head { margin: 8px 0 0; } #settings .mu-num { color: #fff3cf; }
 #settings .mu-now { margin-top: 4px; }
 #settings .mu-btn { width: 44px; height: 44px; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; }
 #settings .mu-song small { font-size: 15px; color: #fff3cf; opacity: .75; } #settings .mu-name { font-size: 21px; color: #fff3cf; }
-#settings .mu-mute { margin-top: 12px; } #settings .mu-ico { width: 28px; height: 28px; } #settings .msw { width: 66px; height: 40px; }
+#settings .mu-mute { margin: 0 0 10px; } #settings .mu-ico { width: 28px; height: 28px; } #settings .msw { width: 66px; height: 40px; }
 
 /* ---- characters another player already has: faded out on the pick screens (js/local.js refreshTaken, js/main.js old chooser) ---- */
 .pk-panel { transition: opacity .25s, filter .25s; }
 .pk-panel.taken { opacity: .3; filter: grayscale(1); }
 .pk-panel.taken .pk-pick { cursor: not-allowed; }
 #chooser .card.taken { opacity: .3; filter: grayscale(1); cursor: not-allowed; } #setup .card.taken:hover { filter: grayscale(1); }
+
+/* ---- play / pause, loop and shuffle buttons (under the song name) ---- */
+.mu-ctl { display: flex; justify-content: center; gap: 14px; margin-top: 12px; }
+.mu-play[data-paused="false"] .i-play, .mu-play[data-paused="true"] .i-pause { display: none; }   /* playing: show "pause"; paused: show "play" */
+.mu-ctl .mu-btn svg { height: 55%; width: auto; }
+.tp-card .mu-ctl .mu-btn { width: 56px; height: 56px; }
+.tp-card .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: var(--tt-ink); }   /* loop / shuffle switched ON: orange */
+#settings .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: #2f2504; }

@@ -202,7 +202,7 @@ function pageHtml(id) {
     for (let i = 1; i <= 10; i++)
       bar += `<div class="tt-seg sfx-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`;   // "sfx-seg" marks the SOUND EFFECTS bar only (the music bar from audio.js has its own class and click code)
     // Sound effects bar, then the music controls (music volume, now playing, mute switch) from audio.js
-    return `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
+    return muteRowHtml() + `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
   }
   if (id === "about") return $("about").innerHTML; // same text as the About tab in the game
   return `<h2>Play screen coming next</h2><p>The new play screen will go here. Until then, the current setup screen still starts a game.</p><p><button class="cbtn tt-open" style="--s:1.5;width:480px"><span>Open current setup</span></button></p>`;

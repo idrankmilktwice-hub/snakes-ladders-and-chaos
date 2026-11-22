@@ -25,12 +25,17 @@ let VOLUME = 7;
 // MUSIC_VOL = music volume, same 0-10 steps. MUTED = true when the mute switch is on (silences music and effects).
 let MUSIC_VOL = 5;
 let MUTED = false;
+// SHUFFLE = the next song is picked at random instead of the next one in the list (ON by default). LOOP = the current song repeats instead of moving on (off by default). Both are remembered between visits.
+let SHUFFLE = true;
+let LOOP = false;
 try {
   const v = parseInt(localStorage.getItem("snc_volume"), 10);
   if (v >= 0 && v <= 10) VOLUME = v;
   const m = parseInt(localStorage.getItem("snc_music_vol"), 10);
   if (m >= 0 && m <= 10) MUSIC_VOL = m;
   MUTED = localStorage.getItem("snc_muted") === "1";
+  if (localStorage.getItem("snc_shuffle") !== null) SHUFFLE = localStorage.getItem("snc_shuffle") === "1";
+  LOOP = localStorage.getItem("snc_loop") === "1";
 } catch (e) {
   /* storage not available: keep the defaults */
 }
@@ -63,7 +68,7 @@ async function loadSounds() {
 function unlockAudio() {
   if (ACTX && ACTX.state === "suspended") ACTX.resume();
   if (!MUSIC_EL) startMusic();
-  else if (MUSIC_EL.paused) MUSIC_EL.play().catch(() => {});
+  else if (MUSIC_EL.paused && !MUSIC_PAUSED) MUSIC_EL.play().catch(() => {}); // (but never restart music the player paused on purpose)
 }
 addEventListener("pointerdown", unlockAudio, { capture: true });
 addEventListener("keydown", unlockAudio, { capture: true });
@@ -188,6 +193,8 @@ addEventListener("pointerdown", (e) => {
 //  MUSIC PLAYER
 // =====================================================================================
 let SONG = 0; // SONG = position in MUSIC of the song that is playing now
+let MUSIC_PAUSED = false; // true while the player has paused the music with the play/pause button
+const SONG_HISTORY = []; // the songs played before this one (most recent last), so the "previous" button can go back to them
 let MUSIC_EL = null; // MUSIC_EL = the hidden audio player that streams the songs (made on the first click, see startMusic)
 let MUSIC_NODE = null; // MUSIC_NODE = the volume knob the music passes through (Web Audio), so the volume also works on phones
 let MUSIC_FAILS = 0; // how many songs in a row failed to load (stops us skipping forever if the folder is missing)
@@ -207,9 +214,10 @@ function startMusic() {
   if (MUSIC_EL || !MUSIC.length) return;
   MUSIC_EL = new Audio();
   MUSIC_EL.preload = "auto";
-  MUSIC_EL.addEventListener("ended", () => playSong(SONG + 1)); // song finished: next one (after the last comes the first)
+  MUSIC_EL.loop = LOOP; // loop on: the browser repeats the same song by itself (so "ended" below only fires when loop is off)
+  MUSIC_EL.addEventListener("ended", () => playSong(nextIndex())); // song finished: the next one (random when shuffle is on, otherwise the next in the list; after the last comes the first)
   MUSIC_EL.addEventListener("playing", () => { MUSIC_FAILS = 0; });
-  MUSIC_EL.addEventListener("error", () => { if (++MUSIC_FAILS < MUSIC.length) playSong(SONG + 1); }); // a file is missing: skip it
+  MUSIC_EL.addEventListener("error", () => { if (++MUSIC_FAILS < MUSIC.length) playSong(SONG + 1, true); }); // a file is missing: skip it (in list order, so it always moves on)
   if (ACTX) {
     try {
       const src = ACTX.createMediaElementSource(MUSIC_EL);
@@ -221,21 +229,53 @@ function startMusic() {
     }
   }
   applyMusicVolume();
+  if (SHUFFLE && MUSIC.length > 1) SONG = Math.floor(Math.random() * MUSIC.length); // shuffle: begin with a random song
   playSong(SONG);
 }
-// playSong(i): play song number i of MUSIC (numbers wrap around: -1 = the last song, one past the last = the first).
-function playSong(i) {
+// nextIndex(): which song comes next: a random OTHER song when shuffle is on, otherwise the next one in the list (after the last comes the first).
+function nextIndex() {
+  const n = MUSIC.length;
+  if (n < 2) return 0;
+  if (SHUFFLE) { let k; do { k = Math.floor(Math.random() * n); } while (k === SONG); return k; }
+  return (SONG + 1) % n;
+}
+// playSong(i, back): play song number i of MUSIC (numbers wrap around: -1 = the last song). back = true when going BACK to an earlier song (so it is not added to the history again).
+function playSong(i, back) {
   if (!MUSIC.length) return;
+  if (!MUSIC_EL) { SONG = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length; return startMusic(); }
+  if (!back && MUSIC_EL.getAttribute("src")) { SONG_HISTORY.push(SONG); if (SONG_HISTORY.length > 30) SONG_HISTORY.shift(); } // remember the song we are leaving
   SONG = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length;
-  if (!MUSIC_EL) return startMusic();
+  MUSIC_PAUSED = false; // choosing a song always plays it
+  MUSIC_EL.loop = LOOP;
   MUSIC_EL.src = "assets/" + MUSIC[SONG].file;
   MUSIC_EL.play().catch(() => {}); // (if the browser still blocks it, the next click starts it - see unlockAudio)
   refreshMusicUi();
 }
-// changeSong(step): the next / previous buttons. step = +1 or -1.
+// changeSong(step): the next / previous buttons. Next = the next song (random when shuffling). Previous = the song that played before this one.
 function changeSong(step) {
-  if (!MUSIC_EL) { SONG = ((SONG + step) % MUSIC.length + MUSIC.length) % MUSIC.length; return startMusic(); }
-  playSong(SONG + step);
+  if (!MUSIC_EL) return startMusic();
+  if (step > 0) playSong(nextIndex());
+  else if (SONG_HISTORY.length) playSong(SONG_HISTORY.pop(), true);
+  else playSong(SONG - 1, true);
+}
+// togglePlay(): the play / pause button.
+function togglePlay() {
+  if (!MUSIC_EL) return startMusic();
+  if (MUSIC_EL.paused) { MUSIC_PAUSED = false; MUSIC_EL.play().catch(() => {}); }
+  else { MUSIC_PAUSED = true; MUSIC_EL.pause(); }
+  refreshMusicUi();
+}
+// toggleLoop() / toggleShuffle(): the loop and shuffle buttons (remembered between visits).
+function toggleLoop() {
+  LOOP = !LOOP;
+  try { localStorage.setItem("snc_loop", LOOP ? "1" : "0"); } catch (e) { /* not saved: fine */ }
+  if (MUSIC_EL) MUSIC_EL.loop = LOOP;
+  refreshMusicUi();
+}
+function toggleShuffle() {
+  SHUFFLE = !SHUFFLE;
+  try { localStorage.setItem("snc_shuffle", SHUFFLE ? "1" : "0"); } catch (e) { /* not saved: fine */ }
+  refreshMusicUi();
 }
 // setMusicVol(n): the music volume bar. Clicking step 1 while it is the only one lit turns the music off (same as the effects bar).
 function setMusicVol(n) {
@@ -260,7 +300,7 @@ function speakerHtml(off) {
 }
 // muteSwitchHtml(): the mute switch (same shape as the light/dark switch). Knob left = sound on, knob right = muted. Its click is handled by the listener at the bottom of this file.
 function muteSwitchHtml() {
-  return `<button class="msw" data-mu="mute" role="switch" aria-label="Mute all sound" aria-checked="${MUTED}"><svg viewBox="0 0 121 72"><rect class="ms-rim" width="121" height="72" rx="36"/><rect class="ms-trk" x="6" y="6" width="109" height="60" rx="30"/><g class="ms-knob"><circle cx="31" cy="39" r="23.5" fill="#e2330a"/><circle class="ms-ring" cx="31" cy="32" r="23.5" fill="#ff7529" stroke-width="3"/><circle cx="24" cy="22" r="11" fill="#fff" opacity=".5"/></g></svg></button>`;
+  return `<button class="msw" data-mu="mute" role="switch" aria-label="Mute" aria-checked="${MUTED}"><svg viewBox="0 0 121 72"><rect class="ms-rim" width="121" height="72" rx="36"/><rect class="ms-trk" x="6" y="6" width="109" height="60" rx="30"/><g class="ms-knob"><circle cx="31" cy="39" r="23.5" fill="#e2330a"/><circle class="ms-ring" cx="31" cy="32" r="23.5" fill="#ff7529" stroke-width="3"/><circle cx="24" cy="22" r="11" fill="#fff" opacity=".5"/></g></svg></button>`;
 }
 // musicPanelHtml(kind): the HTML for: Music volume bar, "Now playing" with previous / next buttons, and the mute switch.
 // kind = "tt" for the title screen Options page, anything else for the Settings tab (only the look differs, see css/style.css "MUSIC").
@@ -270,8 +310,11 @@ function musicPanelHtml(kind) {
   for (let i = 1; i <= 10; i++)
     bar += `<div class="${tt ? "tt-seg" : "seg"} mu-seg${i <= MUSIC_VOL ? " on" : ""}" data-mu="vol" data-v="${i}" title="${i * 10}%"></div>`;
   const chev = (d) => `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const speaker = speakerHtml;
-  const sw = muteSwitchHtml();
+  const ico = (d, extra) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>${extra || ""}</svg>`;
+  const playIco = `<svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5l13 7.5-13 7.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  const pauseIco = `<svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h3.6v15H7zM13.4 4.5H17v15h-3.6z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  const loopIco = ico("M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3", `<path d="M11 10h1v4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`); // "repeat one" arrows
+  const shufIco = ico("M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M18 2l4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4"); // crossing arrows
   return `<div class="mu-wrap">
     <div class="mu-head"><span class="mu-title">Music</span><span class="mu-num">${MUSIC_VOL ? MUSIC_VOL * 10 + "%" : "Off"}</span></div>
     <div class="${tt ? "tt-vol" : "volbar"}">${bar}</div>
@@ -280,8 +323,16 @@ function musicPanelHtml(kind) {
       <div class="mu-song"><small>Now playing</small><b class="mu-name">${esc(songName())}</b></div>
       <button class="mu-btn" data-mu="next" title="Next song" aria-label="Next song">${chev("M3 2.5L11 10L3 17.5")}</button>
     </div>
-    <div class="mu-mute"><span class="mu-mlabel">Mute all sound</span>${speaker(false)}${sw}${speaker(true)}</div>
+    <div class="mu-ctl">
+      <button class="mu-btn mu-play" data-mu="play" data-paused="${MUSIC_PAUSED}" title="Play / pause" aria-label="Play or pause the music">${playIco}${pauseIco}</button>
+      <button class="mu-btn mu-loop" data-mu="loop" aria-pressed="${LOOP}" title="Loop: keep repeating this song" aria-label="Loop the current song">${loopIco}</button>
+      <button class="mu-btn mu-shuf" data-mu="shuffle" aria-pressed="${SHUFFLE}" title="Shuffle: play the songs in random order" aria-label="Shuffle the songs">${shufIco}</button>
+    </div>
   </div>`;
+}
+// muteRowHtml(): the "Mute" heading with the mute switch (speaker with waves on the left, muted speaker on the right). It is the first setting on the Options page and in the Settings tab.
+function muteRowHtml() {
+  return `<div class="mu-mute"><span class="mu-title">Mute</span>${speakerHtml(false)}${muteSwitchHtml()}${speakerHtml(true)}</div>`;
 }
 // refreshMusicUi(): update every music control that is on screen (song name, volume bar, switch position). Called after anything changes.
 function refreshMusicUi() {
@@ -289,6 +340,9 @@ function refreshMusicUi() {
   document.querySelectorAll(".mu-num").forEach((el) => (el.textContent = MUSIC_VOL ? MUSIC_VOL * 10 + "%" : "Off"));
   document.querySelectorAll(".mu-seg").forEach((el) => el.classList.toggle("on", +el.dataset.v <= MUSIC_VOL));
   document.querySelectorAll(".msw").forEach((el) => el.setAttribute("aria-checked", MUTED));
+  document.querySelectorAll(".mu-play").forEach((el) => el.setAttribute("data-paused", MUSIC_PAUSED)); // shows the play or the pause picture
+  document.querySelectorAll(".mu-loop").forEach((el) => el.setAttribute("aria-pressed", LOOP));
+  document.querySelectorAll(".mu-shuf").forEach((el) => el.setAttribute("aria-pressed", SHUFFLE));
 }
 // ONE click listener for all the music controls (so the title screen and the Settings tab share the same code).
 document.addEventListener("click", (e) => {
@@ -299,4 +353,7 @@ document.addEventListener("click", (e) => {
   else if (a === "mute") toggleMute();
   else if (a === "next") changeSong(1);
   else if (a === "prev") changeSong(-1);
+  else if (a === "play") togglePlay();
+  else if (a === "loop") toggleLoop();
+  else if (a === "shuffle") toggleShuffle();
 });
