@@ -337,13 +337,13 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 
 /* light / dark switch (top right): orange sun, the switch, orange moon */
 #tSun, #tMoon { position: absolute; fill: #ff7529; stroke: #ff7529; } #tMoon { stroke: none; }
-#tSun { left: 1764px; top: 116px; width: 27px; height: 27px; } #tMoon { left: 1863px; top: 118px; width: 19px; height: 23px; }   /* half the old size, same right edge */
-#tSwitch { position: absolute; left: 1797px; top: 112px; width: 60px; height: 36px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; }
+#tSun { left: 1764px; top: 89.5px; width: 27px; height: 27px; } #tMoon { left: 1863px; top: 91.5px; width: 19px; height: 23px; }   /* half the old size, same right edge */
+#tSwitch { position: absolute; left: 1797px; top: 85px; width: 60px; height: 36px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; }
 #tSwitch svg { width: 60px; height: 36px; }
 /* the mute switch sits directly under it, same width: speaker, switch, muted speaker (the switch itself is styled in the MUSIC + MUTE section below) */
 /* Every piece is placed by hand (numbers are relative to the row's left edge, x = 1764) so the capsule sits exactly under the light/dark capsule (both start at x = 1797, 60px wide)
    and each speaker is centred under the sun / moon above it (sun centre x = 1777.5, moon centre x = 1872.5). */
-#tMuteRow { position: absolute; left: 1764px; top: 160px; width: 118px; height: 36px; }
+#tMuteRow { position: absolute; left: 1764px; top: 144px; width: 118px; height: 36px; }
 #tMuteRow .mu-ico { position: absolute; top: 6px; width: 24px; height: 24px; }
 #tMuteRow .mu-ico:first-child { left: 1.5px; }    /* speaker with sound waves, under the sun */
 #tMuteRow .mu-ico:last-child { left: 96.5px; }    /* speaker with a cross, under the moon */
@@ -364,8 +364,8 @@ html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 .lname { position: absolute; left: 143px; top: 2px; width: 376px; height: 96px; box-sizing: border-box; padding: 12.4px 30px 0; line-height: 1; border: 0; border-radius: 9px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 49.8px; outline: none; transition: background-color .35s; }
 .lname::placeholder { color: #fff; opacity: .92; } .lname:focus { box-shadow: 0 0 0 4px var(--tt-ink); }
 .pk-pick:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }
-#tCnt { position: absolute; left: 1208px; top: 85px; width: 412px; height: 95px; display: flex; align-items: center; justify-content: space-between; }
-#tCnt .cl { font-family: MC, monospace; font-size: 52.4px; color: var(--tt-ink); white-space: nowrap; transition: color .35s; }
+#tCnt { position: absolute; left: 1208px; top: 85px; width: 412px; height: 95px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; }   /* label + number box stay together at the right edge */
+#tCnt .cl { font-family: LM, monospace; font-size: 42px; line-height: 1; transform: translateY(.1em); color: var(--tt-ink); white-space: nowrap; transition: color .35s; }   /* Little Monster, same size as the small buttons' labels; translateY centres its capitals (they sit high in the font) */
 #tCntBtn { position: relative; width: 125px; height: 95px; padding: 0 14px; box-sizing: border-box; border: 0; border-radius: 10px; background: var(--tt-field); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; transition: background-color .35s; }
 /* box = 14px | digit | 12px | divider | 12px | chevron | 14px: the space left of the digit equals the space right of the chevron; the digit is centred vertically */
 #tCntBtn b { flex: none; width: 51.12px; margin-left: 0.0px; font-weight: normal; font-family: MC, monospace; font-size: 81.8px; line-height: 1; transform: translateY(10.23px); text-align: left; }
@@ -409,7 +409,9 @@ html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 #tLocal[data-mode=host] #tHost, #tLocal[data-mode=join] #tJoin { display: flex; }
 /* the game's own orange button (blue at night): the .cbtn art, see css above */
 .hcode { box-sizing: border-box; width: 240px; height: 95px; padding: 14.0px 0 0 6px; line-height: 1; border: 0; border-radius: 10px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 56px; letter-spacing: 6px; display: flex; align-items: center; justify-content: center; outline: none; text-align: center; text-transform: uppercase; transition: background-color .35s; }
-.hcode.empty { color: rgba(255,255,255,.5); } input.hcode { width: 330px; } input.hcode::placeholder { color: #fff; opacity: .55; } input.hcode:placeholder-shown { font-size: 34px; letter-spacing: 2px; padding-top: 8.5px; }   /* text is centred using the font's own measurements */ input.hcode:focus { box-shadow: 0 0 0 4px var(--tt-ink); } input.hcode:disabled { -webkit-text-fill-color: #fff; opacity: .8; }
+.hcode.empty { padding: 14px 0 0 0; font-size: 0; letter-spacing: 0; word-spacing: 0; }   /* the "- - - - -" text is hidden (zero size); the dashes below are drawn instead */
+.hcode.empty::before { content: ""; flex: none; width: 170px; height: 6px; border-radius: 1px;   /* 5 dashes x 34px. Every 34px: 8px gap, an 18px dash, 8px gap, so the space on the left and right of the box is identical (35px each) */
+  background: repeating-linear-gradient(90deg, transparent 0 8px, rgba(255,255,255,.5) 8px 26px, transparent 26px 34px); } input.hcode { width: 330px; } input.hcode::placeholder { color: #fff; opacity: .55; } input.hcode:placeholder-shown { font-size: 34px; letter-spacing: 2px; padding-top: 8.5px; }   /* text is centred using the font's own measurements */ input.hcode:focus { box-shadow: 0 0 0 4px var(--tt-ink); } input.hcode:disabled { -webkit-text-fill-color: #fff; opacity: .8; }
 #tToast { display: none; position: absolute; z-index: 6; height: 52px; padding: 0 24px; border-radius: 26px; align-items: center; font-family: MC, monospace; font-size: 26px; white-space: nowrap; pointer-events: none; box-shadow: 0 5px 0 rgba(0,0,0,.3); }
 #tToast.ok { background: #c3f73a; color: #2f2504; } #tToast.bad { background: #e2330a; color: #fff; }
 #tWait { display: none; position: absolute; left: 1430px; top: 900px; width: 440px; text-align: right; font-family: MC, monospace; font-size: 26px; color: var(--tt-ink); }
