@@ -33,6 +33,7 @@ const SOUNDS = {
   // a thrown stone hits a pawn
   stone_1: { file: "sounds/sound_stone_1.mp3", skip: 0.062, volume: 0.7 },
   stone_2: { file: "sounds/sound_stone_2.mp3", skip: 0.078, volume: 0.6 },
+  stone_3: { file: "sounds/sound_stone_3.mp3", skip: 0.041, volume: 0.6 },
   // the cat knocks a player down
   cat_1: { file: "sounds/sound_cat_1.mp3", skip: 0.029, volume: 1.3 },
   // someone wins (plays once)

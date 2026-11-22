@@ -341,8 +341,13 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 #tSwitch { position: absolute; left: 1797px; top: 112px; width: 60px; height: 36px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; }
 #tSwitch svg { width: 60px; height: 36px; }
 /* the mute switch sits directly under it, same width: speaker, switch, muted speaker (the switch itself is styled in the MUSIC + MUTE section below) */
-#tMuteRow { position: absolute; left: 1764px; top: 160px; width: 118px; height: 36px; display: flex; align-items: center; justify-content: space-between; }
-#tMuteRow .mu-ico { width: 24px; height: 24px; } #tMuteRow .msw { width: 60px; height: 36px; border-radius: 18px; }
+/* Every piece is placed by hand (numbers are relative to the row's left edge, x = 1764) so the capsule sits exactly under the light/dark capsule (both start at x = 1797, 60px wide)
+   and each speaker is centred under the sun / moon above it (sun centre x = 1777.5, moon centre x = 1872.5). */
+#tMuteRow { position: absolute; left: 1764px; top: 160px; width: 118px; height: 36px; }
+#tMuteRow .mu-ico { position: absolute; top: 6px; width: 24px; height: 24px; }
+#tMuteRow .mu-ico:first-child { left: 1.5px; }    /* speaker with sound waves, under the sun */
+#tMuteRow .mu-ico:last-child { left: 96.5px; }    /* speaker with a cross, under the moon */
+#tMuteRow .msw { position: absolute; left: 33px; top: 0; width: 60px; height: 36px; border-radius: 18px; }   /* the capsule: x = 1764 + 33 = 1797, same as #tSwitch */
 .tt-trkrim { fill: var(--tt-trackrim); transition: fill .35s; } .tt-trk { fill: var(--tt-track); transition: fill .35s; } .tt-knobring { stroke: var(--tt-track); transition: stroke .35s; }
 .tt-knob { transition: transform .3s cubic-bezier(.3,1.5,.5,1); } html[data-theme=dark] .tt-knob { transform: translateX(59px); }
 
