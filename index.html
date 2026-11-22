@@ -21,19 +21,25 @@
       </div>
       <div id="shade"></div>                     <!-- dark layer over the board while the active player must act (shown by "#prompt.choice ~ #shade" in css) -->
       <div id="panels"></div>                    <!-- right, top: the player panels (render.js buildPanels / placePanels) -->
-      <div id="chev"><svg viewBox="0 0 44 26" width="44" height="26"><path d="M4 22L22 5L40 22" fill="none" stroke="#2f2504" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>   <!-- bouncing arrow above the next player -->
-      <div id="sidebox">                         <!-- right, middle: the brown box (Settings / Chat / Information, one at a time) -->
-        <button id="expand" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
-        <div id="settings" class="view"></div>        <!-- Settings (sound, music, switch device) -->
-        <div id="about" class="view"></div>           <!-- Information -->
-        <div id="chatView" class="view" style="display:none"></div>  <!-- Real-time chat -->
-        <div id="chatInputBar" style="display:none">
-          <input type="text" id="chatInput" placeholder="Message..." maxlength="100" onkeydown="if(event.key==='Enter')chatSendPressed()">
-          <button class="cbtn" id="chatSendBtn" title="Send" aria-label="Send" onclick="chatSendPressed()"><span><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+      <!-- right column below the player panels: ONE view at a time (main.js showTab); each panel (class "rp") slides in from the right edge -->
+      <div id="sidebox">
+        <div id="evPanel" class="rp lp"><div id="evText"></div></div>            <!-- Current Event: the latest log / flavour lines in a big font (default view) -->
+        <div id="aboutPanel" class="rp lp">                                       <!-- Information (can expand) -->
+          <button id="expand" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          <div id="about"></div>
         </div>
+        <div id="chatPanel" class="rp lp">                                        <!-- Chat -->
+          <div id="chatView"></div>
+          <div id="chatInputBar">
+            <input type="text" id="chatInput" placeholder="Message..." maxlength="100" onkeydown="if(event.key==='Enter')chatSendPressed()">
+            <button id="chatSendBtn" title="Send" aria-label="Send" onclick="chatSendPressed()"><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <div id="opSw" class="rp op"></div>                                       <!-- Settings: four orange panels. Switch Device (online games only) -->
+        <div id="opMute" class="rp op"></div>                                     <!-- Mute -->
+        <div id="opSfx" class="rp op"></div>                                      <!-- SFX volume -->
+        <div id="opMusic" class="rp op"></div>                                    <!-- Music volume, song, play / loop / shuffle -->
       </div>
-      <div id="dock"></div>                      <!-- bottom right: orange strip behind the tab buttons -->
-      <div id="topbtns"></div>                   <!-- bottom right: the five tab buttons (main.js) -->
       <div id="log" style="display:none"></div>  <!-- hidden: collects the log lines for the Combat log window -->
     </div>
     <div id="fly"></div>                         <!-- layer for thrown / sliding items -->
@@ -43,6 +49,8 @@
     <div id="tCopy">Copyright &copy; 2026 Hafiz Shaikh. All Rights Reserved.<span class="tc-sub">Copying, modifying, distributing or reusing this game's code, artwork or audio without written permission is prohibited.</span></div>   <!-- copyright notice, bottom middle of the title screens (see LICENSE.md) -->
     <div id="modal" onclick="if(event.target===this)this.style.display='none'"></div>                       <!-- pop-up windows (rulebook etc.) -->
   </div>
+  <!-- The tab buttons live OUTSIDE the stage so they stick to the bottom-right corner of the real window (css #dockfix; shown by main.js while a game is on screen). -->
+  <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="js/config.js?v=22"></script>

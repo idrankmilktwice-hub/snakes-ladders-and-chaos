@@ -113,23 +113,24 @@ const BY0 = 16;                 // top edge of the first board row
 const BS = 1.1;                 // BS = "board scale": everything drawn on the board (snakes, pawns, items) is sized relative to this
 // ---- Player panels (right side). ONE panel art (assets/player_panel.svg, 510 x 220.89) is used for every panel and drawn at two sizes:
 //      the ACTIVE player is big on top, everyone else is small and sits in a ring below, see panelSlot() in render.js. All numbers below are measured from the art (panel units). ----
-const PANEL = { w: 510, h: 220.89,
+const PANEL = { w: 510, h: 220.89, disc: 88,                              // disc = radius of the coloured pawn-colour disc behind the head (the panel's dark circle is 93.25 wide; same centre as the portrait)
+ 
   field: { x: 214.27, y: 40.18, w: 279.4, h: 59.88 },                       // the dark name box
-  portrait: { cx: 105.44, cy: 108, size: 200 },                              // the round portrait area (the head may stick out of the circle a little)
+  portrait: { cx: 105.44, cy: 105.44, size: 196 },                              // the round portrait area (the head may stick out of the circle a little)
   slots: [{ x: 214.27, y: 110.84, w: 59.88, h: 59.88 }, { x: 287.45, y: 110.84, w: 59.88, h: 59.88 }, { x: 360.63, y: 110.84, w: 59.88, h: 59.88 }],   // the 3 item slots
   counter: { x: 433.8, y: 110.84, w: 59.88, h: 59.88 } };                    // the 4th square: the buff / debuff number
 const PANEL_ZONE = { bigX: 1329, bigY: 16, bigScale: 1.07,                   // the big (active) panel: top-left corner and size (1.07 x the art)
   smallScale: 0.51, colL: 1330, colR: 1615, midX: 1472, rowY: 268, rowPitch: 124 };   // small panels: size, left column x, right column x, centred x, first row y, distance between rows
 const COUNTER_ORANGE = "#ff7529", COUNTER_BLUE = "#1b84b8", COUNTER_BROWN = "#2f2504";   // buff (positive) / debuff (negative) / zero colours of the number square
-// ---- The brown box on the right that shows Settings, Chat or Info (one at a time) and the strip of round tab buttons below it ----
-const SIDEBOX = { x: 1318, y: 652, w: 590, h: 336 };
-const DOCK = { x: 1506, y: 1000, pitch: 80 };           // x of the first tab button (dock strip starts here), y of the buttons' strip, distance between buttons
+// ---- The strip of round tab buttons in the bottom-right CORNER OF THE WINDOW (not of the 1920x1080 stage: it is fixed to the real window corner, see #dockfix in css/style.css).
+//      pad = space round the buttons, pitch = distance between two buttons ----
+const DOCK = { pad: 14, pitch: 80 };
 // ---- Roll overlay: while a player rolls, the board area becomes the dice tray. TRAY = its position on screen; DICE_AREA = where dice may roll (relative to the tray's top-left) ----
 const TRAY = { x: 8, y: 8, w: 1276, h: 1064 };
 const DICE_AREA = { x1: 70, y1: 70, x2: 1206, y2: 994 };   // dice stay inside this rectangle
 const DICE_GAP = 116;                                       // dice are never allowed closer than this (centre to centre), so they cannot overlap
 const DICE_SIZE = 90;                                       // drawn size of a die (a 3D cube) in pixels
-const DICE_IDLE = [[696, 430], [580, 430]];                // where waiting dice sit and spin (one or two dice), just above the ROLL button
+const DICE_IDLE_Y = 430;                                    // height where waiting dice sit and spin. They are centred above the ROLL button: one die in the middle, two dice side by side (DICE_GAP apart)
 const DICE_REST_Y = 520;                                    // after a roll the dice glide to this height (centre of the board) so the result is in plain view
 
 // ---- Items (see the Items section of rules.js). file = art in assets/, w/h = art size (used to fit it in slots and on tiles) ----

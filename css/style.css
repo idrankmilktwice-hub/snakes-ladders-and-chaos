@@ -11,7 +11,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
 img { display: block; user-select: none; -webkit-user-drag: none; }
 
 /* ---- the three red containers behind the sections (container_red.svg stretched like a 9-slice picture; positions come from BOXES in js/config.js) ---- */
-.box { position: absolute; box-sizing: border-box; border-style: solid; border-width: 12px; border-image: var(--box-img) 24 fill / 12px stretch; }   /* the board container has a thin frame (12px) */
+.box { position: absolute; box-sizing: border-box; background: #ff7529; border: 6px solid #a00f36; border-radius: 24px; }   /* the board sits on an orange rounded rectangle with a red outline (plain CSS: no picture) */
 
 /* ---- player panels (right). Every .pp is the full-size panel art (510 x 220.89); js/render.js (placePanels) moves and scales it to its place with a CSS transform.
    When the turn changes the transform changes and the panel glides there (and grows / shrinks): that is the rotation animation. #panels gets the class "anim" after the first placement. ---- */
@@ -34,9 +34,6 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .pp .slot.usable img { filter: drop-shadow(0 0 5px #c3f73a) drop-shadow(0 0 2px #c3f73a); animation: itempulse .7s ease-in-out infinite alternate; }   /* usable items pulse in size with a lime glow */
 @keyframes itempulse { from { transform: scale(1); } to { transform: scale(1.22); } }
 .pp .slot.usable:hover img { filter: drop-shadow(0 0 9px #c3f73a) drop-shadow(0 0 4px #c3f73a); }
-/* the chevron above the NEXT player's panel: it bobs up and down (js/render.js placePanels puts it in place) */
-#chev { display: none; position: absolute; top: 240px; width: 44px; height: 26px; z-index: 4; pointer-events: none; animation: chevbob .8s ease-in-out infinite alternate; }
-@keyframes chevbob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
 /* items lying on the board; a placed toy brick (trap) glows red */
 .gitem { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); pointer-events: none; }
 .gitem.trap { filter: drop-shadow(0 0 5px #e2330a) drop-shadow(0 0 2px #e2330a); }
@@ -53,7 +50,8 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 /* ---- top-right icon buttons ---- */
 .ib { position: absolute; top: 24px; width: 72px; height: 52px; padding: 0; border: 0; background: none; cursor: pointer; }
 .ib img { position: absolute; left: 0; top: 0; width: 72px; }
-.ib .bsh { left: -2px; width: 76px; }
+.ib .bsh { display: none; }   /* (the old shadow picture is not used: the shadow is the dark plate below, drawn by CSS) */
+.ib::before { content: ""; position: absolute; left: -2px; top: 6px; width: 76px; height: 54px; border-radius: 9px; background: #2f2504; }   /* the shadow under every button */
 .ib .face { transform: translateY(-5px); transition: transform .15s; }   /* tabs that are not selected hover above their shadow... */
 .ib.on .face { transform: none; }                                       /* ...the selected one is pressed down onto it */
 .ib.unread::after {
@@ -112,20 +110,65 @@ b, strong { font-weight: normal; }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: 700px; overflow-y: auto; } #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
-/* ---- the brown box on the right: Settings / Chat / Information (one at a time), and the strip of tab buttons below it ---- */
-#sidebox { position: absolute; left: 1318px; top: 652px; width: 590px; height: 336px; box-sizing: border-box; background: #2f2504; border: 5px solid #2f2504; box-shadow: inset 0 0 0 3px #7d9926; border-radius: 6px; }
-#dock { position: absolute; left: 1506px; top: 1000px; width: 430px; height: 100px; box-sizing: border-box; background: #ff7529; border: 5px solid #e2330a; border-radius: 16px 16px 0 0; box-shadow: 0 -3px 0 #2f2504; }
-#expand { position: absolute; right: 20px; top: 14px; width: 34px; height: 30px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 5px; background: #ff7529; cursor: pointer; display: none; z-index: 3; }
+/* ---- RIGHT-HAND PANELS: Current Event, Information, Chat (light lime "lp" panels) and the four orange Settings panels ("op"). ----
+   Every panel (class "rp") waits beyond the right edge of the screen. When its view opens it gets the class "in" and slides to its place, overshooting a little and springing back
+   (the 1.5 in the curve is the overshoot); main.js staggers the Settings panels with --d. "#sidebox.again" = the view was opened before: the same animation, but faster.
+   When the view closes ("in" is removed) the panel slides out quickly. */
+#sidebox { position: absolute; inset: 0; pointer-events: none; }
+.rp { position: absolute; visibility: hidden; transform: translateX(760px); pointer-events: none; transition: transform .2s cubic-bezier(.5, 0, .9, .45), visibility 0s .2s; }
+.rp.in { visibility: visible; transform: none; pointer-events: auto; transition: transform var(--dur, .5s) cubic-bezier(.3, 1.5, .5, 1) var(--d, 0s), visibility 0s var(--d, 0s); }
+#sidebox.again .rp.in { --dur: .28s; }
+/* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
+.lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
+#evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
+#chatPanel { left: 1330px; top: 650px; width: 559px; height: 340px; }
+/* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
+#evText { position: absolute; inset: 0; padding: 18px 24px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; line-height: 1.15; }
+#evText .evl { margin-top: 6px; font-size: 22px; opacity: .45; } #evText .evl.new { font-size: 34px; opacity: 1; }
+#evText b { font-weight: normal; color: #6b5a10; }
+/* Information */
+#about { position: absolute; inset: 0; padding: 16px 70px 16px 22px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
+#about p { margin: 0 0 10px; }
+#expand { position: absolute; right: 16px; top: 14px; width: 40px; height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 3; }
 #expand svg { display: block; margin: 0 auto; } #expand:active { transform: translateY(2px); border-bottom-width: 2px; }
-.view { position: absolute; left: 24px; top: 20px; width: 536px; height: 286px; overflow-y: auto; overflow-x: hidden; color: #d8f58c; font-size: 23px; line-height: 1.28; scrollbar-width: thin; scrollbar-color: #c3f73a #2f2504; }
-#about, #settings { display: none; font-size: 21px; }
-#about { padding-right: 50px; }
-#log div { margin-bottom: 5px; } #log b { color: #fff3cf; }   /* the log uses two colours: lime (events) and cream (turn headings), never bold. (#log itself is hidden: it collects the lines for the Combat log window.) */
-/* Settings layout: Mute row on top, then two columns (left: sound effects + switch device, right: music). Headings use the condensed Little Monster font in capitals. */
-#settings .st-mute { margin-bottom: 4px; }
-#settings .st-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-#settings .st-col { min-width: 0; }
-#settings .mu-title, #settings .sfxrow span:first-child, #settings .swhead span:first-child { font-family: LM, MC, monospace; text-transform: uppercase; font-size: 38px; line-height: 1.1; color: #c3f73a; }
+/* Chat: message area with its own scrollbar, then the input and the chevron send button */
+#chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 238px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
+#chatView::-webkit-scrollbar { width: 24px; }
+#chatView::-webkit-scrollbar-track { background: #7d9926; border-radius: 8px; }
+#chatView::-webkit-scrollbar-thumb { background: #c3f73a; border: 7px solid #7d9926; border-radius: 12px; }
+#chatView::-webkit-scrollbar-button:single-button { display: block; height: 22px; background-color: #2f2504; background-repeat: no-repeat; background-position: center; background-size: 12px; border-radius: 6px; }
+#chatView::-webkit-scrollbar-button:single-button:vertical:decrement { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M2 10L7 4L12 10' fill='none' stroke='%23c3f73a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
+#chatView::-webkit-scrollbar-button:single-button:vertical:increment { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M2 4L7 10L12 4' fill='none' stroke='%23c3f73a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
+#chatInputBar { position: absolute; left: 14px; top: 262px; width: 521px; height: 46px; display: flex; gap: 10px; }
+#chatInput { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; font-family: MC, monospace; font-size: 20px; background: #ebffad; border: 4px solid #2f2504; border-radius: 12px; padding: 0 12px; color: #2f2504; outline: none; }
+#chatSendBtn { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 10px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#chatSendBtn svg { height: 55%; width: auto; } #chatSendBtn:hover { background: #3d3108; } #chatSendBtn:active { transform: translateY(2px); }
+/* Settings: orange panels with a red outline (positions measured from the mockup) */
+.op { box-sizing: border-box; background: #ff7529; border: 4px solid #a00f36; border-radius: 18px; color: #fff; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#opSw { left: 1332px; top: 647px; width: 305px; height: 155px; flex-direction: column; justify-content: center; align-items: stretch; padding: 8px 14px; }
+#opMute { left: 1673px; top: 647px; width: 216px; height: 77px; }
+#opSfx { left: 1673px; top: 729px; width: 216px; height: 73px; }
+#opMusic { left: 1566px; top: 809px; width: 323px; height: 182px; flex-direction: column; justify-content: space-between; align-items: stretch; padding: 10px 14px 12px; }
+.oph { font-family: LM, MC, monospace; text-transform: uppercase; font-size: 36px; line-height: 1; color: #fff; }   /* headings: the condensed hand-drawn font in white capitals */
+#opSw .oph { text-align: center; }
+.mrow { display: flex; align-items: center; justify-content: space-between; }
+.stp { display: flex; align-items: center; gap: 4px; }
+.stp .arr { width: 18px; height: 30px; padding: 0; border: 0; background: none; color: #2f2504; cursor: pointer; } .stp .arr svg { width: 100%; height: 100%; } .stp .arr:active { transform: scale(.88); }
+.stp-num { min-width: 52px; height: 42px; box-sizing: border-box; border-radius: 7px; background: #2f2504; color: #fff; font-size: 28px; font-weight: normal; display: flex; align-items: center; justify-content: center; padding-top: 3px; }
+#opMute .msw { width: 62px; height: 37px; flex: none; } #opMute .ms-rim { fill: #a00f36; } #opMute .ms-trk { fill: #2f2504; }
+#opMusic .mu-now { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#opMusic .mu-ctl { display: flex; justify-content: center; gap: 14px; }
+#opMusic .mu-btn { width: 40px; height: 40px; border-radius: 10px; background: #2f2504; color: #ff7529; border: 0; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#opMusic .mu-btn svg { width: 55%; height: 55%; } #opMusic .mu-btn[aria-pressed="true"] { background: #fff3cf; color: #2f2504; } #opMusic .mu-btn:active { transform: translateY(2px); }
+#opMusic .mu-song { flex: 1; min-width: 0; text-align: left; line-height: 1.05; } #opMusic .mu-song small { display: block; font-size: 13px; color: #ffef8a; } #opMusic .mu-name { display: block; font-size: 19px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swgen, .swcodebox { height: 44px; box-sizing: border-box; border: 3px solid #a00f36; border-radius: 9px; background: #2f2504; color: #fff; font-family: MC, monospace; font-size: 24px; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
+.swgen { cursor: pointer; width: 100%; } .swgen:active { transform: translateY(2px); }
+.swrow { display: flex; gap: 8px; align-items: center; margin-top: 10px; } .swrow .swcodebox { margin-top: 0; flex: 1; min-width: 0; font-size: 18px; user-select: all; }
+.swx { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 9px; background: #2f2504; color: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; } .swx svg { width: 18px; height: 18px; }
+.swleft { text-align: center; font-size: 16px; margin-top: 4px; } .swerr { margin: 6px 0 0; font-size: 14px; color: #ffef8a; text-align: center; }
+/* ---- the tab buttons: pinned to the bottom-right corner of the WINDOW (outside the stage), scaled like the stage (--fit, set by fit() in main.js) ---- */
+#dockfix { display: none; position: fixed; right: 0; bottom: 0; width: 420px; height: 92px; transform-origin: 100% 100%; transform: scale(var(--fit, 1)); z-index: 20; }
+#dock { position: absolute; inset: 0; box-sizing: border-box; background: #ff7529; border: 5px solid #a00f36; border-right: 0; border-bottom: 0; border-radius: 18px 0 0 0; }
 /* ---- the prompt over the board. Two looks: a small BANNER at the top of the board (plain messages: the board stays clear), and a DIALOG in the middle (class "choice": the board
    behind it is darkened by #shade, but only on the screen of the player who has to act). "roll" moves the dialog above the dice. ---- */
 #prompt { display: none; position: absolute; left: 146px; top: 24px; width: 1000px; box-sizing: border-box; padding: 10px 22px 12px; background: #2f2504; border: 4px solid #c3f73a; border-radius: 16px; color: #fff3cf; font-size: 26px; line-height: 1.25; text-align: center; z-index: 8; pointer-events: none; }
@@ -228,44 +271,8 @@ b, strong { font-weight: normal; }
   to { filter: brightness(1.2); }
 }
 
-/* ---- In-game Chat Tab ---- */
-#chatView {
-  display: none;
-  height: 240px;
-}
-.cmsg {
-  margin-bottom: 6px;
-  word-break: break-word;
-  line-height: 1.25;
-}
-#chatInputBar {
-  position: absolute;
-  left: 24px;
-  top: 276px;
-  width: 536px;
-  display: flex;
-  gap: 8px;
-}
-#chatInput {
-  flex: 1;
-  height: 48px;
-  font-family: MC, monospace;
-  font-size: 20px;
-  background: #c3f73a;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
-  color: #2f2504;
-  box-sizing: border-box;
-}
-#chatSendBtn {
-  --s: 1.0;
-  width: 80px;
-  height: 48px;
-}
-#chatSendBtn span { padding-top: 0; }
-#chatSendBtn span svg { height: 62%; width: auto; flex: none; }   /* the > chevron: always a fixed share of the button face, so it grows and shrinks with the button */
-
+/* ---- In-game Chat panel (see the right-hand panels section) ---- */
+.cmsg { margin-bottom: 6px; word-break: break-word; line-height: 1.25; }
 /* ---- Mode & Lobby Selection ---- */
 .mode-toggle {
   display: flex;

@@ -313,26 +313,42 @@ function openLog() { openModal("Combat log", `<div class="big biglog" id="biglog
 const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Combat log"], ["chat", "Chat"], ["about", "Information"]];
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
 $("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p>";
-// ---- Settings tab: Sound Effects volume bar (10 steps). Orange = selected volume, blue = the whole bar, lime outline on every step. ----
-// drawSettings(): (re)draw the Settings panel from VOLUME (audio.js): the Mute switch on top, then two columns:
-// left = Sound effects bar (+ Switch Device in online games), right = Music (volume, song name, play / loop / shuffle). The two columns are laid out by css/style.css (".st-cols").
+// ---- RIGHT-HAND PANELS (below the player panels) ----
+// The right column shows ONE "view" at a time: the Current Event panel (the default), Settings, Chat or Information. Every view is a set of panels (class "rp") that slide in from
+// beyond the right edge of the screen, overshoot a little and spring back (see ".rp.in" in css/style.css), and slide out again when another view replaces them.
+// Settings is four separate orange panels that arrive one after another. Opening a view a second time plays the same animation, only faster.
+const VIEWS = { event: ["evPanel"], settings: ["opSw", "opMute", "opSfx", "opMusic"], chat: ["chatPanel"], about: ["aboutPanel"] };
+// small helpers for the Settings panels: arrow icons and a "< 10 >" stepper (a number box with an arrow on each side)
+const arrowSvg = d => `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const stepper = (id, minus, plus, val) => `<div class="stp"><button class="arr" onclick="${minus}" aria-label="Lower">${arrowSvg("M11 2.5L3 10L11 17.5")}</button><b class="stp-num" id="${id}">${val}</b><button class="arr" onclick="${plus}" aria-label="Raise">${arrowSvg("M3 2.5L11 10L3 17.5")}</button></div>`;
+// drawSettings(): (re)fill the Settings panels from the current sound state (VOLUME, MUSIC_VOL, MUTED in audio.js). The panels themselves stay in place (so their animation is not restarted).
+// The music buttons (previous / next song, play, loop, shuffle) are taken from audio.js's musicPanelHtml so they keep working with its click handler.
 function drawSettings() {
-  let bar = "";
-  for (let i = 1; i <= 10; i++) bar += `<div class="seg${i <= VOLUME ? " on" : ""}" title="${i * 10}%" onclick="setVolume(${i})"></div>`;
-  const sfxHtml = `<div class="sfxrow"><span>Sound effects</span><span class="volnum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="volbar">${bar}</div>`;
-  $("settings").innerHTML = `<div class="st-mute">${muteRowHtml()}</div><div class="st-cols"><div class="st-col">${sfxHtml}${NET.active && NET.gameStarted && !NET.retired ? swDeviceHtml() : ""}</div><div class="st-col">${musicPanelHtml("tab")}</div></div>`;
+  const t = document.createElement("div"); t.innerHTML = musicPanelHtml("tab");
+  $("opMute").innerHTML = `<span class="oph">Mute</span>${muteSwitchHtml()}`;
+  $("opSfx").innerHTML = `<span class="oph">SFX</span>${stepper("sfxNum", "stepSfx(-1)", "stepSfx(1)", VOLUME)}`;
+  $("opMusic").innerHTML = `<div class="mrow"><span class="oph">Music</span>${stepper("musNum", "stepMusic(-1)", "stepMusic(1)", MUSIC_VOL)}</div>${t.querySelector(".mu-now").outerHTML}${t.querySelector(".mu-ctl").outerHTML}`;
+  const online = NET.active && NET.gameStarted && !NET.retired;      // the Switch Device panel only exists during an online game
+  $("opSw").style.display = online ? "" : "none";
+  if (online) $("opSw").innerHTML = swDeviceHtml();
+  refreshMusicUi();                                                  // fills in the song name, play / loop / shuffle states
 }
+// stepSfx(d) / stepMusic(d): the arrows next to SFX and MUSIC change the volume by one step (0-10; 10 = full).
+function stepSfx(d) {
+  VOLUME = Math.max(0, Math.min(10, VOLUME + d));
+  try { localStorage.setItem("snc_volume", VOLUME); } catch (e) { /* not saved: fine */ }
+  $("sfxNum").textContent = VOLUME; sfx("small");                    // a click so you can hear the new level
+}
+function stepMusic(d) { setMusicVol(Math.max(0, Math.min(10, MUSIC_VOL + d))); $("musNum").textContent = MUSIC_VOL; }
 // ---- Switch Device (online games): a one-time code that lets this player carry on from another device ----
 const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };
 const fmtLeft = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 function swDeviceHtml() {
   const x = XFER_UI, live = !!(x.code && performance.now() < x.until);
-  // header row: "Switch Device" on the left, the 2-minute countdown on the right (same layout as "Sound effects" / 30%)
-  const head = `<div class="sfxrow swhead"><span>Switch Device</span><span class="volnum" id="swLeft">${live ? fmtLeft(Math.ceil((x.until - performance.now()) / 1000)) : ""}</span></div>`;
   const body = live
-    ? `<div class="swrow"><div class="swcodebox">${x.code.room}-${x.code.secret}</div><button class="swx" onclick="switchDeviceCancel()" title="Cancel" aria-label="Cancel"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="#2f2504" stroke-width="3.6" stroke-linecap="round"/></svg></button></div>`
-    : `<div class="swrow"><button class="swgen" onclick="switchDevicePressed()">Generate Code</button></div>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}`;
-  return `<div class="swbox">${head}${body}</div>`;
+    ? `<div class="swrow"><div class="swcodebox">${x.code.room}-${x.code.secret}</div><button class="swx" onclick="switchDeviceCancel()" title="Cancel" aria-label="Cancel"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button></div><div class="swleft" id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</div>`
+    : `<button class="swgen" onclick="switchDevicePressed()">Generate Code</button>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}`;
+  return `<div class="oph">Switch Device</div>${body}`;
 }
 // switchDeviceCancel(): the X next to the code - the code stops working and the "Generate Code" box comes back
 function switchDeviceCancel() {
@@ -362,31 +378,52 @@ function setVolume(n) {
   try { localStorage.setItem("snc_volume", VOLUME); } catch (e) { /* not saved: fine */ }
   drawSettings(); sfx("small");   // play a click so you can hear the new level
 }
-drawSettings();
-let TAB = "settings";   // the tab being shown in the brown box (Settings is the default until the new "latest event" panel exists)
-// showTab(k): switch the brown box to tab k (settings / chat / about), and update the buttons (active = light + pressed, others = dark + raised).
-// Other code (network.js, input.js) still calls showTab("boardlog") to leave the Chat tab; that is no longer needed (choices now appear over the board), so it does nothing.
+let TAB = "event";   // the view being shown (event / settings / chat / about); network.js reads this to count unread chat messages
+let SHOWN = null;    // the view that is currently on screen (null = none yet)
+const OPENED = {};   // which views have been opened before (a repeat opening plays a faster animation)
+// showTab(k): switch the right column to view k. Clicking the tab that is already open goes back to the Current Event panel.
+// (network.js / input.js still call showTab("boardlog") to leave the Chat tab; that is no longer needed, so unknown names are ignored.)
 function showTab(k) {
-  if (k !== "settings" && k !== "chat" && k !== "about") return;
-  TAB = k;
-  ["settings", "chat", "about"].forEach(t => {
+  if (!VIEWS[k]) return;
+  if (k === TAB && k !== "event" && SHOWN === k) k = "event";
+  if (k === SHOWN) return;
+  const leaving = SHOWN;
+  if (leaving) VIEWS[leaving].forEach(id => $(id).classList.remove("in"));   // the old panels slide out to the right (fast)
+  TAB = k; SHOWN = k;
+  $("sidebox").classList.toggle("again", !!OPENED[k]); OPENED[k] = true;      // class "again" = the quicker version of the entrance
+  if (k === "settings") drawSettings();
+  VIEWS[k].forEach((id, i) => {                                              // the new panels slide in, one after another
+    const el = $(id);
+    el.style.setProperty("--d", ((leaving ? .12 : 0) + i * .05) + "s");
+    el.classList.add("in");
+  });
+  ["settings", "chat", "about"].forEach(t => {                               // pressed-down look for the open tab's button
     const on = t === k;
     $("tb_" + t).classList.toggle("on", on);
     $("tb_" + t).querySelector(".face").src = A(`button_${t}_${on ? "light" : "dark"}.svg`);
   });
-  $("about").style.display = k === "about" ? "block" : "none";
-  $("settings").style.display = k === "settings" ? "block" : "none";
-  if (k === "settings") drawSettings();                       // (the Switch Device part only exists during an online game)
-  $("chatView").style.display = k === "chat" ? "block" : "none";
-  $("chatInputBar").style.display = k === "chat" ? "flex" : "none";
-  $("expand").style.display = k === "about" ? "block" : "none";   // only the Information panel can expand
   if (k === "chat") {
     NET.unreadChat = 0;
     const btn = $("tb_chat");
     if (btn) btn.classList.remove("unread");
   }
 }
-
+// ---- Current Event panel: shows the latest lines of the log (the flavour text) in a big font. A watcher on the hidden #log fills it, so lines from every source appear (host, guests, game rules). ----
+function updateEvent() {
+  const lines = [...$("log").children].slice(-3);
+  $("evText").innerHTML = lines.map((l, i) => `<div class="evl${i === lines.length - 1 ? " new" : ""}">${l.innerHTML}</div>`).join("");   // newest line big, the two before it smaller and faded
+}
+new MutationObserver(updateEvent).observe($("log"), { childList: true });
+// ---- The game screen appears (or disappears): show / hide the tab buttons in the window corner, and play the first panel animation. ----
+let GAME_ON = false;
+new MutationObserver(() => {
+  const on = getComputedStyle($("game")).display !== "none";
+  if (on === GAME_ON) return;
+  GAME_ON = on;
+  $("dockfix").style.display = on ? "block" : "none";
+  if (on) { SHOWN = null; TAB = "event"; showTab("event"); updateEvent(); }
+  else { Object.values(VIEWS).flat().forEach(id => $(id).classList.remove("in")); SHOWN = null; TAB = "event"; }
+}).observe($("game"), { attributes: true, attributeFilter: ["style", "class"] });
 function chatSendPressed() {
   const inp = $("chatInput");
   if (!inp || !inp.value.trim()) return;
@@ -394,11 +431,10 @@ function chatSendPressed() {
   inp.value = "";
 }
 // expandPanel(): the Expand button of the Information panel - show its text in a big window.
-function expandPanel() { if (TAB === "about") openModal("Information", `<div class="big">${$("about").innerHTML}</div>`); }
-// The five buttons: Rulebook and Combat log open their big window directly, the other three switch the brown box.
+function expandPanel() { openModal("Information", `<div class="big">${$("about").innerHTML}</div>`); }
+// The five buttons: Rulebook and Combat log open their big window directly, the other three switch the right column's view.
 const TAB_ACTION = { rulebook: "openRulebook()", boardlog: "openLog()" };
-$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.x + 14 + i * DOCK.pitch}px;top:${DOCK.y + 8}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A("button_" + b[0] + "_dark.svg")}" alt="${b[1]}"></button>`).join("");
-showTab("settings");
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.pad}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}_dark.svg`)}" alt="${b[1]}"></button>`).join("");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
 function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the character pick panels (css)

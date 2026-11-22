@@ -378,7 +378,8 @@ function spawnDiceElements(n, canGrab) {
     const el = document.createElement("div"); el.className = "die"; el.dataset.i = i;
     el.style.pointerEvents = canGrab ? "auto" : "none";
     el.style.cursor = canGrab ? "grab" : "default";
-    const idlePos = DICE_IDLE[i] || DICE_IDLE[0];
+    // waiting dice are centred above the ROLL button: one die exactly in the middle, two dice (Gambler) side by side, DICE_GAP apart
+    const idlePos = [(DICE_AREA.x1 + DICE_AREA.x2) / 2 + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
     el.innerHTML = `<div class="cube">${[1, 2, 3, 4, 5, 6].map(v => `<img class="df df${v}" src="${A(`dice_no_${v}.svg`)}" alt="" draggable="false">`).join("")}</div>`;
     $("dice").appendChild(el);
     const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, 359), ry: rnd(0, 359), mode: "idle", val: 1 };

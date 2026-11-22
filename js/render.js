@@ -276,11 +276,11 @@ function renderItems() {
 // The numbers are TEXT in the Blustrue font (assets/Blustrue.otf, loaded by loadNumberFont in art.js): white with a brown outline that sits a little lower than the letters.
 // (The old number pictures no_0_B.svg ... no_9_B.svg are no longer used by any code.)
 // Numbers sit in a corner of their tile; placeNumbers() picks a corner no snake or ladder covers.
-const NUM_FS = 40;                                                              // font size of the numbers in pixels (bigger = more readable)
+const NUM_FS = 32;                                                              // font size of the numbers in pixels (bigger = more readable)
 const NUM_ADV = [.6985, .3735, .699, .6885, .6295, .686, .703, .6395, .687, .702];   // width of digits 0-9 as a fraction of the font size (measured from Blustrue.otf, so no measuring is needed at run time)
 const NUM_H = NUM_FS * .94;                                                     // height of a digit in pixels (from the top of the digit to the bottom of its lowest curve)
 const NUM_TOP = NUM_FS * .725;                                                  // how far a digit's top is above the text baseline
-const NUM_OUT = 3;                                                              // the brown outline is shifted this many pixels DOWN
+const NUM_OUT = 2.5;                                                            // the brown outline is shifted this many pixels DOWN
 // numWidth(n): how wide the number n is in pixels.
 function numWidth(n) { return [...String(n)].reduce((a, c) => a + NUM_ADV[+c] * NUM_FS, 0) - NUM_FS * .05; }
 // numSvg(n,x,y): SVG text that draws number n with the top-left corner of its digits at (x,y): first a thick brown copy shifted down (the offset outline),
@@ -289,7 +289,7 @@ function numSvg(n, x, y) {
   const bx = x - NUM_FS * .02, by = y + NUM_TOP;                                // text start and baseline
   const t = (dy, attrs) => `<text x="${f1(bx)}" y="${f1(by + dy)}" ${attrs}>${n}</text>`;
   return `<g font-family="Blustrue, Impact, sans-serif" font-size="${NUM_FS}" stroke-linejoin="round">` +
-    t(NUM_OUT, `fill="${BROWN}" stroke="${BROWN}" stroke-width="8"`) + t(0, `fill="#fff" stroke="${BROWN}" stroke-width="4" paint-order="stroke"`) + `</g>`;
+    t(NUM_OUT, `fill="${BROWN}" stroke="${BROWN}" stroke-width="6"`) + t(0, `fill="#fff" stroke="${BROWN}" stroke-width="3" paint-order="stroke"`) + `</g>`;
 }
 // segDist(px,py, ax,ay, bx,by): shortest distance from point (px,py) to the line segment a-b.
 function segDist(px, py, ax, ay, bx, by) {
@@ -405,6 +405,7 @@ function buildPanels() {
     const slots = PANEL.slots.map((s, j) => `<div class="slot" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
     return `<div class="pp" id="pp${i}" title="${esc(CHARACTERS.find(ch => ch.id === p.character).name)}"><div class="pbody">` +
       `<img class="pbg" src="${A("player_panel.svg")}" alt="">` +
+      `<div class="pcol" style="left:${pt.cx - PANEL.disc}px;top:${pt.cy - PANEL.disc}px;width:${PANEL.disc * 2}px;height:${PANEL.disc * 2}px;background:${p.color}"></div>` +   // a disc in the player's pawn colour, behind the head and on top of the panel's dark circle
       `<img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size}px">` +
       `<img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">` +
       `<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - 32, 40)}px">${esc(p.name)}</div>${slots}` +
@@ -413,7 +414,7 @@ function buildPanels() {
   placePanels();
   requestAnimationFrame(() => requestAnimationFrame(() => $("panels").classList.add("anim")));   // switch the glide animation on only AFTER the first placement, so panels don't fly in from the corner
 }
-// placePanels(): move every panel to the place that matches its distance (in turn order) from the active player, and put the bouncing chevron above the NEXT player's panel.
+// placePanels(): move every panel to the place that matches its distance (in turn order) from the active player.
 function placePanels() {
   const order = turnOrder(), n = order.length, cur = Math.max(0, order.indexOf(G.cur));   // (before the first turn the first player in turn order is shown on top)
   G.players.forEach((p, i) => {
@@ -424,13 +425,6 @@ function placePanels() {
     el.style.zIndex = sl.z;
     el.classList.toggle("big", rank === 0);
   });
-  const ch = $("chev");
-  if (ch) {
-    if (n < 2) { ch.style.display = "none"; return; }
-    const nx = panelSlot(1, n);
-    ch.style.display = "block";
-    ch.style.left = f1(nx.x + PANEL.w * nx.s / 2 - 22) + "px";   // centred above the next player's panel
-  }
 }
 // updateSlots(): show each player's items in their three slots (an item picture fitted to the slot, centred).
 function updateSlots() {

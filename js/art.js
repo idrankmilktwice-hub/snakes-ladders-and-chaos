@@ -132,15 +132,6 @@ async function initButtonArt() {
       `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(t)}")`,
     );
   }
-  // the red container art (stretched behind each section; see .box in css/style.css)
-  const c = (await T("container_red.svg")).replace(
-    "<svg ",
-    '<svg width="1063.86" height="1057.37" ',
-  );
-  $("stage").style.setProperty(
-    "--box-img",
-    `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(c)}")`,
-  );
 }
 
 // initPatternArt(): the repeating background tile (assets/pattern.svg). Like the button art above, width/height are added to a copy of the SVG text
