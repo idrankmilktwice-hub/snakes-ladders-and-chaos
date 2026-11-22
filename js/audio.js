@@ -144,6 +144,15 @@ function stopVoice() {
   VOICE_NEXT = null;
   if (VOICE) { try { VOICE.src.onended = null; VOICE.src.stop(); } catch (e) { /* already over */ } VOICE = null; }
 }
+// voiceIfFree(group): play a random sound of the group through the voice channel, but ONLY if no game sound is playing or waiting right now. Returns true if it played.
+// Used for toy sounds (clicking the cat) so they can never cut off or delay a real game sound.
+function voiceIfFree(group) {
+  if (MUTED || !ACTX || VOICE_NEXT || (VOICE && VOICE.ends > ACTX.currentTime)) return false;
+  const list = SFX_GROUPS[group], name = list ? pick(list) : group;
+  if (!BUF[name]) return false;
+  startVoice(name);
+  return true;
+}
 // sfxPick(group, delayMs, chain): pick ONE random sound of the group (or the sound itself if it has no variations) and play it through the voice channel on this device only. Returns the name picked.
 function sfxPick(group, delayMs, chain) {
   const list = SFX_GROUPS[group], name = list ? pick(list) : group;

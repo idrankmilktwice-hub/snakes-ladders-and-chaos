@@ -64,6 +64,7 @@ const SOUNDS = {
   happy_oracle_1: { file: "sounds/sound_oracle_happy_1.mp3", skip: 0.056, volume: 0.94 },
   happy_struggler_1: { file: "sounds/sound_struggler_happy_1.mp3", skip: 0.062, volume: 0.82 }
 };
+const CAT_CLICK_COOLDOWN = 1500;   // milliseconds: clicking the cat makes its sound at most this often (the picture still changes on every click)
 const STONE_BAD_DELAY = 450;   // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
 

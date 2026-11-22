@@ -153,6 +153,7 @@ window.addEventListener("keydown", e => {
   else if ($("moveBtn").style.display === "block" && $("moveBtn").onclick) { sfx("small"); $("moveBtn").click(); }
 });
 
+let CAT_CLICK_AT = 0;   // when the cat last made its click sound (Date.now() value), for the cooldown
 // Mouse pressed: grab a piece, throw a die, or click the cat.
 window.addEventListener("pointerdown", e => {
   const t = e.target;
@@ -162,7 +163,12 @@ window.addEventListener("pointerdown", e => {
     const [x, y] = stagePt(e), sq = squareAt(x, y);
     if (TGT.targets.includes(sq)) { e.preventDefault(); const fn = TGT.res; TGT = null; fn(sq); return; }
   }
-  if (t.closest && t.closest(".cat")) { switchCat(); sfx("small"); }                                  // 4. clicking the cat changes its picture (any time, any player)
+  if (t.closest && t.closest(".cat")) {                                             // 4. clicking the cat changes its picture (any time, any player)...
+    switchCat();
+    const now = Date.now();                                                         // ...and makes the cat's sound, but at most once every CAT_CLICK_COOLDOWN ms (config.js), and only if no game sound is playing.
+    if (now - CAT_CLICK_AT >= CAT_CLICK_COOLDOWN && voiceIfFree("cat")) CAT_CLICK_AT = now;
+    else sfx("small");                                                              // otherwise the usual small click
+  }
   const die = t.closest && t.closest(".die");
   if (die && DICE.waiting && !DICE.flying && DICE.canInteract) { e.preventDefault(); dieDown(+die.dataset.i, e); return; }   // 3. grab a die (only on your turn)
   const g = t.closest && t.closest(".grab");

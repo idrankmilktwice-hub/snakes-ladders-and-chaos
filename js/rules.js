@@ -372,7 +372,7 @@ async function landOn(p) {
   const it = itemAt(p.pos);
   if (!it || p.disconnected) return;                                // a disconnected pawn picks nothing up and trips nothing
   if (it.trap) {                                                    // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
-    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, 150); render();   // ouch: the character reacts just after the thud syncGameState(); return;
+    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, 150); render(); syncGameState(); return;   // ouch: the character reacts just after the thud
   }
   const name = ITEMS[it.type].name;
   if (p.items.length < ITEM_MAX) { G.items.splice(G.items.indexOf(it), 1); p.items.push(it.type); log(FLAVOR.pickup(p.name, name)); sfx("small"); cheer(p); render(); syncGameState(); return; }
