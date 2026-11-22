@@ -534,7 +534,7 @@ body:not(.on-title) #tReconn { display: none !important; }
 
 /* ---- play / pause, loop and shuffle buttons (under the song name) ---- */
 .mu-ctl { display: flex; justify-content: center; gap: 14px; margin-top: 12px; }
-.mu-play[data-paused="false"] .i-play, .mu-play[data-paused="true"] .i-pause { display: none; }   /* playing: show "pause"; paused: show "play" */
+.mu-play[data-paused="false"] .i-play, .mu-play[data-paused="true"] .i-pause { display: none !important; }   /* playing: show "pause"; paused: show "play". (!important because the title screen has a general "#title svg { display: block }" rule that would otherwise show both) */
 .mu-ctl .mu-btn svg { height: 55%; width: auto; }
 .tp-card .mu-ctl .mu-btn { width: 56px; height: 56px; }
 .tp-card .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: var(--tt-ink); }   /* loop / shuffle switched ON: orange */
