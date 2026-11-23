@@ -103,13 +103,14 @@ const BOXES = [                                   // the container drawn behind 
 ];
 const BOARD_BOX = { x: 8, y: 8, w: 1276, h: 1064 };   // the board SVG / canvases cover the whole container (stage coordinates). The roll overlay (#tray) covers the same area.
 // Tiles are RECTANGULAR now (wider than tall): the tile art (tile_dark.svg / tile_light.svg) is 113.48 x 95.54 with a 86.52-high top face and a ~9-high edge underneath.
-const TW = 120;                 // drawn width of one tile (pixels)
+const TW = 114;                 // drawn width of one tile (pixels). (A little smaller than the 126 pitch so a dark-brown shadow AND a thin orange gap fit between tiles.)
 const TK = TW / 113.48;         // scale from the tile SVG's own size to its drawn size (1.0575): every tile is drawn at exactly this scale
+const TTH = 95.54 * TK;         // drawn height of a WHOLE tile (top face + the edge underneath); the shadow in render.js is as tall as this
 const TH = 86.52 * TK;          // drawn height of the TOP FACE of a tile (about 91.5). Pawns, numbers and highlights are centred on / fitted to the face.
 const CX = 126;                 // horizontal distance between the left edges of two neighbouring tiles (tile width + a small gap)
 const CY = 105;                 // vertical distance between the tops of two neighbouring tiles (face + edge + a small gap)
-const BX0 = 19;                 // left edge of the first board column
-const BY0 = 16;                 // top edge of the first board row
+const BX0 = 22;                 // left edge of the first board column
+const BY0 = 17;                 // top edge of the first board row
 const BS = 1.1;                 // BS = "board scale": everything drawn on the board (snakes, pawns, items) is sized relative to this
 // ---- Player panels (right side). ONE panel art (assets/player_panel.svg, 510 x 220.89) is used for every panel and drawn at two sizes:
 //      the ACTIVE player is big on top, everyone else is small and sits in a ring below, see panelSlot() in render.js. All numbers below are measured from the art (panel units). ----
@@ -124,7 +125,7 @@ const PANEL_ZONE = { bigX: 1329, bigY: 16, bigScale: 1.07,                   // 
 const COUNTER_ORANGE = "#ff7529", COUNTER_BLUE = "#1b84b8", COUNTER_BROWN = "#2f2504";   // buff (positive) / debuff (negative) / zero colours of the number square
 // ---- The strip of round tab buttons in the bottom-right CORNER OF THE WINDOW (not of the 1920x1080 stage: it is fixed to the real window corner, see #dockfix in css/style.css).
 //      pad = space round the buttons, pitch = distance between two buttons ----
-const DOCK = { pad: 14, pitch: 80 };
+const DOCK = { pad: 14, padY: 10, pitch: 80 };   // pad = space left of the first button, padY = space above the buttons (the strip is 80 tall, see #dockfix in css), pitch = distance between buttons
 // ---- Roll overlay: while a player rolls, the board area becomes the dice tray. TRAY = its position on screen; DICE_AREA = where dice may roll (relative to the tray's top-left) ----
 const TRAY = { x: 8, y: 8, w: 1276, h: 1064 };
 const DICE_AREA = { x1: 70, y1: 70, x2: 1206, y2: 994 };   // dice stay inside this rectangle

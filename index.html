@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=22">
+  <link rel="stylesheet" href="css/style.css?v=23">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -47,24 +47,24 @@
     <div id="title"></div>                       <!-- title screen: logo, Play / Options / About (js/title.js) -->
     <div id="tLoad"><div class="ld-bar"><i></i></div><span class="ld-ok"><svg viewBox="0 0 12 10" width="12" height="10"><path d="M1 5.5L4.5 9 11 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>Assets loaded</span></div>
     <div id="tCopy">Copyright &copy; 2026 Hafiz Shaikh. All Rights Reserved.<span class="tc-sub">Copying, modifying, distributing or reusing this game's code, artwork or audio without written permission is prohibited.</span></div>   <!-- copyright notice, bottom middle of the title screens (see LICENSE.md) -->
-    <div id="modal" onclick="if(event.target===this)this.style.display='none'"></div>                       <!-- pop-up windows (rulebook etc.) -->
   </div>
   <!-- The tab buttons live OUTSIDE the stage so they stick to the bottom-right corner of the real window (css #dockfix; shown by main.js while a game is on screen). -->
+  <div id="modal" onclick="if(event.target===this)this.style.display='none'"></div>   <!-- big pop-up windows (rulebook, combat log, information): OUTSIDE the stage so the dark layer covers the whole browser window -->
   <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=22"></script>
-  <script src="js/board.js?v=22"></script>
-  <script src="js/art.js?v=22"></script>
-  <script src="js/audio.js?v=22"></script>
-  <script src="js/preload.js?v=22"></script>
-  <script src="js/render.js?v=22"></script>
-  <script src="js/network.js?v=22"></script>
-  <script src="js/input.js?v=22"></script>
-  <script src="js/rules.js?v=22"></script>
-  <script src="js/rulebook.js?v=22"></script>
-  <script src="js/main.js?v=22"></script>
-  <script src="js/title.js?v=22"></script>
-  <script src="js/local.js?v=22"></script>
+  <script src="js/config.js?v=23"></script>
+  <script src="js/board.js?v=23"></script>
+  <script src="js/art.js?v=23"></script>
+  <script src="js/audio.js?v=23"></script>
+  <script src="js/preload.js?v=23"></script>
+  <script src="js/render.js?v=23"></script>
+  <script src="js/network.js?v=23"></script>
+  <script src="js/input.js?v=23"></script>
+  <script src="js/rules.js?v=23"></script>
+  <script src="js/rulebook.js?v=23"></script>
+  <script src="js/main.js?v=23"></script>
+  <script src="js/title.js?v=23"></script>
+  <script src="js/local.js?v=23"></script>
 </body>
 </html>

@@ -328,7 +328,7 @@ function buildBoard() {
   for (let n = 1; n <= 100; n++) {
     const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (9 - r0) * CY;
     const L = ART.tiles[(r0 + c0) % 2 === 0 ? "dark" : "light"], T = L[(n * 37 % 11) % L.length];   // checkerboard colours
-    sh += `<rect x="${f1(x + 2)}" y="${f1(y + 6)}" width="${TW - 4}" height="${f1(TH)}" rx="8" fill="#1d1500" opacity=".55"/>`;   // a dark shadow under the tile: it shows when the tile hovers (empty) and is hidden when the tile sinks (someone stands on it)
+    sh += `<rect x="${f1(x - 2)}" y="${f1(y + 4)}" width="${TW + 4}" height="${f1(TTH)}" rx="9" fill="#2f2504"/>`;   // a dark shadow under the tile: it shows when the tile hovers (empty) and is hidden when the tile sinks (someone stands on it)
     tl += `<g class="tile" id="tl${n}"><use href="#${T.p}all" transform="translate(${f1(x)} ${f1(y)}) scale(${TK})"/><g class="nm" id="nm${n}"></g></g>`;
     hl += `<rect class="hl" id="hl${n}" x="${f1(x)}" y="${f1(y)}" width="${TW}" height="${f1(TH)}" rx="8"/>`;   // the pulsing lime outline (hidden until needed)
   }

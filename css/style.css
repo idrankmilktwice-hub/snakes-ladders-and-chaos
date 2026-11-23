@@ -8,6 +8,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
   font-family: MC, monospace; color: #2f2504;
 }
 #game { display: none; position: absolute; inset: 0; }
+#stage.ingame { overflow: visible; }   /* during a game the stage does not clip: the window itself does, so panels can fly in from the real window edge (main.js sets the class) */
 img { display: block; user-select: none; -webkit-user-drag: none; }
 
 /* ---- the three red containers behind the sections (container_red.svg stretched like a 9-slice picture; positions come from BOXES in js/config.js) ---- */
@@ -22,6 +23,7 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .pp .pbody { position: absolute; left: 0; top: 0; width: 510px; height: 220.89px; }
 /* the brown outline round the panel, shifted down: four hard drop-shadows (top, right, left, and a deeper one at the bottom) */
 .pp .pbg { left: 0; top: 0; width: 510px; filter: drop-shadow(0 -3px 0 #2f2504) drop-shadow(3px 0 0 #2f2504) drop-shadow(-3px 0 0 #2f2504) drop-shadow(0 9px 0 #2f2504); }
+.pp .pcol { position: absolute; border-radius: 50%; }   /* the coloured disc behind the head: a circle in the player's pawn colour */
 .pp .port { width: auto; transform: translate(-50%, -50%); }          /* position + height are set inline from PANEL in config.js (centre of the round portrait window) */
 .pp .fld { position: absolute; display: flex; align-items: center; justify-content: flex-start; white-space: nowrap; overflow: hidden; padding: 3px 0 0 16px; box-sizing: border-box; color: #fff; }   /* the player's name, white on the dark box */
 /* the 4th square: buff / debuff number. Colour is set from JS (orange = positive, blue = negative, brown = zero). Minecraft font, white with a brown outline, no sign. */
@@ -102,12 +104,12 @@ b, strong { font-weight: normal; }
 #chooser .card img { height: 220px; width: 190px; object-fit: contain; flex: none; }
 #chooser .card b { display: block; font-weight: normal; font-size: 46px; margin-bottom: 8px; } #chooser .card span { display: block; font-size: 21px; line-height: 1.3; }
 .dot { display: inline-block; width: 40px; height: 40px; border-radius: 50%; border: 3px solid #000; flex: none; }
-#modal { display: none; position: absolute; inset: 0; background: rgba(20, 14, 2, .6); align-items: center; justify-content: center; z-index: 60; }   /* the window is centred on the SCREEN; JS shows it with display:flex */   /* clicking this dark area (outside the window) closes the pop-up */
-#modal > div { position: relative; width: 1000px; max-height: 960px; overflow: auto; padding: 26px 34px; font-size: 18px; line-height: 1.45; }
+#modal { display: none; position: fixed; inset: 0; background: rgba(20, 14, 2, .72); align-items: center; justify-content: center; z-index: 60; font-family: MC, monospace; color: #2f2504; }   /* covers the WHOLE browser window (it lives outside the stage); JS shows it with display:flex. The window inside is scaled like the stage. */
+#modal > div { position: relative; width: min(1500px, calc(100vw / var(--fit, 1) - 80px)); max-height: min(960px, calc(100vh / var(--fit, 1) - 60px)); transform: scale(var(--fit, 1)); flex: none; overflow: auto; padding: 26px 34px; font-size: 18px; line-height: 1.45; }
 /* the small X at the top right of a big window (clicking outside the window also closes it) */
 .mclose { position: sticky; top: 0; float: right; width: 44px; height: 44px; margin: -6px -14px 0 12px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
-#modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: 700px; overflow-y: auto; } #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
+#modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
 /* ---- RIGHT-HAND PANELS: Current Event, Information, Chat (light lime "lp" panels) and the four orange Settings panels ("op"). ----
@@ -115,13 +117,13 @@ b, strong { font-weight: normal; }
    (the 1.5 in the curve is the overshoot); main.js staggers the Settings panels with --d. "#sidebox.again" = the view was opened before: the same animation, but faster.
    When the view closes ("in" is removed) the panel slides out quickly. */
 #sidebox { position: absolute; inset: 0; pointer-events: none; }
-.rp { position: absolute; visibility: hidden; transform: translateX(760px); pointer-events: none; transition: transform .2s cubic-bezier(.5, 0, .9, .45), visibility 0s .2s; }
+.rp { position: absolute; visibility: hidden; transform: translateX(var(--off, 760px)); pointer-events: none; transition: transform .2s cubic-bezier(.5, 0, .9, .45), visibility 0s .2s; }
 .rp.in { visibility: visible; transform: none; pointer-events: auto; transition: transform var(--dur, .5s) cubic-bezier(.3, 1.5, .5, 1) var(--d, 0s), visibility 0s var(--d, 0s); }
 #sidebox.again .rp.in { --dur: .28s; }
 /* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
 .lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
 #evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
-#chatPanel { left: 1330px; top: 650px; width: 559px; height: 340px; }
+#chatPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
 #evText { position: absolute; inset: 0; padding: 18px 24px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; line-height: 1.15; }
 #evText .evl { margin-top: 6px; font-size: 22px; opacity: .45; } #evText .evl.new { font-size: 34px; opacity: 1; }
@@ -132,14 +134,14 @@ b, strong { font-weight: normal; }
 #expand { position: absolute; right: 16px; top: 14px; width: 40px; height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 3; }
 #expand svg { display: block; margin: 0 auto; } #expand:active { transform: translateY(2px); border-bottom-width: 2px; }
 /* Chat: message area with its own scrollbar, then the input and the chevron send button */
-#chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 238px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
+#chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
 #chatView::-webkit-scrollbar { width: 24px; }
 #chatView::-webkit-scrollbar-track { background: #7d9926; border-radius: 8px; }
 #chatView::-webkit-scrollbar-thumb { background: #c3f73a; border: 7px solid #7d9926; border-radius: 12px; }
 #chatView::-webkit-scrollbar-button:single-button { display: block; height: 22px; background-color: #2f2504; background-repeat: no-repeat; background-position: center; background-size: 12px; border-radius: 6px; }
 #chatView::-webkit-scrollbar-button:single-button:vertical:decrement { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M2 10L7 4L12 10' fill='none' stroke='%23c3f73a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
 #chatView::-webkit-scrollbar-button:single-button:vertical:increment { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M2 4L7 10L12 4' fill='none' stroke='%23c3f73a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
-#chatInputBar { position: absolute; left: 14px; top: 262px; width: 521px; height: 46px; display: flex; gap: 10px; }
+#chatInputBar { position: absolute; left: 14px; top: 246px; width: 521px; height: 46px; display: flex; gap: 10px; }
 #chatInput { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; font-family: MC, monospace; font-size: 20px; background: #ebffad; border: 4px solid #2f2504; border-radius: 12px; padding: 0 12px; color: #2f2504; outline: none; }
 #chatSendBtn { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 10px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 #chatSendBtn svg { height: 55%; width: auto; } #chatSendBtn:hover { background: #3d3108; } #chatSendBtn:active { transform: translateY(2px); }
@@ -167,7 +169,7 @@ b, strong { font-weight: normal; }
 .swx { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 9px; background: #2f2504; color: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; } .swx svg { width: 18px; height: 18px; }
 .swleft { text-align: center; font-size: 16px; margin-top: 4px; } .swerr { margin: 6px 0 0; font-size: 14px; color: #ffef8a; text-align: center; }
 /* ---- the tab buttons: pinned to the bottom-right corner of the WINDOW (outside the stage), scaled like the stage (--fit, set by fit() in main.js) ---- */
-#dockfix { display: none; position: fixed; right: 0; bottom: 0; width: 420px; height: 92px; transform-origin: 100% 100%; transform: scale(var(--fit, 1)); z-index: 20; }
+#dockfix { display: none; position: fixed; right: 0; bottom: 0; width: 420px; height: 80px; transform-origin: 100% 100%; transform: scale(var(--fit, 1)); z-index: 20; }
 #dock { position: absolute; inset: 0; box-sizing: border-box; background: #ff7529; border: 5px solid #a00f36; border-right: 0; border-bottom: 0; border-radius: 18px 0 0 0; }
 /* ---- the prompt over the board. Two looks: a small BANNER at the top of the board (plain messages: the board stays clear), and a DIALOG in the middle (class "choice": the board
    behind it is darkened by #shade, but only on the screen of the player who has to act). "roll" moves the dialog above the dice. ---- */
@@ -242,6 +244,9 @@ b, strong { font-weight: normal; }
 #rulebook .rb h2, #modal .rb h2 { margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 2px solid #c3f73a; color: #c3f73a; font-weight: normal; font-size: 1.15em; }
 #rulebook .rb h2:first-of-type, #modal .rb h2:first-of-type { margin-top: 10px; }
 #rulebook .rb h3, #modal .rb h3 { margin: 12px 0 3px; color: #ffa42c; font-weight: normal; font-size: 1em; }
+#modal .rb { column-count: 2; column-gap: 56px; column-rule: 2px dashed #5a4a12; }                       /* the rulebook is two columns in its big window */
+#modal .rb > p:first-child { column-span: all; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid #5a4a12; }   /* the intro sentence runs across both columns */
+#modal .rb h2 { break-after: avoid; } #modal .rb h3 { break-after: avoid; } #modal .rb ul, #modal .rb table { break-inside: avoid; }
 .rb ul { margin: 0 0 6px; padding-left: 1.1em; list-style: square; }
 .rb li { margin-bottom: 4px; } .rb li::marker { color: #ffa42c; }
 .rb .k { color: #fff3cf; }

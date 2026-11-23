@@ -159,6 +159,22 @@ async function initPatternArt() {
   }
 }
 
+// initTabArt(): the five tab buttons (assets/button_settings.svg, button_rulebook.svg, button_boardlog.svg, button_chat.svg, button_about.svg) come in ONE colour (green).
+// The PRESSED (selected) look is made here by swapping the four colours inside a copy of each file's text (key face, base, highlight, icon) for orange ones.
+// ART.tabs[name] = { n: normal picture address, p: pressed picture address }, used by showTab() in main.js.
+const TAB_PRESSED = { "#c3f73a": "#ff7529", "#7d9926": "#d23a0e", "#eeffae": "#ffc99a", "#4b5b18": "#7a1f06" };   // green colour -> orange colour
+async function initTabArt() {
+  ART.tabs = {};
+  for (const k of ["settings", "rulebook", "boardlog", "chat", "about"]) {
+    try {
+      const t = await T(`button_${k}.svg`);
+      const p = t.replace(/#[0-9a-fA-F]{6}\b/g, (c) => TAB_PRESSED[c.toLowerCase()] || c);
+      const url = (x) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(x);
+      ART.tabs[k] = { n: url(t), p: url(p) };
+    } catch (e) { console.warn("Tab button art missing:", k, e); }
+  }
+}
+
 // loadNumberFont(): the square numbers on the board are drawn with the Blustrue font (assets/Blustrue.otf, declared by @font-face in css/style.css).
 // Browsers only fetch a font when something uses it, so this asks for it up front; the board is then drawn with the real font from the first frame.
 // If the font file is missing the game still works (the numbers fall back to a plain bold font).
@@ -172,6 +188,7 @@ async function loadAssets() {
     await initButtonArt();
     await initPatternArt();
     await loadNumberFont();
+    await initTabArt();
     let M;
     try {
       M = JSON.parse(await T("manifest.json"));

@@ -400,7 +400,8 @@ function showTab(k) {
   ["settings", "chat", "about"].forEach(t => {                               // pressed-down look for the open tab's button
     const on = t === k;
     $("tb_" + t).classList.toggle("on", on);
-    $("tb_" + t).querySelector(".face").src = A(`button_${t}_${on ? "light" : "dark"}.svg`);
+    const ta = ART.tabs && ART.tabs[t];                                      // green normally, orange when pressed (made in art.js initTabArt)
+    if (ta) $("tb_" + t).querySelector(".face").src = on ? ta.p : ta.n;
   });
   if (k === "chat") {
     NET.unreadChat = 0;
@@ -421,6 +422,7 @@ new MutationObserver(() => {
   if (on === GAME_ON) return;
   GAME_ON = on;
   $("dockfix").style.display = on ? "block" : "none";
+  $("stage").classList.toggle("ingame", on);                       // during a game the stage no longer clips, so the right-hand panels can fly in from the real window edge
   if (on) { SHOWN = null; TAB = "event"; showTab("event"); updateEvent(); }
   else { Object.values(VIEWS).flat().forEach(id => $(id).classList.remove("in")); SHOWN = null; TAB = "event"; }
 }).observe($("game"), { attributes: true, attributeFilter: ["style", "class"] });
@@ -434,10 +436,11 @@ function chatSendPressed() {
 function expandPanel() { openModal("Information", `<div class="big">${$("about").innerHTML}</div>`); }
 // The five buttons: Rulebook and Combat log open their big window directly, the other three switch the right column's view.
 const TAB_ACTION = { rulebook: "openRulebook()", boardlog: "openLog()" };
-$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.pad}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}_dark.svg`)}" alt="${b[1]}"></button>`).join("");
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
-function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);   // --fit = the stage scale, also used by the character pick panels (css)
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);
+  document.documentElement.style.setProperty("--off", ((innerWidth - 1920 * s) / 2 / s + 760) + "px");   // --off = how far (in stage pixels) a right-hand panel must sit to be completely beyond the window's right edge   // --fit = the stage scale, also used by the character pick panels (css)
   $("stage").style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; }
 addEventListener("resize", fit); fit();
 
