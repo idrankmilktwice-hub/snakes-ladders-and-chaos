@@ -121,15 +121,15 @@ const gbText = (txt, px, lmOnly) => {
 // gbBuild(btn, h, label, opt): h = button height in px (the title buttons are 165 high). The width follows the text. opt = { icon: picture url, iconW: its width, minW: smallest width, maxW: largest width (longer text shrinks), html: custom content instead of text }
 function gbBuild(btn, h, label, opt) {
   opt = opt || {};
-  const sc = h / 165,
+  const sc = h / BUTTON_ART_H,
     txt = String(label || "").toUpperCase();
-  const base = opt.html ? 0 : gbText(txt, 70.9 * sc, opt.lmOnly),
-    fixed = (opt.icon ? opt.iconW + 14 * sc : 0) + 60 * sc; // text width; icon + side room
+  const base = opt.html ? 0 : gbText(txt, GB_TEXT_SIZE * sc, opt.lmOnly),
+    fixed = (opt.icon ? opt.iconW + GB_ICON_GAP * sc : 0) + GB_SIDE_ROOM * sc; // text width; icon + side room
   const k =
     opt.maxW && base + fixed > opt.maxW
-      ? Math.max(0.4, (opt.maxW - fixed) / base)
+      ? Math.max(GB_MIN_SHRINK, (opt.maxW - fixed) / base)
       : 1; // too long for maxW: shrink the text
-  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0, 174 * sc)); // never narrower than the art's two corners (too narrow made the face spill out of its shadow)
+  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0, GB_MIN_WIDTH * sc)); // never narrower than the art's two corners (too narrow made the face spill out of its shadow)
   btn.dataset.h = h;
   btn.style.setProperty("--sc", sc);
   btn.style.setProperty("--tk", k);
@@ -159,7 +159,7 @@ function glide(el, to, ms, ease, delay) {
   });
   return Promise.race([
     a.finished.catch(() => {}),
-    sleep(ms + (delay || 0) + 100),
+    sleep(ms + (delay || 0) + GLIDE_SAFETY_MS),
   ]).then(() => {
     el._x = to.x || 0;
     el._y = to.y || 0;
@@ -177,11 +177,11 @@ function pop(el, show, dx, dy) {
   const hide = { opacity: 0, transform: `translate(${dx}px,${dy}px)` },
     shown = { opacity: 1, transform: "none" };
   const a = el.animate(show ? [hide, shown] : [shown, hide], {
-    duration: show ? 450 : 280,
+    duration: show ? POP_MS.in : POP_MS.out,
     easing: show ? EASE_BOUNCE : "ease-in",
     fill: "both",
   });
-  return Promise.race([a.finished.catch(() => {}), sleep(600)]).then(() => {
+  return Promise.race([a.finished.catch(() => {}), sleep(POP_SAFETY_MS)]).then(() => {
     if (!show) el.style.display = "none";
     a.cancel();
   });
@@ -199,10 +199,10 @@ function showSetup() {
 function pageHtml(id) {
   if (id === "options") {
     let bar = "";
-    for (let i = 1; i <= 10; i++)
+    for (let i = 1; i <= VOLUME_MAX; i++)
       bar += `<div class="tt-seg sfx-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`;   // "sfx-seg" marks the SOUND EFFECTS bar only (the music bar from audio.js has its own class and click code)
     // Sound effects bar, then the music controls (music volume, now playing, mute switch) from audio.js
-    return muteRowHtml() + `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * 10 + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
+    return muteRowHtml() + `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * VOLUME_STEP_PERCENT + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
   }
   if (id === "about") return $("about").innerHTML; // same text as the About tab in the game
   return `<h2>Play screen coming next</h2><p>The new play screen will go here. Until then, the current setup screen still starts a game.</p><p><button class="cbtn tt-open" style="--s:1.5;width:480px"><span>Open current setup</span></button></p>`;
@@ -222,19 +222,19 @@ async function openPage(id) {
   let j = 0;
   TT.btns.forEach((b, k) => {
     if (k !== i)
-      exits.push(glide(b, { x: b._x, y: TITLE.off }, 320, EASE_IN, 50 * j++));
+      exits.push(glide(b, { x: b._x, y: TITLE.off }, TITLE_MS.btnExit, EASE_IN, TITLE_MS.btnExitStagger * j++));
   }); // the other buttons slide off the bottom, quickly, one after another
-  exits.push(glide(TT.logo, { x: 0, y: TITLE.logoOff }, 380, EASE_IN, 0)); // the logo slides up off the top
+  exits.push(glide(TT.logo, { x: 0, y: TITLE.logoOff }, TITLE_MS.logoExit, EASE_IN, 0)); // the logo slides up off the top
   await Promise.all(exits); // wait until everything has fully left...
   await glide(
     me,
     { x: TITLE.header.x - TITLE.btnX[i], y: TITLE.header.y - TITLE.btnY },
-    700,
+    TITLE_MS.toTitleSpot,
     EASE_BOUNCE,
     0,
   ); // ...and only then the pressed button travels to the title spot
   if (id === "play") {
-    await Promise.all([pop(TT.back, true, -40, 0), playRowsIn()]);
+    await Promise.all([pop(TT.back, true, ...POP_BACK), playRowsIn()]);
     TT.state = "page";
     $("title").classList.remove("busy");
     return;
@@ -247,12 +247,12 @@ async function openPage(id) {
         TT.card
           .querySelectorAll(".sfx-seg")
           .forEach((q) => q.classList.toggle("on", +q.dataset.v <= VOLUME));
-        $("ttVolNum").textContent = VOLUME ? VOLUME * 10 + "%" : "Muted";
+        $("ttVolNum").textContent = VOLUME ? VOLUME * VOLUME_STEP_PERCENT + "%" : "Muted";
       }),
   );
   const op = TT.card.querySelector(".tt-open");
   if (op) op.onclick = showSetup;
-  await Promise.all([pop(TT.back, true, -40, 0), pop(TT.card, true, 0, 70)]);
+  await Promise.all([pop(TT.back, true, ...POP_BACK), pop(TT.card, true, ...POP_CARD)]);
   TT.state = "page";
   $("title").classList.remove("busy");
 }
@@ -264,14 +264,14 @@ async function closePage() {
   const i = TT.open,
     me = TT.btns[i];
   if (i === 0) await playRowsOut(); // Play page: the rows leave first, last row first
-  await Promise.all([pop(TT.back, false, -40, 0), pop(TT.card, false, 0, 70)]);
-  glide(me, { x: 0, y: 0 }, 650, EASE_BOUNCE, 0);
+  await Promise.all([pop(TT.back, false, ...POP_BACK), pop(TT.card, false, ...POP_CARD)]);
+  glide(me, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, 0);
   let j = 0;
   TT.btns.forEach((b, k) => {
-    if (k !== i) glide(b, { x: 0, y: 0 }, 650, EASE_BOUNCE, 250 + 110 * j++);
+    if (k !== i) glide(b, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, TITLE_MS.btnReturnDelay + TITLE_MS.btnReturnStagger * j++);
   }); // the others slide back up from the bottom, one by one
-  glide(TT.logo, { x: 0, y: 0 }, 800, EASE_BOUNCE, 200); // the logo drops back in from the top
-  await sleep(1050);
+  glide(TT.logo, { x: 0, y: 0 }, TITLE_MS.logoReturn, EASE_BOUNCE, TITLE_MS.logoReturnDelay); // the logo drops back in from the top
+  await sleep(TITLE_MS.homeSettle);
   me.classList.remove("is-title");
   me.style.zIndex = "";
   TT.open = -1;
@@ -296,7 +296,7 @@ const ROWPOS = {
 // slideRow(i, out, delay): row i's green button slides off to the left and its orange button to the right (out = true), or back in (out = false)
 function slideRow(i, out, delay) {
   const r = TT.rows[i],
-    ms = out ? 320 : 650,
+    ms = out ? TITLE_MS.rowOut : TITLE_MS.rowIn,
     ez = out ? EASE_IN : EASE_BOUNCE;
   return Promise.all([
     glide(r.g, { x: out ? ROWPOS.gOff : 0, y: 0 }, ms, ez, delay),
@@ -305,10 +305,10 @@ function slideRow(i, out, delay) {
 }
 async function playRowsIn() {
   $("tRows").style.display = "block";
-  await Promise.all(TT.rows.map((r, i) => slideRow(i, false, i * 120)));
+  await Promise.all(TT.rows.map((r, i) => slideRow(i, false, i * TITLE_MS.rowStaggerIn)));
 } // first row first
 async function playRowsOut() {
-  await Promise.all([2, 1, 0].map((k, j) => slideRow(k, true, j * 60)));
+  await Promise.all([2, 1, 0].map((k, j) => slideRow(k, true, j * TITLE_MS.rowStaggerOut)));
   $("tRows").style.display = "none";
 } // the reverse order
 // openSub(i): a row was chosen. Everything else leaves the way it came (reverse order); the green button takes the title spot.
@@ -322,26 +322,26 @@ async function openSub(i) {
   TT.sub = i;
   const exits = [];
   [2, 1, 0].forEach((k, j) => {
-    if (k !== i) exits.push(slideRow(k, true, j * 60));
+    if (k !== i) exits.push(slideRow(k, true, j * TITLE_MS.rowStaggerOut));
     else
       exits.push(
-        glide(TT.rows[i].o, { x: ROWPOS.oOff, y: 0 }, 320, EASE_IN, j * 60),
+        glide(TT.rows[i].o, { x: ROWPOS.oOff, y: 0 }, TITLE_MS.rowOut, EASE_IN, j * TITLE_MS.rowStaggerOut),
       );
   });
   exits.push(
     glide(
       TT.btns[0],
-      { x: -700, y: TITLE.header.y - TITLE.btnY },
-      320,
+      { x: TITLE_MS.playExitX, y: TITLE.header.y - TITLE.btnY },
+      TITLE_MS.playExit,
       EASE_IN,
-      180,
+      TITLE_MS.playExitDelay,
     ),
   ); // the PLAY title leaves last (it came first)
   await Promise.all(exits); // everything has fully left...
   await glide(
     g,
     { x: TITLE.header.x - ROWPOS.gx, y: TITLE.header.y - ROWPOS.gy[i] },
-    700,
+    TITLE_MS.toTitleSpot,
     EASE_BOUNCE,
     0,
   ); // ...and only then the chosen green button takes the title spot
@@ -357,19 +357,19 @@ async function closeSub() {
   const i = TT.sub,
     g = TT.rows[i].g;
   await hideLocal();
-  glide(g, { x: 0, y: 0 }, 650, EASE_BOUNCE, 0);
+  glide(g, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, 0);
   glide(
     TT.btns[0],
     { x: TITLE.header.x - TITLE.btnX[0], y: TITLE.header.y - TITLE.btnY },
-    650,
+    TITLE_MS.bounce,
     EASE_BOUNCE,
-    150,
+    TITLE_MS.playReturnDelay,
   );
   [0, 1, 2].forEach((k, j) => {
-    if (k !== i) slideRow(k, false, 200 + j * 120);
-    else glide(TT.rows[i].o, { x: 0, y: 0 }, 650, EASE_BOUNCE, 200 + j * 120);
+    if (k !== i) slideRow(k, false, TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn);
+    else glide(TT.rows[i].o, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn);
   });
-  await sleep(1150);
+  await sleep(TITLE_MS.lobbySettle);
   g.classList.remove("is-title");
   g.style.zIndex = "";
   TT.sub = -1;
@@ -466,7 +466,7 @@ function buildTitle(root, logoSvg, btnSvg, backSvg) {
   TT.btns[2].addEventListener("animationend", (e) => {
     if (e.target === TT.btns[2]) enterHome();
   });
-  setTimeout(enterHome, (TITLE.btnStart + 2 * TITLE.btnGap + 0.9) * 1000 + 300); // safety net if the animation event never fires
+  setTimeout(enterHome, (TITLE.btnStart + 2 * TITLE.btnGap + TITLE_MS.homeTail) * MS_PER_SECOND + TITLE_MS.homeSafety); // safety net if the animation event never fires
   root.addEventListener("pointerdown", () => {
     if (TT.state === "intro")
       root.getAnimations({ subtree: true }).forEach((a) => a.finish());
@@ -487,13 +487,13 @@ function showReconnectCard() {
   }
   el.querySelector(".rc-text").textContent = "Attempting to reconnect to the Lobby";
   $("rcTime").style.display = ""; $("rcBtn").style.display = "";
-  onRejoinTick(window.REJOIN_STATE ? window.REJOIN_STATE.msLeft : 15000);
+  onRejoinTick(window.REJOIN_STATE ? window.REJOIN_STATE.msLeft : REJOIN_GIVEUP_MS);
   el.style.display = "flex";
 }
 // onRejoinTick(msLeft): called by network.js while it keeps trying
 function onRejoinTick(ms) {
   const t = $("rcTime");
-  if (t) t.textContent = Math.max(0, Math.ceil(ms / 1000));
+  if (t) t.textContent = Math.max(0, Math.ceil(ms / MS_PER_SECOND));
 }
 // onRejoinEnd(result): "ok" = back in the game, "abandoned" = the player gave up, "ended" = nobody answered (the lobby is gone)
 function onRejoinEnd(result) {
@@ -502,7 +502,7 @@ function onRejoinEnd(result) {
   if (result === "ended") {                    // say so for a moment, then tidy away
     el.querySelector(".rc-text").textContent = "The lobby has ended.";
     $("rcTime").style.display = "none"; $("rcBtn").style.display = "none";
-    setTimeout(() => { el.style.display = "none"; }, 2500);
+    setTimeout(() => { el.style.display = "none"; }, BANNER_HIDE_MS);
   } else el.style.display = "none";
 }
 
@@ -515,7 +515,7 @@ async function initTitle() {
   // A page that is going back into a running game (reload / crash / closed and reopened) never shows the title at all: wait for the rejoin result first.
   if (typeof sessionForAutoRejoin === "function" && sessionForAutoRejoin() && window.REJOIN_P) {
     let back = false;
-    try { back = await Promise.race([window.REJOIN_P, sleep(2000).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 2s the title appears, with a countdown card, and a late rejoin still takes over)
+    try { back = await Promise.race([window.REJOIN_P, sleep(REJOIN_TITLE_WAIT_MS).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 2s the title appears, with a countdown card, and a late rejoin still takes over)
     if (back) return; // the game board is already showing
   }
   root.classList.add("on");

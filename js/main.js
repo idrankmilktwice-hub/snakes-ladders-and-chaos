@@ -218,7 +218,7 @@ function onPlayerNameInput(idx, val) {
   nameSyncTimer = setTimeout(() => {
     nameSyncTimer = null;
     sendLobbyUpdate(val, undefined);
-  }, 240);
+  }, NAME_SYNC_MS);
 }
 
 function onPlayerNameChanged(idx, val) {
@@ -303,21 +303,75 @@ function start() {
 // openModal(title, html): show a big pop-up window centred on the SCREEN. It closes with the small X at its top right or by clicking anywhere outside the window.
 function openModal(title, html) {
   const m = $("modal");
-  m.innerHTML = `<div><button class="mclose" onclick="$('modal').style.display='none'" title="Close" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button><h2>${title}</h2>${html}</div>`;
+  m.innerHTML = `<div style="width:min(${MODAL.width}px, calc(100vw / var(--fit, 1) - ${MODAL.screenMargin * 2}px)); max-height:min(${MODAL.maxHeight}px, calc(100vh / var(--fit, 1) - ${MODAL.screenMargin}px))"><button class="mclose" onclick="$('modal').style.display='none'" title="Close" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button><h2>${title}</h2><div class="mbody">${html}</div></div>`;
   m.style.display = "flex";
+  attachScrollbar(m.querySelector(".mbody"));
 }
-// openRulebook() / openLog(): the Rulebook and Combat log icons. (The log window keeps filling live: log() in config.js also writes to #biglog.)
+// openRulebook() / openLog(): the big windows (opened by the Expand buttons of the small Rulebook / Combat log panels). (The log window keeps filling live: log() in config.js also writes to #biglog.)
 function openRulebook() { openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`); }
-function openLog() { openModal("Combat log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").scrollTop = 1e6; }
+function openLog() { openModal("Combat log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").parentElement.scrollTop = 1e9; }   // (1e9 = "as far down as it goes")
+// ---- attachScrollbar(el): a custom scroll bar for a scrolling area, drawn like the mockup (olive strip, dark arrow buttons, lime handle). ----
+// It appears ONLY when there is something to scroll to, and follows the text as it grows. The element's parent must be positioned (position:absolute / relative).
+// The browser's own scroll bar is hidden (class "scr" in css/style.css). All sizes come from SCROLLBAR in config.js.
+function attachScrollbar(el) {
+  if (el._sbUpdate) return el._sbUpdate;
+  const S = SCROLLBAR, parent = el.parentElement, fit = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fit")) || 1;
+  const chev = (d) => `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const bar = document.createElement("div");
+  bar.className = "sb";
+  bar.style.cssText = `width:${S.width}px;padding:${S.padding}px;gap:${S.gap}px`;
+  bar.innerHTML = `<button class="sbb up" tabindex="-1" aria-label="Scroll up" style="width:${S.button}px;height:${S.button}px">${chev("M2 9.5L7 4.5L12 9.5")}</button><div class="sbt"><i class="sbh" style="width:${S.thumbWidth}px;margin-left:${-S.thumbWidth / 2}px"></i></div><button class="sbb dn" tabindex="-1" aria-label="Scroll down" style="width:${S.button}px;height:${S.button}px">${chev("M2 4.5L7 9.5L12 4.5")}</button>`;
+  parent.appendChild(bar);
+  el.classList.add("scr");
+  el.style.paddingRight = Math.max(parseFloat(getComputedStyle(el).paddingRight) || 0, S.textPad) + "px";   // keep text clear of the bar (but never less padding than the area already had)
+  const track = bar.querySelector(".sbt"), thumb = bar.querySelector(".sbh");
+  // update(): show / hide the bar, place it at the right edge of the area, and size + move the handle to match the text position.
+  function update() {
+    const can = el.scrollHeight > el.clientHeight + 1;
+    bar.style.display = can ? "flex" : "none";
+    if (!can) return;
+    bar.style.left = (el.offsetLeft + el.offsetWidth - S.width - S.edge) + "px";
+    bar.style.top = (el.offsetTop + S.edge) + "px";
+    bar.style.height = (el.clientHeight - S.edge * 2) + "px";
+    const room = track.clientHeight, max = el.scrollHeight - el.clientHeight;
+    const h = Math.min(room, Math.max(S.thumbMin, room * el.clientHeight / el.scrollHeight));
+    thumb.style.height = h + "px";
+    thumb.style.top = (max ? el.scrollTop / max * (room - h) : 0) + "px";
+  }
+  el.addEventListener("scroll", update);
+  new ResizeObserver(update).observe(el);
+  new MutationObserver(update).observe(el, { childList: true, subtree: true, characterData: true });
+  bar.querySelector(".up").onclick = () => el.scrollBy({ top: -S.step });
+  bar.querySelector(".dn").onclick = () => el.scrollBy({ top: S.step });
+  track.addEventListener("pointerdown", (e) => {            // click on the strip: jump one page towards the click (unless the handle itself was grabbed)
+    if (e.target === thumb) return;
+    const r = thumb.getBoundingClientRect();
+    el.scrollBy({ top: (e.clientY < r.top ? -1 : 1) * el.clientHeight * .9 });
+  });
+  thumb.addEventListener("pointerdown", (e) => {            // drag the handle
+    e.preventDefault(); thumb.setPointerCapture(e.pointerId);
+    const y0 = e.clientY, top0 = el.scrollTop;
+    const move = (ev) => {
+      const room = track.clientHeight - thumb.offsetHeight, max = el.scrollHeight - el.clientHeight;
+      el.scrollTop = top0 + (ev.clientY - y0) / fit() * (room ? max / room : 0);
+    };
+    const stop = () => { thumb.removeEventListener("pointermove", move); thumb.removeEventListener("pointerup", stop); };
+    thumb.addEventListener("pointermove", move); thumb.addEventListener("pointerup", stop);
+  });
+  el._sbUpdate = update; update();
+  return update;
+}
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
 const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Combat log"], ["chat", "Chat"], ["about", "Information"]];
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
-$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p>";
+$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
+$("ruleView").innerHTML = RULES_HTML();                     // the small Rulebook panel (the big window calls RULES_HTML() again)
+["ruleView", "log", "about", "chatView"].forEach(id => attachScrollbar($(id)));   // custom scroll bars for every scrolling panel (they appear only when needed)
 // ---- RIGHT-HAND PANELS (below the player panels) ----
 // The right column shows ONE "view" at a time: the Current Event panel (the default), Settings, Chat or Information. Every view is a set of panels (class "rp") that slide in from
 // beyond the right edge of the screen, overshoot a little and spring back (see ".rp.in" in css/style.css), and slide out again when another view replaces them.
 // Settings is four separate orange panels that arrive one after another. Opening a view a second time plays the same animation, only faster.
-const VIEWS = { event: ["evPanel"], settings: ["opSw", "opMute", "opSfx", "opMusic"], chat: ["chatPanel"], about: ["aboutPanel"] };
+const VIEWS = { event: ["evPanel"], settings: ["opSw", "opMute", "opSfx", "opMusic"], chat: ["chatPanel"], about: ["aboutPanel"], rulebook: ["rulePanel"], boardlog: ["logPanel"] };
 // small helpers for the Settings panels: arrow icons and a "< 10 >" stepper (a number box with an arrow on each side)
 const arrowSvg = d => `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const stepper = (id, minus, plus, val) => `<div class="stp"><button class="arr" onclick="${minus}" aria-label="Lower">${arrowSvg("M11 2.5L3 10L11 17.5")}</button><b class="stp-num" id="${id}">${val}</b><button class="arr" onclick="${plus}" aria-label="Raise">${arrowSvg("M3 2.5L11 10L3 17.5")}</button></div>`;
@@ -335,18 +389,18 @@ function drawSettings() {
 }
 // stepSfx(d) / stepMusic(d): the arrows next to SFX and MUSIC change the volume by one step (0-10; 10 = full).
 function stepSfx(d) {
-  VOLUME = Math.max(0, Math.min(10, VOLUME + d));
+  VOLUME = Math.max(0, Math.min(VOLUME_MAX, VOLUME + d));
   try { localStorage.setItem("snc_volume", VOLUME); } catch (e) { /* not saved: fine */ }
   $("sfxNum").textContent = VOLUME; sfx("small");                    // a click so you can hear the new level
 }
-function stepMusic(d) { setMusicVol(Math.max(0, Math.min(10, MUSIC_VOL + d))); $("musNum").textContent = MUSIC_VOL; }
+function stepMusic(d) { setMusicVol(Math.max(0, Math.min(VOLUME_MAX, MUSIC_VOL + d))); $("musNum").textContent = MUSIC_VOL; }
 // ---- Switch Device (online games): a one-time code that lets this player carry on from another device ----
 const XFER_UI = { code: null, until: 0, timer: null, busy: false, err: "" };
-const fmtLeft = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+const fmtLeft = s => Math.floor(s / SECONDS_PER_MINUTE) + ":" + String(s % SECONDS_PER_MINUTE).padStart(2, "0");
 function swDeviceHtml() {
   const x = XFER_UI, live = !!(x.code && performance.now() < x.until);
   const body = live
-    ? `<div class="swrow"><div class="swcodebox">${x.code.room}-${x.code.secret}</div><button class="swx" onclick="switchDeviceCancel()" title="Cancel" aria-label="Cancel"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button></div><div class="swleft" id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / 1000))}</div>`
+    ? `<div class="swrow"><div class="swcodebox">${x.code.room}-${x.code.secret}</div><button class="swx" onclick="switchDeviceCancel()" title="Cancel" aria-label="Cancel"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button></div><div class="swleft" id="swLeft">${fmtLeft(Math.ceil((x.until - performance.now()) / MS_PER_SECOND))}</div>`
     : `<button class="swgen" onclick="switchDevicePressed()">Generate Code</button>${x.err ? `<p class="swerr">${esc(x.err)}</p>` : ""}`;
   return `<div class="oph">Switch Device</div>${body}`;
 }
@@ -365,10 +419,10 @@ async function switchDevicePressed() {
     XFER_UI.code = { room: c.room, secret: c.secret }; XFER_UI.until = performance.now() + c.ms;
     if (XFER_UI.timer) clearInterval(XFER_UI.timer);
     XFER_UI.timer = setInterval(() => {                          // count down; when it runs out the button comes back
-      const left = Math.ceil((XFER_UI.until - performance.now()) / 1000);
+      const left = Math.ceil((XFER_UI.until - performance.now()) / MS_PER_SECOND);
       if (left <= 0) { clearInterval(XFER_UI.timer); XFER_UI.timer = null; XFER_UI.code = null; if (TAB === "settings") drawSettings(); }
       else { const el = $("swLeft"); if (el) el.textContent = fmtLeft(left); }
-    }, 500);
+    }, SWITCH_TICK_MS);
   } catch (e) { XFER_UI.err = (e && e.message) || "Could not make a code."; }
   XFER_UI.busy = false; drawSettings();
 }
@@ -397,7 +451,7 @@ function showTab(k) {
     el.style.setProperty("--d", ((leaving ? .12 : 0) + i * .05) + "s");
     el.classList.add("in");
   });
-  ["settings", "chat", "about"].forEach(t => {                               // pressed-down look for the open tab's button
+  ["settings", "rulebook", "boardlog", "chat", "about"].forEach(t => {       // pressed-down look for the open tab's button
     const on = t === k;
     $("tb_" + t).classList.toggle("on", on);
     const ta = ART.tabs && ART.tabs[t];                                      // green normally, orange when pressed (made in art.js initTabArt)
@@ -411,7 +465,7 @@ function showTab(k) {
 }
 // ---- Current Event panel: shows the latest lines of the log (the flavour text) in a big font. A watcher on the hidden #log fills it, so lines from every source appear (host, guests, game rules). ----
 function updateEvent() {
-  const lines = [...$("log").children].slice(-3);
+  const lines = [...$("log").children].slice(-EVENT_LINES);
   $("evText").innerHTML = lines.map((l, i) => `<div class="evl${i === lines.length - 1 ? " new" : ""}">${l.innerHTML}</div>`).join("");   // newest line big, the two before it smaller and faded
 }
 new MutationObserver(updateEvent).observe($("log"), { childList: true });
@@ -433,14 +487,16 @@ function chatSendPressed() {
   inp.value = "";
 }
 // expandPanel(): the Expand button of the Information panel - show its text in a big window.
-function expandPanel() { openModal("Information", `<div class="big">${$("about").innerHTML}</div>`); }
-// The five buttons: Rulebook and Combat log open their big window directly, the other three switch the right column's view.
-const TAB_ACTION = { rulebook: "openRulebook()", boardlog: "openLog()" };
-$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="${TAB_ACTION[b[0]] || `showTab('${b[0]}')`}"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
+function expandPanel() {   // the Expand button of the small Information / Rulebook / Combat log panels: the same content in a big pop-up window
+  if (TAB === "rulebook") openRulebook();
+  else if (TAB === "boardlog") openLog();
+  else openModal("Information", `<div class="big">${$("about").innerHTML}</div>`);
+}
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
 
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
-function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); document.documentElement.style.setProperty("--fit", s);
-  document.documentElement.style.setProperty("--off", ((innerWidth - 1920 * s) / 2 / s + 760) + "px");   // --off = how far (in stage pixels) a right-hand panel must sit to be completely beyond the window's right edge   // --fit = the stage scale, also used by the character pick panels (css)
+function fit() { const s = Math.min(innerWidth / STAGE_W, innerHeight / STAGE_H); document.documentElement.style.setProperty("--fit", s);
+  document.documentElement.style.setProperty("--off", ((innerWidth - STAGE_W * s) / 2 / s + PANEL_OFFSCREEN_MARGIN) + "px");   // --off = how far (in stage pixels) a right-hand panel must sit to be completely beyond the window's right edge   // --fit = the stage scale, also used by the character pick panels (css)
   $("stage").style.transform = `translate(${(innerWidth - 1920 * s) / 2}px,${(innerHeight - 1080 * s) / 2}px) scale(${s})`; }
 addEventListener("resize", fit); fit();
 

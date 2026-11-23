@@ -126,6 +126,221 @@ const COUNTER_ORANGE = "#ff7529", COUNTER_BLUE = "#1b84b8", COUNTER_BROWN = "#2f
 // ---- The strip of round tab buttons in the bottom-right CORNER OF THE WINDOW (not of the 1920x1080 stage: it is fixed to the real window corner, see #dockfix in css/style.css).
 //      pad = space round the buttons, pitch = distance between two buttons ----
 const DOCK = { pad: 14, padY: 10, pitch: 80 };   // pad = space left of the first button, padY = space above the buttons (the strip is 80 tall, see #dockfix in css), pitch = distance between buttons
+// ---- Scroll bars (made by attachScrollbar in main.js; used by the chat, the small Rulebook / Combat log / Information panels and the big pop-up windows). Sizes are in stage pixels. ----
+const SCROLLBAR = {
+  width: 24,        // total width of the bar (the olive rounded strip)
+  padding: 4,       // space between the strip's edge and the arrow buttons / the track
+  button: 16,       // size of the square up / down arrow buttons
+  gap: 4,           // space between a button and the track
+  thumbWidth: 8,    // width of the lime handle
+  thumbMin: 36,     // the handle is never shorter than this, however long the text is
+  step: 56,         // how far an arrow click scrolls
+  edge: 6,          // distance between the bar and the right edge of the area it scrolls
+  textPad: 40       // extra space kept free on the right of the text, so words never run under the bar
+};
+// ---- Big pop-up windows (Rulebook, Combat log, Information) ----
+const MODAL = { width: 1200, maxHeight: 960, screenMargin: 60 };   // widest the window gets, tallest it gets, and the space kept free round it (all in stage pixels)
+
+// =====================================================================================
+//  TUNING NUMBERS  -  every adjustable number of the game's code lives here, with a name and a short explanation.
+//  Change a value here and it changes everywhere that uses it. (Layout numbers of the screen are above; sound, network and timing numbers are further down.)
+// =====================================================================================
+// ---- The board itself ----
+const BOARD_COLS = 10, BOARD_ROWS = 10;             // the board is 10 squares wide and 10 squares tall...
+const SQUARES = BOARD_COLS * BOARD_ROWS;            // ...so it has 100 squares (the last one is the finish)
+const LAST_COL = BOARD_COLS - 1, LAST_ROW = BOARD_ROWS - 1;   // index of the last column / row (columns and rows are counted from 0)
+// ---- Snake drawing (render.js) ----
+const SNAKE_FLAT_WIDTH = 26;            // thickness of a snake drawn as a flat colour (before the board scale BS is applied)
+const SNAKE_BEND_RADIUS = 40;           // how round the bends of a snake are (bigger = rounder)
+const SNAKE_BODY_HEAD_WIDTH = 38;       // thickness of the head end of a snake drawn from picture art (it tapers towards the tail)
+const SNAKE_TIP_WIDTH = 9;              // width of the very tip of a flat snake's tail
+const SNAKE_TAPER_FRACTION = .6;        // the tail tapers over this share of the snake's length...
+const SNAKE_TAPER_MAX = 300;            // ...but never over more than this many pixels
+const SNAKE_OUTLINE_WIDTH = 3.5;        // thickness of the black outline round a flat snake
+const SNAKE_POINT_SPACING = 14;         // a snake's path is split into points this many pixels apart
+const CORNER_STEPS = 8;                 // each rounded corner of a snake is drawn as this many little straight pieces
+const TIP_CAP_STEPS = 8;                // the round end of a flat snake's tail is drawn as this many little pieces
+const SLICE_STEP = 1.5;                 // snakes made from art are drawn in slices this many pixels long (thin = smooth bends)
+const SLICE_OVERLAP = 1.5;              // neighbouring slices overlap by this much so no gaps show
+const HEAD_DIRECTION_POINT = 4;         // the head looks towards the 5th point of the snake's path (counting from 0)
+const HEAD_FLIP_DEADZONE = 8;           // the head only turns round when the path points sideways by more than this many pixels
+// ---- Snake route planning (render.js route()) ----
+const OVERLAP_SAMPLES_PER_SQUARE = 4;   // when measuring how much a route overlaps others, this many points are checked per square of length
+const OVERLAP_NEAR = .6;                // a checked point counts as overlapping when it is closer than this many squares to another route
+const MIN_ROUTE_LENGTH = 5;             // a snake's route is never shorter than this many squares...
+const ROUTE_LENGTH_PER_DISTANCE = 1.1;  // ...and is at least this many times the straight distance between head and tail...
+const ROUTE_LENGTH_EXTRA = 1.5;         // ...plus this many extra squares
+const ROUTE_MARGIN = 2;                 // extra waypoints may be placed up to this many squares outside the head-to-tail box
+const ROUTE_TRIES = 500;                // how many random routes are tried before settling for the best one found
+const SHORT_SNAKE_DISTANCE = 3;         // a snake whose head and tail are closer than this (in squares) counts as short...
+const WAYPOINTS_SHORT = [2, 3];         // ...and gets this many (min, max) extra waypoints so it curls...
+const WAYPOINTS_LONG = [1, 2];          // ...a longer snake gets this many
+const NECK_SIDEWAYS = [1, 2];           // the first corner after a head is this many squares (min, max) to the side
+// ---- Ladder drawing (render.js) ----
+const LADDER_STRAIGHT_DX = 4;           // a ladder whose two ends are less than this many pixels apart sideways is drawn with the straight picture
+const LADDER_EXTRA_LENGTH = 36;         // ladders are drawn this much longer than the distance between the two square centres
+const LADDER_SCALE = .96;               // size of the ladder picture on the board
+const LADDER_PIECE_HEIGHT = 100;        // height of one ladder picture in its own units
+const LADDER_BORDER_ROOM = 40;          // room kept round a ladder bitmap for its outline
+const LADDER_END_TRIM = 22;             // when number placement checks ladders, the ladder ends are shortened by this many pixels
+const OUTLINE_STEPS = 20;               // the black outline round pictures is made by stamping them in this many directions
+const OUTLINE_PX = 3;                   // thickness of that outline in pixels
+// ---- Numbers on tiles, tiles, pawns, items (render.js) ----
+const NUM_PAD = 6;                      // gap between a tile's edge and its number
+const NUM_NEAR = 60;                    // snakes / ladders farther than this many pixels from a number's corner are ignored when choosing its corner
+const NUM_CLEARANCE = 3;                // extra space kept between a snake's outline and a number
+const TILE_PICK_MUL = 37, TILE_PICK_MOD = 11;   // formula that picks which tile picture is used on which square (a fixed pattern, so every game looks the same)
+const PAWN_CELL = 82;                   // room (pixels, before BS) one square offers its pawns...
+const PAWN_SIZE = 72;                   // ...and the size of one pawn drawn alone on a square
+const PAWN_CROWD = 1.08;                // when pawns share a square they may grow to this share of their cell
+const ITEM_BOARD_W = 60, ITEM_BOARD_H = 52;   // size of an item lying on a square (before BS)
+// ---- Player panels (render.js) ----
+const FIT_CHAR_WIDTH = .62;             // average width of a character as a share of the font size (used to shrink long names)
+const FIT_MIN_FONT = 9;                 // names are never shrunk below this font size
+const NAME_MAX_FONT = 40;               // biggest font size of a player's name in the panel's name box
+const NAME_PAD = 32;                    // space kept free inside the name box
+const PANEL_Z_ACTIVE = 3, PANEL_Z_OTHER = 2;   // stacking order: the big active panel is drawn above the small ones
+const SLOT_ITEM_W = 54, SLOT_ITEM_H = 50;      // biggest size an item picture may have inside a panel slot
+const SLOT_FALLBACK = [1600, 140];             // where thrown items start if a slot cannot be found
+const COUNTER_TWO_DIGITS = 10;                 // numbers from this value up use the smaller two-digit font in the buff/debuff square
+const FLASH_MS = { short: 900, long: 2600 };   // how long a panel flashes (normal / when a player reconnects)
+// ---- Random board generation (board.js): how the snakes and ladders are placed. Square numbers are 1-100; rows and columns are counted from 0 (row 0 = bottom). ----
+const TOP_HEAD_1 = [91, 95];            // the short top snake's head lands on one of these squares (min, max)
+const TOP_HEAD_GAP = 4;                 // the second top head is at least this many squares after the first...
+const TOP_HEAD_2_MAX = 99;              // ...and at most on this square
+const TOP_LADDER_MARGIN = 2;            // the top ladder ends this many squares away from both top snake heads
+const SHORT_SNAKE_DROP = [8, 14];       // the short top snake slides down this many squares (min, max)
+const LONG_SNAKE_DROP = [35, 55];       // the long top snake (the cobra) slides down this many squares
+const TOP_LADDER_RISE = [20, 50];       // the ladder reaching the top starts this many squares below its end
+const TOP_LADDER_MAX_COLS = 4;          // ...and no more than this many columns to the side
+const TOP_LADDER_TRIES = 60;            // attempts to place that ladder
+const MIN_GAP_STRICT = 2, MIN_GAP_RELAXED = 1;   // snake / ladder squares must be at least this many squares apart (strict first, relaxed after RELAX_AFTER tries)
+const RELAX_AFTER = 40;                 // after this many failed tries the gap rule is relaxed
+const PLACE_TRIES = 80;                 // attempts to place each other snake / ladder before giving up on the whole board
+const SNAKE_HEAD_ROWS = 8;              // other snake heads may be on rows 1 to this (higher rows are more likely: weight = row x row)
+const SNAKE_DROP_ROWS = [1, 4];         // other snakes drop this many rows (min, max)
+const SNAKE_TAIL_SHIFT = 4;             // ...and their tail is up to this many columns to the left or right
+const SNAKE_MIN_DROP = 6;               // every snake must slide down at least this many squares
+const WIDE_LADDER_CHANCE = .15;         // chance that a ladder is a wide (mostly sideways) one (at most one per board)
+const LADDER_START_ROW_MAX = 7;         // other ladders start on rows 0 to this
+const WIDE_LADDER_RISE = [1, 2];        // a wide ladder climbs this many rows...
+const WIDE_LADDER_SHIFT = [6, 9];       // ...and moves this many columns sideways
+const TALL_LADDER_RISE = [2, 5];        // an ordinary ladder climbs this many rows...
+const TALL_LADDER_SHIFT = [-3, 3];      // ...and moves this many columns sideways (negative = left)
+const LADDER_TOP_ROW_MAX = 8;           // no other ladder reaches above this row
+const WIDE_LADDER_MIN_SHIFT = 5;        // a wide ladder must really be wide: at least this many columns
+const COLUMN_THIRDS = [3, 7];           // columns below 3 = left third, below 7 = middle, the rest = right third
+const MIN_PER_THIRD = 5;                // every third of the board needs at least this many snake / ladder ends
+const LOW_ROW_LIMIT = 5;                // snake heads on rows below this are "low"...
+const MAX_LOW_SNAKES = 2;               // ...and there may be at most this many of them
+const BOARD_TRIES = 3000;               // random boards tried before the generator starts over
+const STAGE_W = 1920, STAGE_H = 1080;   // the game screen is a fixed canvas this big (pixels); main.js scales it to fit the window
+// ---- Item flights and dice (input.js) ----
+const TAU = Math.PI * 2;                // a full circle in radians
+const FLY_ITEM_SIZE = 56;               // size of an item picture while it flies (thrown or slid)
+const TOSS_ARC = { base: 70, perPixel: .25, max: 200 };   // how high a thrown item arcs: base + perPixel x distance, never more than max pixels
+const TOSS_SPIN = { stick: 720, other: 540 };             // degrees a thrown item spins on its way (a stick spins more)
+const FLY_MS = { toss: 750, slide: 650 };                 // how long a thrown / slid item takes to arrive
+const FLY_SCALE = { tossPeak: 1.3, slidePeak: 1.05, slideEnd: .95 };   // size of the item at the top of its arc / end of a slide (1 = normal)
+const ANIM_SAFETY_MS = 80;              // extra wait after an animation so a hidden browser tab can never freeze the game
+const DICE_START_ANGLE_MAX = 359;       // a new die starts at a random angle from 0 to this
+const DICE_FADE_DELAY_MS = 1100;        // after a roll, the result stays on the table this long before the dice fade away
+const DICE_SLIDE_MS = 280;              // time the dice take to glide to the middle after a roll
+const DICE_FRAME_MAX_MS = 32;           // a long pause between frames is cut to this (so dice never jump)
+const DICE_IDLE_SPIN = { x: .1, y: .15 };   // degrees per millisecond a waiting die turns
+const DICE_SEPARATE_PASSES = 3;         // how many times per frame overlapping dice are pushed apart
+const DICE_BOUNCE_KEEP = .9;            // share of speed two flying dice keep when they collide
+const DICE_PUSH_AWAY = 1.8;             // how hard a flying die is pushed away by a resting / held one
+const ROLL_BUTTON_SPEED = { min: .85, range: .6 };   // the ROLL button throws the die with a random speed between min and min+range
+const DRAG_SAMPLES = 8;                 // mouse positions remembered while dragging a die (the throw uses the last ones)
+const WEAK_FLICK_SPEED = .25;           // a flick slower than this counts as "barely moved"...
+const WEAK_FLICK_PUSH = 1;              // ...and the die gets this gentle random push instead
+const THROW_SPEED = { min: .8, max: 2.2 };   // thrown dice are kept between these speeds
+const ROLL_SIM_MAX_FRAMES = 900;        // longest roll that is pre-calculated (frames)
+const ROLL_SIM_FRAME_MS = 16.7;         // length of one pre-calculated frame in milliseconds (about 60 per second)
+const ROLL_FALLBACK_MS = 60;            // extra time after a roll before the safety timer finishes it
+const FULL_TURN = 360;                  // degrees in a full turn
+// ---- Right-hand panels and screen (main.js) ----
+const VOLUME_MAX = 10;                  // volume steps: 0 (silent) to this (full)
+const EVENT_LINES = 3;                  // how many of the latest log lines the Current Event panel shows
+const PANEL_OFFSCREEN_MARGIN = 760;     // right-hand panels wait this many pixels beyond the right edge of the window (more than their width)
+const NAME_SYNC_MS = 240;               // typing a name in the lobby is sent to the other players after this pause (so every key press is not sent)
+const SWITCH_TICK_MS = 500;             // the Switch Device code countdown refreshes this often
+const SECONDS_PER_MINUTE = 60, MS_PER_SECOND = 1000;
+// ---- Snake head art (art.js) ----
+const HEAD_SIZE = 82, COBRA_HEAD_SIZE = 100;   // drawn size of an ordinary snake head / the cobra's bigger head (before BS)
+const SHORT_SNAKE_POOL = 3;             // the "short" head design is given to the closest-to-start of this many shortest snakes
+// ---- Game rules numbers (rules.js). Change these to change how the game plays (the rulebook text in rulebook.js is written separately: update it too). ----
+const FINISH_SQUARE = SQUARES;          // the square that wins the game when landed on exactly
+const DIE_FACES = 6;                    // sides of a normal die...
+const DIE_FACE_LIST = [1, 2, 3, 4, 5, 6];   // ...and its faces (used for the Oracle's call and the Struggler's failure numbers)
+const BONUS_FACE = 6;                   // rolling this gives another turn (for the characters who get a bonus roll)
+const BULLY_RANGE = 6;                  // the Bully may push / pull players up to this many squares ahead
+const GAMBLER_EXACT_WINDOW = 4;         // the Gambler is "near the end" when fewer than this many squares from the finish (then an exact number is needed)
+const ORACLE_BONUS_DIE = [1, 3];        // the Oracle's bonus die for a right call gives this much (min, max)
+const CAT_KNOCKDOWN = 10;               // the cat knocks a player down this many squares
+const CAT_BONUS_PER_HIT = 3;            // the cat owner gains this much on her next roll for every player knocked down
+const ENERGY_DRINK_BONUS = 3;           // an energy drink adds this to the next roll
+const BRICK_PENALTY = 3;                // stepping on a toy brick takes this off the next roll
+const CHARMER_ROW_REACH = 1;            // the Snake Charmer can move snake heads on her own row and this many rows above / below
+const ITEM_START_ROWS = 5;              // new items are a little more likely on rows below this (near the start)...
+const ITEM_START_WEIGHT = 1.25;         // ...by this factor (1 = no difference)
+const ITEM_NEAR_BOOST = .6;             // items are more likely near the last player: up to this much extra weight...
+const ITEM_NEAR_SQUARES = 30;           // ...fading to nothing at this many squares away
+const FIRST_ITEM_SQUARE = 2, LAST_ITEM_SQUARE = SQUARES - 1;   // items never appear on the first or last square
+const LAND_TOCK_DELAY_MS = 270;         // the "tock" sound of a pawn landing is delayed this long
+const TRAP_YELP_DELAY_MS = 150;         // delay before a character yelps after stepping on a toy brick
+const RECONNECT_DEFAULT_MS = 5000;      // how long the game waits for a dropped player when no other time is set
+const CRASH_LIMIT = 3;                  // after this many errors in a row the game stops and tells the players
+const CRASH_PAUSE_MS = 800;             // short pause after an error before the next try
+// ---- Title screen, lobby and character-pick screens (title.js, local.js): sizes and animation times ----
+const BUTTON_ART_H = 165;               // height of the big green title buttons in their own art units; smaller buttons are scaled from this
+const GB_TEXT_SIZE = 70.9, GB_ICON_GAP = 14, GB_SIDE_ROOM = 60;   // button text size, gap after an icon, and room left and right of the text (art units)
+const GB_MIN_SHRINK = .4;               // button text is never squeezed below this share of its size
+const GB_MIN_WIDTH = 174;               // a button is never narrower than this (art units): its two corners need the room
+const GLIDE_SAFETY_MS = 100;            // extra wait after a gliding animation so a hidden tab can never freeze the screen
+const POP_MS = { in: 450, out: 280 }, POP_SAFETY_MS = 600;   // a panel popping in / out, and its safety wait
+const POP_BACK = [-40, 0], POP_CARD = [0, 70];               // how far the Back button and the card move while popping
+const TITLE_MS = {
+  btnExit: 320, btnExitStagger: 50,     // the title buttons slide off one after another
+  logoExit: 380,                        // the logo slides up off the top
+  toTitleSpot: 700,                     // the pressed button travels to the title spot at the top left
+  bounce: 650,                          // buttons springing back into place
+  btnReturnDelay: 250, btnReturnStagger: 110,   // buttons return one after another
+  logoReturn: 800, logoReturnDelay: 200,        // the logo drops back from the top
+  homeSettle: 1050,                     // pause after everything is back on the home screen
+  rowOut: 320, rowIn: 650,              // lobby rows sliding out / in
+  rowStaggerIn: 120, rowStaggerOut: 60, // delay between rows
+  playExit: 320, playExitDelay: 180, playExitX: -700,   // the PLAY title leaves last
+  playReturnDelay: 150,                 // ...and returns first
+  lobbySettle: 1150,                    // pause after the lobby rows are back
+  homeTail: .9, homeSafety: 300         // safety net timing after the home animation (seconds + ms)
+};
+const BANNER_HIDE_MS = 2500;            // a notice on the title screen disappears after this long
+const REJOIN_TITLE_WAIT_MS = 2000;      // the title waits this long for a returning player to get back into a game before showing itself
+const LOBBY_SLIDE_MS = { in: 380, out: 260 };   // lobby items sliding in / out
+const LOBBY_SLIDE_DX = 160;             // ...from this far to the side
+const LOBBY_STAGGER = { in: 60, out: 50 };      // delay between lobby items
+const LOBBY_SLIDE_TIMEOUT_MS = { in: 1200, out: 900 };   // safety waits
+const NEED_FLASH_MS = 1500;             // players who have not picked a character flash this long
+const BTN_H = { badge: 99, field: 95, start: 110, close: 74 };   // heights of lobby buttons (art units)
+const BTN_MIN_W = { badge: 112, start: 235, close: 74 }, PICK_BTN_MAX_W = 378, PICK_ICON_MAX_W = 70;   // widths of lobby buttons
+const CODE_BOX_W = 232, CODE_LONG_LEN = 6, CODE_MAX_FONT = 56, CODE_FONT_PAD = 4, CODE_CHAR_WIDTH = 0.6;   // the join-code box: width, length from which the font shrinks, biggest font, padding, character width share
+const JOIN_CODE_MAX_CHARS = 13;         // most characters accepted in the join box
+const TIP = { gapSide: 18, gapBelow: 12, above: 64, height: 52, ms: 2300 };   // little pointer notes: distances and how long they stay
+const PICK_SCREEN_FILL = .88;           // the character-pick panels use this share of the window height at most
+const PICK_MS = { dim: 150, dimOpacity: .5, in: 280, inStagger: 55, out: 110, outStagger: 14, shine: 220, choose: 130 };   // character-pick animations
+// ---- Sound (audio.js) ----
+const DEFAULT_VOLUME = 7, DEFAULT_MUSIC_VOL = 5;   // starting volumes (0-10) for sound effects and music
+const VOLUME_STEP_PERCENT = 10;         // one volume step is this many percent
+const VOICE_STALE_S = 0.5;              // a sound that should have ended this long ago no longer blocks the sound channel
+const WRAP_RATE = { min: 1.5, max: 8 }; // a cut-off sound plays out at this speed range
+const MIN_VOICE_S = { start: 0.01, left: 0.02 };   // smallest sound lengths the sound code accepts
+const SONG_HISTORY_MAX = 30;            // songs remembered for the "previous song" button
+// ---- Maths helpers ----
+const GEOM_EPS = 1e-9;                  // "close enough to zero" for line-crossing maths
+const POINT_EPS = 1e-6;                 // two points closer than this are the same point
+
 // ---- Roll overlay: while a player rolls, the board area becomes the dice tray. TRAY = its position on screen; DICE_AREA = where dice may roll (relative to the tray's top-left) ----
 const TRAY = { x: 8, y: 8, w: 1276, h: 1064 };
 const DICE_AREA = { x1: 70, y1: 70, x2: 1206, y2: 994 };   // dice stay inside this rectangle

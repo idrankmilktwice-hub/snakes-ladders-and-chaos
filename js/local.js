@@ -18,8 +18,8 @@ const HEAD_RATIO = { bully: .926, gambler: 1.269, cat: .965, struggler: .832, or
 const HEAD_BOX = { w: 212, h: 200, wideW: 242 };   // a head fits inside this box; the Gambler (very wide art) is allowed a wider box so he does not shrink much
 
 let _cv; function fitFont(text) { _cv = _cv || document.createElement("canvas").getContext("2d"); _cv.font = LBASE + "px MC"; return Math.min(LBASE, Math.floor(LBASE * 205 / _cv.measureText(text).width)); }
-const slideIn = (el, dx, delay) => el.animate([{ opacity: 0, transform: `translateX(${dx}px)` }, { opacity: 1, transform: "none" }], { duration: 380, delay, easing: EASE_BOUNCE, fill: "backwards" });
-const slideOut = (el, dx, delay) => el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${dx}px)` }], { duration: 260, delay, easing: EASE_IN, fill: "both" });
+const slideIn = (el, dx, delay) => el.animate([{ opacity: 0, transform: `translateX(${dx}px)` }, { opacity: 1, transform: "none" }], { duration: LOBBY_SLIDE_MS.in, delay, easing: EASE_BOUNCE, fill: "backwards" });
+const slideOut = (el, dx, delay) => el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${dx}px)` }], { duration: LOBBY_SLIDE_MS.out, delay, easing: EASE_IN, fill: "both" });
 
 // buildLocal(): create the Local screen and the pick overlay once.
 function buildLocal() {
@@ -32,9 +32,9 @@ function buildLocal() {
   h += `<button class="gbtn" id="tStart" style="position:absolute;left:1625px;top:910px"></button>`;
   L.innerHTML = h; root.appendChild(L);
   // every button here is a green stretchable button (see gbBuild in title.js): [button, height, text]
-  L.querySelectorAll(".lbadge").forEach(b => gbBuild(b, 99, BADGE_ROMAN ? ROMAN[b.dataset.p - 1] : "P" + b.dataset.p, { minW: 112, lmOnly: true }));
-  [["hGen", 95, "Generate Code"], ["hCopy", 95, "Copy Direct Link"], ["jBtn", 95, "Join Lobby"]].forEach(([id, h, t]) => gbBuild($(id), h, t));
-  gbBuild($("tStart"), 110, "Start", { minW: 235 });
+  L.querySelectorAll(".lbadge").forEach(b => gbBuild(b, BTN_H.badge, BADGE_ROMAN ? ROMAN[b.dataset.p - 1] : "P" + b.dataset.p, { minW: BTN_MIN_W.badge, lmOnly: true }));
+  [["hGen", BTN_H.field, "Generate Code"], ["hCopy", BTN_H.field, "Copy Direct Link"], ["jBtn", BTN_H.field, "Join Lobby"]].forEach(([id, h, t]) => gbBuild($(id), h, t));
+  gbBuild($("tStart"), BTN_H.start, "Start", { minW: BTN_MIN_W.start });
   L.querySelectorAll(".lname").forEach(el => {
     const i = +el.dataset.i, nm = () => el.value.trim() || `Player ${i + 1}`;
     el.oninput = () => { if (S.mode === "online") onPlayerNameInput(i, nm()); else S.rows[i].name = nm(); };   // online: also sent to the other players
@@ -49,13 +49,13 @@ function buildLocal() {
     if (online && !NET.isHost) return;
     if (online && S.n < CONFIG.MIN_PLAYERS) return toast($("tStart"), "Need 2 players!", false, "above");
     const missing = [...L.querySelectorAll(".lrow")].slice(0, S.n).filter((el, i) => !S.rows[i].character);
-    if (missing.length) { missing.forEach(el => el.classList.add("need")); setTimeout(() => missing.forEach(el => el.classList.remove("need")), 1500); return; }   // shine + chevron on whoever has not picked yet
+    if (missing.length) { missing.forEach(el => el.classList.add("need")); setTimeout(() => missing.forEach(el => el.classList.remove("need")), NEED_FLASH_MS); return; }   // shine + chevron on whoever has not picked yet
     const chosen = S.rows.slice(0, S.n).map(r => r.character);
     if (new Set(chosen).size < chosen.length) return toast($("tStart"), "Two players share a character!", false, "above");   // safety net: the pick screen already stops this
     leaveTitle(); online ? startOnlineGame() : start();
   };
   $("hGen").onclick = hostGenerate; $("hCopy").onclick = copyLink; $("jBtn").onclick = joinPressed;
-  $("jCode").addEventListener("input", () => { const n = $("jCode").value.length; $("jCode").style.fontSize = n > 6 ? Math.min(56, Math.floor((232 / n - 4) / 0.6)) + "px" : ""; });   // a long (switch-device) code shrinks to fit the box
+  $("jCode").addEventListener("input", () => { const n = $("jCode").value.length; $("jCode").style.fontSize = n > CODE_LONG_LEN ? Math.min(CODE_MAX_FONT, Math.floor((CODE_BOX_W / n - CODE_FONT_PAD) / CODE_CHAR_WIDTH)) + "px" : ""; });   // a long (switch-device) code shrinks to fit the box
   $("jCode").onkeydown = e => { if (e.key === "Enter") joinPressed(); };
   // the pick overlay: dark layer, X button, the six panels, and the full-rules popup
   const P = document.createElement("div"); P.id = "tPick";
@@ -69,7 +69,7 @@ function buildLocal() {
   document.body.appendChild(P);   // lives outside the scaled stage so the dark layer covers the whole window and the panels can sit on the window's bottom edge
   TT.pkPanels = [...P.querySelectorAll(".pk-panel")];
   addEventListener("resize", () => { if (TT.pickOpen) layoutPanels(); });
-  gbBuild(P.querySelector(".pk-x"), 74, "X", { minW: 74 });   // close (X) button
+  gbBuild(P.querySelector(".pk-x"), BTN_H.close, "X", { minW: BTN_MIN_W.close });   // close (X) button
   TT.pkPanels.forEach((p, k) => { p.querySelector(".pk-pick").onclick = () => pickCharacter(k); p.querySelector(".pk-more").onclick = () => openFull(k); });
   P.querySelector(".pk-x").onclick = closePick;
   P.addEventListener("click", e => { if (!e.target.closest(".pk-panel, .pk-x, .tf-card")) { if ($("tFull").style.display === "block") closeFull(); else closePick(); } });   // click anywhere else = back
@@ -91,8 +91,8 @@ function refreshRow(i) {
   const r = S.rows[i], b = $("tLocal").querySelector(`.lcls[data-i="${i}"]`), c = r && CHARACTERS.find(c => c.id === r.character);
   if (!r) return;
   b.disabled = S.mode === "online" && i !== NET.myPlayerIndex;
-  if (c) gbBuild(b, 99, c.name, { icon: A(PORT[c.id] + ".svg"), iconW: Math.min(82 * 99 / 165 * HEAD_RATIO[c.id], 70), maxW: 378 });   // head + name; the button stretches to fit
-  else gbBuild(b, 99, "Pick a Character", { maxW: 378 });
+  if (c) gbBuild(b, BTN_H.badge, c.name, { icon: A(PORT[c.id] + ".svg"), iconW: Math.min(HEAD_SIZE * BTN_H.badge / BUTTON_ART_H * HEAD_RATIO[c.id], PICK_ICON_MAX_W), maxW: PICK_BTN_MAX_W });   // head + name; the button stretches to fit
+  else gbBuild(b, BTN_H.badge, "Pick a Character", { maxW: PICK_BTN_MAX_W });
 }
 // syncRows(): copy names / characters from S into the lines (used when the lobby changes online)
 function syncRows() {
@@ -121,14 +121,14 @@ async function showLocal(mode) {
   const grp = { local: $("tCnt"), host: $("tHost"), join: $("tJoin") }[mode];
   const items = [...L.querySelectorAll(".lrow")].slice(0, S.n).map(r => r.firstChild).concat([grp, $("tStart")]);
   if (TT.instant) return;   // invite link: the lines are simply there
-  await Promise.race([Promise.all(items.map((el, k) => slideIn(el, 160, k * 60).finished)), sleep(1200)]);
+  await Promise.race([Promise.all(items.map((el, k) => slideIn(el, LOBBY_SLIDE_DX, k * LOBBY_STAGGER.in).finished)), sleep(LOBBY_SLIDE_TIMEOUT_MS.in)]);
 }
 // hideLocal(): back - the lines slide out the way they came, last first. Leaving an online lobby disconnects.
 async function hideLocal() {
   const L = $("tLocal"), grp = { local: $("tCnt"), host: $("tHost"), join: $("tJoin") }[TT.lmode];
   const items = [$("tStart"), grp].concat([...L.querySelectorAll(".lrow")].slice(0, S.n).reverse().map(r => r.firstChild));
-  const an = items.map((el, k) => slideOut(el, 160, k * 50));
-  await Promise.race([Promise.all(an.map(a => a.finished)), sleep(900)]);
+  const an = items.map((el, k) => slideOut(el, LOBBY_SLIDE_DX, k * LOBBY_STAGGER.out));
+  await Promise.race([Promise.all(an.map(a => a.finished)), sleep(LOBBY_SLIDE_TIMEOUT_MS.out)]);
   L.style.display = "none"; an.forEach(a => a.cancel());
   if (TT.lmode !== "local" && NET.active) leaveOnlineLobby();
   TT.net = false;
@@ -139,10 +139,10 @@ function toast(anchor, text, ok, pos) {
   const el = $("tToast"), g = anchor.parentElement, gx = g.id === "tLocal" ? 0 : g.offsetLeft, gy = g.id === "tLocal" ? 0 : g.offsetTop;
   el.textContent = text; el.className = ok ? "ok" : "bad"; el.style.display = "flex";
   const x = gx + anchor.offsetLeft, y = gy + anchor.offsetTop, w = anchor.offsetWidth, h = anchor.offsetHeight;
-  el.style.left = (pos === "below" || pos === "above" ? x : x + w + 18) + "px";
-  el.style.top = (pos === "below" ? y + h + 12 : pos === "above" ? y - 64 : y + (h - 52) / 2) + "px";
+  el.style.left = (pos === "below" || pos === "above" ? x : x + w + TIP.gapSide) + "px";
+  el.style.top = (pos === "below" ? y + h + TIP.gapBelow : pos === "above" ? y - TIP.above : y + (h - TIP.height) / 2) + "px";
   el.getAnimations().forEach(a => a.cancel());
-  const a = el.animate([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)", offset: .12 }, { opacity: 1, transform: "scale(1)", offset: .86 }, { opacity: 0, transform: "scale(.92)" }], { duration: 2300, easing: "cubic-bezier(.2,1.4,.4,1)" });
+  const a = el.animate([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)", offset: .12 }, { opacity: 1, transform: "scale(1)", offset: .86 }, { opacity: 0, transform: "scale(.92)" }], { duration: TIP.ms, easing: "cubic-bezier(.2,1.4,.4,1)" });
   a.onfinish = () => { el.style.display = "none"; };
 }
 // hostGenerate(): the Generate Code button - open a room and show its code
@@ -170,7 +170,7 @@ function copyLink() {
 async function joinPressed() {
   if (TT.net) return;
   const raw = ($("jCode").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const code = raw.length >= 11 ? raw.slice(0, 5) : raw, xfer = raw.length >= 11 ? raw.slice(5, 11) : "";   // room code, plus a switch-device secret if one was typed after it
+  const code = raw.length >= ROOM_CODE_LENGTH + XFER_CODE_LENGTH ? raw.slice(0, ROOM_CODE_LENGTH) : raw, xfer = raw.length >= ROOM_CODE_LENGTH + XFER_CODE_LENGTH ? raw.slice(ROOM_CODE_LENGTH, ROOM_CODE_LENGTH + XFER_CODE_LENGTH) : "";   // room code, plus a switch-device secret if one was typed after it
   if (!code) return toast($("jBtn"), "Enter a code!", false, "right");
   TT.net = true; $("jBtn").disabled = true; gbLabel($("jBtn"), "Joining...");
   try {
@@ -193,7 +193,7 @@ async function joinPressed() {
   TT.net = false;
 }
 // autoJoin(code): used by invite links - fill the code and join straight away
-function autoJoin(code) { $("jCode").value = code.toUpperCase().slice(0, 13); joinPressed(); }
+function autoJoin(code) { $("jCode").value = code.toUpperCase().slice(0, JOIN_CODE_MAX_CHARS); joinPressed(); }
 
 // leaveTitle(): the game itself is starting - remove the title screen completely.
 function leaveTitle() { $("title").classList.remove("on"); document.body.classList.remove("on-title"); document.documentElement.classList.remove("on-title"); }
@@ -202,7 +202,7 @@ function leaveTitle() { $("title").classList.remove("on"); document.body.classLi
 // layoutPanels(): make the panels as big as the window allows - as wide as fits, never taller than the window (a little room is kept on top for the X button) -
 // with the same space between panels and at the far left and right, whatever the window shape. Panels sit on the window's bottom edge.
 function layoutPanels() {
-  const p = Math.min(innerWidth / (6 * PK.w + 7 * 28), innerHeight * .88 / PK.h), gap = (innerWidth - 6 * PK.w * p) / 7;
+  const p = Math.min(innerWidth / (CHARACTERS.length * PK.w + (CHARACTERS.length + 1) * PK.gap), innerHeight * PICK_SCREEN_FILL / PK.h), gap = (innerWidth - CHARACTERS.length * PK.w * p) / (CHARACTERS.length + 1);
   TT.pkScale = p; TT.pkGap = gap;
   TT.pkPanels.forEach((pn, k) => { const s = pn.parentElement; s.style.left = (gap + k * (PK.w * p + gap)) + "px"; s.style.transform = `scale(${p})`; });
 }
@@ -224,13 +224,13 @@ async function openPick(i) {
   TT.pickOpen = true; TT.pkRow = i; TT.pkBusy = true;
   layoutPanels(); refreshTaken();   // (characters other players already have are faded out)
   const P = $("tPick"); P.style.display = "block"; $("tFull").style.display = "none";
-  P.querySelector(".pk-dim").animate([{ opacity: 0 }, { opacity: .5 }], { duration: 150, fill: "backwards" });
+  P.querySelector(".pk-dim").animate([{ opacity: 0 }, { opacity: PICK_MS.dimOpacity }], { duration: PICK_MS.dim, fill: "backwards" });
   TT.pkPanels.forEach(p => { p._x = 0; p._y = PK.off; p.style.transform = `translate(0,${PK.off}px)`; });
-  await Promise.all(TT.pkPanels.map((p, k) => glide(p, { x: 0, y: 0 }, 280, "cubic-bezier(.2,.9,.3,1.08)", k * 55)));
+  await Promise.all(TT.pkPanels.map((p, k) => glide(p, { x: 0, y: 0 }, PICK_MS.in, "cubic-bezier(.2,.9,.3,1.08)", k * PICK_MS.inStagger)));
   TT.pkBusy = false;
 }
 // exitPanels(except): panels leave downwards, last first (the opposite of how they came in)
-function exitPanels(except) { return Promise.all([5, 4, 3, 2, 1, 0].filter(k => k !== except).map((k, j) => glide(TT.pkPanels[k], { x: 0, y: PK.off }, 110, EASE_IN, j * 14))); }
+function exitPanels(except) { return Promise.all([5, 4, 3, 2, 1, 0].filter(k => k !== except).map((k, j) => glide(TT.pkPanels[k], { x: 0, y: PK.off }, PICK_MS.out, EASE_IN, j * PICK_MS.outStagger))); }
 function closePickNow() { $("tPick").style.display = "none"; $("tFull").style.display = "none"; TT.pickOpen = false; TT.pkBusy = false; }
 async function closePick() { if (!TT.pickOpen || TT.pkBusy) return; TT.pkBusy = true; await exitPanels(-1); closePickNow(); }   // X button / click outside
 // pickCharacter(k): PICK pressed on panel k - the others leave first, the chosen one shines, slides to the centre and off the screen; the dark layer vanishes instantly.
@@ -238,10 +238,10 @@ async function pickCharacter(k) {
   if (TT.pkBusy || TT.pkPanels[k].classList.contains("taken")) return; TT.pkBusy = true;   // (a taken character cannot be picked)
   const p = TT.pkPanels[k];
   await exitPanels(k);
-  p.classList.add("shining"); await sleep(220); p.classList.remove("shining");
+  p.classList.add("shining"); await sleep(PICK_MS.shine); p.classList.remove("shining");
   const cx = (innerWidth / 2 - (TT.pkGap + k * (PK.w * TT.pkScale + TT.pkGap)) - PK.w * TT.pkScale / 2) / TT.pkScale;   // slide to the middle of the window (in panel units)
-  await glide(p, { x: cx, y: 0 }, 130, "ease-out", 0);
-  await glide(p, { x: cx, y: PK.off }, 130, EASE_IN, 0);
+  await glide(p, { x: cx, y: 0 }, PICK_MS.choose, "ease-out", 0);
+  await glide(p, { x: cx, y: PK.off }, PICK_MS.choose, EASE_IN, 0);
   closePickNow();
   S.rows[TT.pkRow].character = CHARACTERS[k].id; refreshRow(TT.pkRow);
   if (S.mode === "online" && NET.active) sendLobbyUpdate(undefined, CHARACTERS[k].id);   // tell the other players

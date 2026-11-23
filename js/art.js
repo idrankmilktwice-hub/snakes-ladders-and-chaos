@@ -68,7 +68,7 @@ function prep(text, K) {
 // loadBody(file): load a picture as a BITMAP the canvas can slice up and stamp quickly. Used for snake BODIES (a long horizontal strip, thick at the
 // head end, thin at the tail) and for LADDERS.
 // BODY_RES = how many image pixels per SVG unit (2 = sharp when drawn at 2x). The SVG only has a viewBox, so width/height are added to a copy of its text.
-const BODY_RES = 3;
+const BODY_RES = 3;   // (already a named number: picture pixels per SVG unit; 3 = very sharp)
 async function loadBody(file) {
   let t = await T(file);
   const v = t
@@ -104,7 +104,7 @@ function buildKinds() {
     color: h.art.main,
     body: h.body,
     sc:
-      ((i === all.length - 1 ? 100 : 82) * BS) /
+      ((i === all.length - 1 ? COBRA_HEAD_SIZE : HEAD_SIZE) * BS) /
       Math.max(h.art.box.w, h.art.box.h), // drawn size of a head in pixels (cobra is bigger)
   }));
 }
@@ -254,7 +254,7 @@ function assignKinds() {
     headOf[t] = +h;
   }); // headOf[tail] = head square
   let pool = [...Array(ART.heads.length).keys()].sort(
-      () => Math.random() - 0.5,
+      () => Math.random() - .5,
     ),
     left = tails; // pool = all ordinary heads, shuffled once
   G.kind = {};
@@ -262,7 +262,7 @@ function assignKinds() {
   if (low >= 0 && tails.length) {
     const small = [...tails]
       .sort((a, b) => headOf[a] - a - (headOf[b] - b))
-      .slice(0, 3); // the 3 shortest snakes
+      .slice(0, SHORT_SNAKE_POOL); // the 3 shortest snakes
     const t0 = small.sort((a, b) => headOf[a] - headOf[b])[0]; // ...and the one closest to square 1
     G.kind[t0] = low;
     pool = pool.filter((i) => i !== low);

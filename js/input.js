@@ -10,7 +10,7 @@
 // stagePt(e): mouse position converted to the 1920x1080 stage's own coordinates (works at any window size / zoom).
 function stagePt(e) {
   const r = $("stage").getBoundingClientRect();
-  return [(e.clientX - r.left) * 1920 / r.width, (e.clientY - r.top) * 1080 / r.height];
+  return [(e.clientX - r.left) * STAGE_W / r.width, (e.clientY - r.top) * STAGE_H / r.height];
 }
 
 // ------------------------------------------------------------------ 1. PROMPT BOX + BUTTONS
@@ -323,25 +323,25 @@ async function awaitTarget({ targets, text, label }) {
   return r;
 }
 // elCenter(el): centre of a page element in stage coordinates (to launch or land flying items on pawns).
-function elCenter(el) { const r = el.getBoundingClientRect(), s = $("stage").getBoundingClientRect(); return [(r.x + r.width / 2 - s.left) * 1920 / s.width, (r.y + r.height / 2 - s.top) * 1080 / s.height]; }
+function elCenter(el) { const r = el.getBoundingClientRect(), s = $("stage").getBoundingClientRect(); return [(r.x + r.width / 2 - s.left) * STAGE_W / s.width, (r.y + r.height / 2 - s.top) * STAGE_H / s.height]; }
 // flyItem(type, from, to, mode): animate a copy of an item picture from one stage position to another. mode "toss" = a spinning arc (stone, stick, drink),
 // "slide" = a flat glide (toy brick). Resolves when it lands (a stone plays its impact sound, a toy brick the landing "tock").
 function flyItem(type, from, to, mode, isRemote) {
   if (NET.active && NET.isHost && !isRemote) {
     broadcast({ type: "FLY_ITEM", itemType: type, from, to, mode });
   }
-  const f = itemFit(type, 56, 56), el = document.createElement("img"), toss = mode === "toss", dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  const f = itemFit(type, FLY_ITEM_SIZE, FLY_ITEM_SIZE), el = document.createElement("img"), toss = mode === "toss", dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
   el.src = A(ITEMS[type].file); el.className = "fly"; el.style.width = f.w + "px"; el.style.height = f.h + "px";
   $("fly").appendChild(el);
   const at = (p, rot, sc) => `translate(${f1(p[0] - f.w / 2)}px,${f1(p[1] - f.h / 2)}px) rotate(${rot}deg) scale(${sc})`;
-  const mid = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 - (toss ? Math.min(200, 70 + dist * .25) : 0)];   // the top of the arc
-  const spin = toss ? (type === "stick" ? 720 : 540) : 0;
-  const dur = toss ? 750 : 650;
-  const anim = el.animate([{ transform: at(from, 0, 1) }, { transform: at(mid, spin / 2, toss ? 1.3 : 1.05), offset: .5 }, { transform: at(to, spin, toss ? 1 : .95) }],
+  const mid = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 - (toss ? Math.min(TOSS_ARC.max, TOSS_ARC.base + dist * TOSS_ARC.perPixel) : 0)];   // the top of the arc
+  const spin = toss ? (type === "stick" ? TOSS_SPIN.stick : TOSS_SPIN.other) : 0;
+  const dur = toss ? FLY_MS.toss : FLY_MS.slide;
+  const anim = el.animate([{ transform: at(from, 0, 1) }, { transform: at(mid, spin / 2, toss ? FLY_SCALE.tossPeak : FLY_SCALE.slidePeak), offset: .5 }, { transform: at(to, spin, toss ? 1 : FLY_SCALE.slideEnd) }],
     { duration: dur, easing: toss ? "ease-in-out" : "cubic-bezier(.45,.05,.4,1)", fill: "forwards" });
   sfx("small");
   // Race against sleep(dur + 80) so backgrounded tabs never hang awaiting Web Animations!
-  return Promise.race([anim.finished.catch(() => {}), sleep(dur + 80)]).then(() => { el.remove(); if (type === "stone") sfxPick("stone"); else if (type === "brick") sfx("tock"); });   // stone: its impact sound (random of 2); brick: the landing tock. The drink and the stick get their sounds from rules.js (useItem) right after they land
+  return Promise.race([anim.finished.catch(() => {}), sleep(dur + ANIM_SAFETY_MS)]).then(() => { el.remove(); if (type === "stone") sfxPick("stone"); else if (type === "brick") sfx("tock"); });   // stone: its impact sound (random of 2); brick: the landing tock. The drink and the stick get their sounds from rules.js (useItem) right after they land
 }
 
 // ------------------------------------------------------------------ 3. THE DICE
@@ -382,7 +382,7 @@ function spawnDiceElements(n, canGrab) {
     const idlePos = [(DICE_AREA.x1 + DICE_AREA.x2) / 2 + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
     el.innerHTML = `<div class="cube">${[1, 2, 3, 4, 5, 6].map(v => `<img class="df df${v}" src="${A(`dice_no_${v}.svg`)}" alt="" draggable="false">`).join("")}</div>`;
     $("dice").appendChild(el);
-    const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, 359), ry: rnd(0, 359), mode: "idle", val: 1 };
+    const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, DICE_START_ANGLE_MAX), ry: rnd(0, DICE_START_ANGLE_MAX), mode: "idle", val: 1 };
     dieDraw(d); DICE.list.push(d);
   }
 }
@@ -476,18 +476,18 @@ function finishRollPlayback(P) {
       const cb = DICE.done;
       DICE.done = null;
       NET.pendingActorIdx = null;
-      DICE.hideTimer = setTimeout(() => { DICE.hideTimer = null; trayHide(); }, 1100);   // the result stays in view a moment, then the dice fade away
+      DICE.hideTimer = setTimeout(() => { DICE.hideTimer = null; trayHide(); }, DICE_FADE_DELAY_MS);   // the result stays in view a moment, then the dice fade away
       cb(P.vals);
     }
-  }, 280);
+  }, DICE_SLIDE_MS);
 }
 
 let diceLast = 0;
 function diceTick(now) {
   requestAnimationFrame(diceTick);
   try {
-    const dt = Math.min(32, Math.max(0, now - (diceLast || now))); diceLast = now;
-    DICE.list.forEach(d => { if (d.mode === "idle" || d.mode === "held") { d.rx += .1 * dt; d.ry += .15 * dt; } });
+    const dt = Math.min(DICE_FRAME_MAX_MS, Math.max(0, now - (diceLast || now))); diceLast = now;
+    DICE.list.forEach(d => { if (d.mode === "idle" || d.mode === "held") { d.rx += DICE_IDLE_SPIN.x * dt; d.ry += DICE_IDLE_SPIN.y * dt; } });
     separateDice(DICE.list);                                             // also keeps a held die from being dragged onto the other one
     const P = DICE.play;
     if (P) {                                                             // a roll is being played back
@@ -507,7 +507,7 @@ function slideDiceToCenter() {
 }
 
 function separateDice(L) {
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < DICE_SEPARATE_PASSES; pass++) {
     for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
       const a = L[i], b = L[j];
       let dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy);
@@ -519,9 +519,9 @@ function separateDice(L) {
       a.x -= nx * ov * ma / tot; a.y -= ny * ov * ma / tot; b.x += nx * ov * mb / tot; b.y += ny * ov * mb / tot;
       if (pass === 0) {
         const va = a.vx * nx + a.vy * ny, vb = b.vx * nx + b.vy * ny;
-        if (a.mode === "fly" && b.mode === "fly") { if (va - vb > 0) { const d = (va - vb) * .9; a.vx -= d * nx; a.vy -= d * ny; b.vx += d * nx; b.vy += d * ny; } }
-        else if (a.mode === "fly" && va > 0) { a.vx -= 1.8 * va * nx; a.vy -= 1.8 * va * ny; }
-        else if (b.mode === "fly" && vb < 0) { b.vx -= 1.8 * vb * nx; b.vy -= 1.8 * vb * ny; }
+        if (a.mode === "fly" && b.mode === "fly") { if (va - vb > 0) { const d = (va - vb) * DICE_BOUNCE_KEEP; a.vx -= d * nx; a.vy -= d * ny; b.vx += d * nx; b.vy += d * ny; } }
+        else if (a.mode === "fly" && va > 0) { a.vx -= DICE_PUSH_AWAY * va * nx; a.vy -= DICE_PUSH_AWAY * va * ny; }
+        else if (b.mode === "fly" && vb < 0) { b.vx -= DICE_PUSH_AWAY * vb * nx; b.vy -= DICE_PUSH_AWAY * vb * ny; }
       }
       dieClamp(a); dieClamp(b);
       const d2 = Math.hypot(b.x - a.x, b.y - a.y);
@@ -533,7 +533,7 @@ function separateDice(L) {
 // rollPressed(): the ROLL button (or Space bar) -> throw with a random direction and strength.
 function rollPressed() {
   if (!DICE.waiting || DICE.flying || !DICE.canInteract) return;
-  const a = Math.random() * 6.283, sp = .85 + Math.random() * .6;
+  const a = Math.random() * TAU, sp = ROLL_BUTTON_SPEED.min + Math.random() * ROLL_BUTTON_SPEED.range;
   launch(Math.cos(a) * sp, Math.sin(a) * sp);
 }
 // A die is grabbed: start recording the mouse path so the throw direction/speed can be measured on release.
@@ -549,15 +549,15 @@ function dieMove(e) {
   d.x = x; d.y = y; dieClamp(d);
   sendDragPreview({ kind: "die", i: DD.i, x: d.x, y: d.y });
   DD.samples.push({ t: performance.now(), x, y });
-  if (DD.samples.length > 8) DD.samples.shift();
+  if (DD.samples.length > DRAG_SAMPLES) DD.samples.shift();
 }
 // Die released: speed and direction = how the mouse moved over the last ~100ms. A weak flick still rolls (with a default push).
 function dieUp(e) {
   const s = DD.samples, a = s[0], b = s[s.length - 1], dt = Math.max(1, b.t - a.t);
   let vx = (b.x - a.x) / dt, vy = (b.y - a.y) / dt, sp = Math.hypot(vx, vy);
   DD = null;
-  if (sp < .25) { const ang = Math.random() * 6.283; vx = Math.cos(ang); vy = Math.sin(ang); sp = 1; }   // barely moved: gentle random roll
-  const k = cl(sp, .8, 2.2) / sp;                                                                       // keep the throw within sensible speeds
+  if (sp < WEAK_FLICK_SPEED) { const ang = Math.random() * TAU; vx = Math.cos(ang); vy = Math.sin(ang); sp = WEAK_FLICK_PUSH; }   // barely moved: gentle random roll
+  const k = cl(sp, THROW_SPEED.min, THROW_SPEED.max) / sp;                                                                       // keep the throw within sensible speeds
   launch(vx * k, vy * k);
 }
 
@@ -597,14 +597,14 @@ function launch(vx, vy, forceVals, startDice) {
     return { x: d.x, y: d.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, rx: d.rx, ry: d.ry, mode: "fly" };
   });
   const frames = [sim.map(d => ({ x: d.x, y: d.y, rx: d.rx, ry: d.ry }))];
-  for (let n = 0; n < 900; n++) {
-    const moving = stepDice(sim, 16.7);
+  for (let n = 0; n < ROLL_SIM_MAX_FRAMES; n++) {
+    const moving = stepDice(sim, ROLL_SIM_FRAME_MS);
     frames.push(sim.map(d => ({ x: d.x, y: d.y, rx: d.rx, ry: d.ry })));
     if (!moving && sim.every(d => d.mode === "rest")) break;
   }
   sim.forEach((d, i) => {
     const [X, Y] = FACE_ANGLES[vals[i]], last = frames[frames.length - 1][i];
-    const tx = Math.round((last.rx - X) / 360) * 360 + X, ty = Math.round((last.ry - Y) / 360) * 360 + Y, dx = tx - last.rx, dy = ty - last.ry;
+    const tx = Math.round((last.rx - X) / FULL_TURN) * FULL_TURN + X, ty = Math.round((last.ry - Y) / FULL_TURN) * FULL_TURN + Y, dx = tx - last.rx, dy = ty - last.ry;
     const cum = [0];
     for (let n = 1; n < frames.length; n++) cum.push(cum[n - 1] + Math.abs(frames[n][i].rx - frames[n - 1][i].rx) + Math.abs(frames[n][i].ry - frames[n - 1][i].ry));
     frames.forEach((f, n) => { const q = cum[cum.length - 1] > 1 ? cum[n] / cum[cum.length - 1] : n / (frames.length - 1); f[i].rx += dx * q; f[i].ry += dy * q; });
@@ -614,6 +614,6 @@ function launch(vx, vy, forceVals, startDice) {
   DICE.play = P;
   if (DICE.finishTimer) clearTimeout(DICE.finishTimer);
   // Fallback completion timer so unfocused/backgrounded tabs never stall the game loop!
-  DICE.finishTimer = setTimeout(() => finishRollPlayback(P), ROLL_MS + 60);
+  DICE.finishTimer = setTimeout(() => finishRollPlayback(P), ROLL_MS + ROLL_FALLBACK_MS);
   sfx("dice");
 }

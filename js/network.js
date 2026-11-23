@@ -106,7 +106,7 @@ const IN_GAME_TYPES = new Set([
 function genRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = "";
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < ROOM_CODE_LENGTH; i++) s += chars[Math.floor(Math.random() * chars.length)];
   return s;
 }
 
@@ -128,7 +128,51 @@ const ELECT_BASE_MS = 1000;       // new-host election: first candidate takes ov
 const ELECT_STEP_MS = 3500;       // ...each next candidate waits this much longer
 const XFER_TTL_MS = 120000;       // a "switch device" code lives 2 minutes
 const SESSION_KEY = "snc_session";
-const SESSION_MAX_AGE = 6 * 3600 * 1000;
+
+// ---- More network and timing numbers (all in milliseconds unless the name says otherwise) ----
+const HOST_RECORD_FRESH_MS = 15000;   // a lobby's listing is only trusted if its host was heard from this recently
+const MQTT_OUTBOX_MAX = 64;           // messages waiting to be sent over the relay: older ones are dropped beyond this
+const SOCKET_RETRY_MS = 1800;         // wait before re-opening a lost relay connection
+const SOCKET_PING_MS = 25000;         // how often the relay connection is pinged to keep it alive
+const HTTP_BATCH_MAX = 32;            // most messages sent in one go over the backup (HTTP) channel
+const HTTP_RETRY_PAUSE_MS = 600;      // pause before retrying the backup channel
+const PEER_RECONNECT_MS = 600;        // wait before asking the peer server to reconnect
+const HOST_START_WAIT_MS = 1200;      // how long hosting waits for a relay before going on without one
+const RELAY_GRACE_MS = 1200;          // the relay may still be carrying a player: give them this extra time before calling them gone
+const JOIN_HANDSHAKE_DELAY_MS = 60;   // short pause before the join handshake is sent
+const KNOCK_FAST_MS = 500, KNOCK_SLOW_MS = 1200;   // a returning player knocks every 0.5s, a new player every 1.2s
+const JOIN_GIVEUP_MS = 12000;         // a new player gives up joining after this long
+const KNOCK_FAST_TRIES = 4;           // a returning player knocks fast for this many tries, then only every second try
+const RTC_TRY_AT = [3, 6];            // direct (WebRTC) connections are attempted on these tries...
+const RTC_RETURNING_TRY_AT = 12;      // ...and once more on this try for a returning player
+const SESSION_SAVE_EVERY = 5;         // the seat held by a live tab is re-saved every this many monitor ticks
+const MONITOR_TICK_MS = 500;          // how often connections are checked
+const SLEEP_GAP_MS = 2500;            // a pause between two checks longer than this means the computer slept: everybody gets a fresh start
+const RELOAD_DELAY_MS = 1500, RELOAD_SOON_MS = 600;   // short waits before the page reloads itself
+const RECOVERY_TICK_MS = 1000;        // how often a lost player looks for a host
+const EPOCH_SEARCH_SPAN = 5;          // a returning player tries this many host generations beyond the last known one
+const BANNER_AFTER_MS = 8000;         // the "Connection lost" banner shows the form after this long
+const LINK_UP_GRACE_MS = 2500;        // after my connection returns, wait this long for the host to answer before acting
+const RESUME_GRACE_MS = 1500;         // after the host starts, wait this long so players can arrive before the first prompt
+const PROBE_MAX = 15;                 // how many times an old host looks for a new host
+const PROBE_EVERY_MS = 2000;          // ...and how often
+const RECHECK_MS = 3000, RECHECK_FIRST_MS = 1000;   // waits used when double-checking a lost link before carrying on
+const COUNTDOWN_TICK_MS = 250;        // the reconnect countdown refreshes this often
+const SYNC_LOG_LINES = 80;            // log lines sent to a rejoining player
+const SYNC_CHAT_LINES = 40;           // chat lines sent to a rejoining player
+const XFER_ATTEMPT_MS = 60000;        // a switch-device attempt is valid for this long
+const XFER_MAX_FAILS = 6;             // this many wrong codes lock switch-device for a while...
+const XFER_LOCK_MS = 30000;           // ...for this long
+const XFER_ANSWER_MS = 5000;          // the host must answer a switch-device request within this time
+const SEEN_MSGS_MAX = 1200;           // how many message ids are remembered to ignore duplicates
+const UNKNOWN_SEAT_GRACE_MS = 2500;   // a guest told "unknown seat" only acts after being in the game this long
+const NO_ELECT_MS = 10000;            // after an election nobody starts another for this long
+const DRAG_SEND_MIN_MS = 45;          // drag positions are sent to other players at most this often
+const ROOM_CODE_LENGTH = 5;           // characters in a lobby code
+const XFER_CODE_LENGTH = 6;           // characters in a switch-device code
+const STANDIN_THROW = { vx: 1, vy: 0.4 };   // the throw used when the game rolls for a player (everybody sees the same roll)
+const SESSION_HOURS = 6;              // a saved seat is forgotten after this many hours
+const SESSION_MAX_AGE = SESSION_HOURS * 3600 * 1000;   // ...in milliseconds
 
 // hostPeerId(code, epoch): the address of the host. Epoch 0 = the original host; every host change gets a fresh address so two hosts never share one.
 function hostPeerId(code, epoch) {
@@ -214,7 +258,7 @@ function pickAutoSession() {
   try { j = readSession(window.sessionStorage); } catch (e) {}
   if (j) return j;
   try { j = readSession(window.localStorage); } catch (e) {}
-  if (j && (!j.live || Date.now() - j.ts > 15000)) return j;
+  if (j && (!j.live || Date.now() - j.ts > HOST_RECORD_FRESH_MS)) return j;
   return null;
 }
 function clearSession() {
@@ -394,7 +438,7 @@ function mqttSend(dstPeerId, data, preferredIdx, allBrokers) {
       }
     }
     NET.mqttOutbox.push({ dst: dstPeerId || "*", data, preferredIdx, allBrokers });
-    if (NET.mqttOutbox.length > 64) NET.mqttOutbox.shift();
+    if (NET.mqttOutbox.length > MQTT_OUTBOX_MAX) NET.mqttOutbox.shift();
     return true;
   }
 
@@ -494,7 +538,7 @@ function startCloudRelay(onAnyBrokerReady) {
       ws.onclose = () => {
         slot.ready = false;
         if (!slot.stopped && NET.active) {
-          slot.reconnTimer = setTimeout(openSocket, 1800);
+          slot.reconnTimer = setTimeout(openSocket, SOCKET_RETRY_MS);
         }
       };
     };
@@ -511,7 +555,7 @@ function startCloudRelay(onAnyBrokerReady) {
         try { s.ws.send(ping); } catch (e) {}
       }
     });
-  }, 25000);
+  }, SOCKET_PING_MS);
 }
 
 // Ordered, batched FIFO HTTP sender for serve.py (/api/send) - prevents out-of-order POST races
@@ -533,7 +577,7 @@ async function flushHttpOutbox() {
   if (NET.httpFlushing || !NET.httpEnabled || !NET.httpOutbox.length) return;
   NET.httpFlushing = true;
   while (NET.httpEnabled && NET.httpOutbox.length) {
-    const batch = NET.httpOutbox.splice(0, 32);
+    const batch = NET.httpOutbox.splice(0, HTTP_BATCH_MAX);
     try {
       const r = await fetch("/api/send", {
         method: "POST",
@@ -633,7 +677,7 @@ async function startLongPollLoop(handleBatch) {
       const j = await r.json();
       handleBatch(j);
     } catch (e) {
-      await new Promise(res => setTimeout(res, 600));
+      await new Promise(res => setTimeout(res, HTTP_RETRY_PAUSE_MS));
     }
   }
 }
@@ -718,13 +762,13 @@ function startHostTransport(pid, onIdTaken) {
           if (NET.active && NET.peer && NET.peer.disconnected && !NET.peer.destroyed) {
             try { NET.peer.reconnect(); } catch (e) {}
           }
-        }, 600);
+        }, PEER_RECONNECT_MS);
       }
     });
 
     setTimeout(() => {
       if (NET.httpEnabled || mqttIsReady()) finishHost();
-    }, 1200);
+    }, HOST_START_WAIT_MS);
 
     NET.peer.on("connection", conn => {
       handleIncomingConnection(conn);
@@ -743,7 +787,7 @@ function startHostTransport(pid, onIdTaken) {
             if (mqttIsReady() || NET.httpEnabled) finishHost();
             else { settled = true; reject(err); }
           }
-        }, 1200);
+        }, HOST_START_WAIT_MS);
       }
     });
   });
@@ -800,7 +844,7 @@ function guestConnectRtc() {
     rtcConn.on("close", () => {
       if (hc.rtcConn !== rtcConn || NET.hostConn !== hc) return;
       if (!NET.httpEnabled && !mqttIsReady()) { if (NET.joined) onHostLost("rtc"); }
-      else NET.lastRx = Math.min(NET.lastRx || 0, performance.now() - HB_TIMEOUT_MS + 1200);   // the relay may still be carrying us: give it a moment
+      else NET.lastRx = Math.min(NET.lastRx || 0, performance.now() - HB_TIMEOUT_MS + RELAY_GRACE_MS);   // the relay may still be carrying us: give it a moment
     });
     rtcConn.on("error", () => {});
   } catch (e) {}
@@ -826,7 +870,7 @@ function initGuest(code, playerName, opts) {
     NET.epoch = opts.epoch || 0;
 
     const returning = !!(opts.token || opts.xfer || opts.rejoin);
-    const epochs = returning ? [0, 1, 2, 3, 4, 5].map(i => NET.epoch + i) : [0];   // a returning player does not know which generation of host is alive
+    const epochs = returning ? Array.from({ length: EPOCH_SEARCH_SPAN + 1 }, (_, i) => NET.epoch + i) : [0];   // a returning player does not know which generation of host is alive
     const hc = createHybridConn(hostPeerId(NET.roomCode, NET.epoch), null);
     NET.hostConn = hc;
 
@@ -860,11 +904,11 @@ function initGuest(code, playerName, opts) {
     });
 
     // Immediate attempt over HTTP/SSE if served by serve.py
-    if (NET.httpEnabled) setTimeout(sendJoinHandshake, 60);
+    if (NET.httpEnabled) setTimeout(sendJoinHandshake, JOIN_HANDSHAKE_DELAY_MS);
 
     let tries = 0;
-    const tickMs = returning ? 500 : 1200;                                       // a returning player knocks faster...
-    const giveUpMs = opts.giveUpMs || (returning ? REJOIN_GIVEUP_MS : 12000);    // ...and gives up after this long
+    const tickMs = returning ? KNOCK_FAST_MS : KNOCK_SLOW_MS;                                       // a returning player knocks faster...
+    const giveUpMs = opts.giveUpMs || (returning ? REJOIN_GIVEUP_MS : JOIN_GIVEUP_MS);    // ...and gives up after this long
     const maxTries = Math.ceil(giveUpMs / tickMs);
     joinRetryTimer = setInterval(() => {
       tries++;
@@ -875,11 +919,11 @@ function initGuest(code, playerName, opts) {
         return;
       }
       if (opts.onTick) opts.onTick(Math.max(0, giveUpMs - tries * tickMs));      // lets the screen show "15, 14, 13..."
-      if (returning && tries > 4 && tries % 2) return;                           // first 2 seconds: knock every 0.5s, after that every 1s
+      if (returning && tries > KNOCK_FAST_TRIES && tries % 2) return;                           // first 2 seconds: knock every 0.5s, after that every 1s
       sendJoinHandshake();
       if (!hc.isRtcOpen() && !NET.httpEnabled) {
         epochs.forEach(e => wsSend(hostPeerId(NET.roomCode, e), { _mid: makeMsgId(), type: "JOIN_REQ", name: playerName || "Guest", token: opts.token || undefined, xfer: opts.xfer || undefined }));
-        if (tries === 3 || tries === 6 || (returning && tries === 12)) guestConnectRtc();
+        if (RTC_TRY_AT.includes(tries) || (returning && tries === RTC_RETURNING_TRY_AT)) guestConnectRtc();
       }
     }, tickMs);
 
@@ -939,7 +983,7 @@ function handleIncomingConnection(rtcConn) {
     if (!NET.httpEnabled && !mqttIsReady()) {
       seatLost(hc, "rtc");                // no other way to reach them: they are gone
     } else if (hc.lastRx) {
-      hc.lastRx = Math.min(hc.lastRx, performance.now() - HB_TIMEOUT_MS + 1200);   // the relay may still carry them: if nothing arrives within ~1s they are gone
+      hc.lastRx = Math.min(hc.lastRx, performance.now() - HB_TIMEOUT_MS + RELAY_GRACE_MS);   // the relay may still carry them: if nothing arrives within ~1s they are gone
     }
   });
 }
@@ -1004,10 +1048,10 @@ function startHeartbeat() {
   NET.pingTimer = setInterval(() => {
     if (!NET.active || NET.retired) return;
     n++;
-    if (n % 5 === 0) saveSession();                                   // keeps "this seat is held by a live tab" fresh
+    if (n % SESSION_SAVE_EVERY === 0) saveSession();                                   // keeps "this seat is held by a live tab" fresh
     if (!NET.isHost && NET.joined && NET.hostConn && !NET.hostLost) NET.hostConn.send({ type: "PING" });
   }, HB_PING_MS);
-  NET.monTimer = setInterval(monitorTick, 500);
+  NET.monTimer = setInterval(monitorTick, MONITOR_TICK_MS);
 }
 function stopHeartbeat() {
   if (NET.pingTimer) { clearInterval(NET.pingTimer); NET.pingTimer = null; }
@@ -1019,7 +1063,7 @@ function monitorTick() {
   const now = performance.now();
   const gap = now - NET.lastMonTick;
   NET.lastMonTick = now;
-  if (gap > 2500) {            // this computer slept / the tab was frozen: everybody gets a fresh start instead of a mass false alarm
+  if (gap > SLEEP_GAP_MS) {            // this computer slept / the tab was frozen: everybody gets a fresh start instead of a mass false alarm
     NET.lastRx = now;
     NET.connections.forEach(c => { c.lastRx = now; });
     return;
@@ -1075,8 +1119,8 @@ function hostAutoResolve(idx) {
   if (DICE.waiting && !DICE.flying && DICE.done) {
     const vals = DICE.list.map(() => d6());
     const snap = DICE.list.map(d => ({ x: d.x, y: d.y, rx: d.rx, ry: d.ry }));
-    sendAction({ type: "ROLL_LAUNCH", vx: 1, vy: 0.4, vals, startDice: snap });   // everybody sees the same roll
-    launch(1, 0.4, vals, snap);
+    sendAction({ type: "ROLL_LAUNCH", vx: STANDIN_THROW.vx, vy: STANDIN_THROW.vy, vals, startDice: snap });   // everybody sees the same roll
+    launch(STANDIN_THROW.vx, STANDIN_THROW.vy, vals, snap);
   }
   if (NET.pendingMoveRes) { const fn = NET.pendingMoveRes; NET.pendingMoveRes = null; fn(null); }
   if (NET.pendingChoiceRes) { const fn = NET.pendingChoiceRes; NET.pendingChoiceRes = null; fn(0); }
@@ -1115,7 +1159,7 @@ function onHostLost(why) {
   if (G && G.winner) return;
   if (!G || !NET.gameStarted) {      // lobby: nothing to save, back to the start screen
     showNetworkBanner("Host disconnected. Returning to lobby...");
-    setTimeout(() => location.reload(), 1500);
+    setTimeout(() => location.reload(), RELOAD_DELAY_MS);
     return;
   }
   NET.hostLost = true;
@@ -1128,7 +1172,7 @@ function startRecovery() {
   NET.linkUpSince = 0;
   NET.linkWasDown = false;
   recoveryTick();
-  NET.recTimer = setInterval(recoveryTick, 1000);
+  NET.recTimer = setInterval(recoveryTick, RECOVERY_TICK_MS);
 }
 function stopRecovery() {
   if (NET.recTimer) { clearInterval(NET.recTimer); NET.recTimer = null; }
@@ -1141,10 +1185,10 @@ function recoveryTick() {
   const el = performance.now() - NET.hostLostAt;
   ensureTransports();
   // knock on every address a host could be using right now (the original one, and the next few generations)
-  for (let e = NET.epoch; e <= NET.epoch + 5; e++) {
+  for (let e = NET.epoch; e <= NET.epoch + EPOCH_SEARCH_SPAN; e++) {
     sendToPeer(hostPeerId(NET.roomCode, e), { type: "JOIN_REQ", name: myName(), token: NET.myToken || undefined, xfer: NET.pendingXfer || undefined });
   }
-  if (el > 8000) showNetworkBanner(`Connection lost. Reconnecting... (${Math.floor(el / 1000)}s)`, { form: true });
+  if (el > BANNER_AFTER_MS) showNetworkBanner(`Connection lost. Reconnecting... (${Math.floor(el / 1000)}s)`, { form: true });
   maybeElect(el);
   if (el > RECOVERY_GIVEUP_MS && NET.hostLost) endLobby("The lobby has ended: nobody is hosting it any more.");
 }
@@ -1155,7 +1199,7 @@ function maybeElect(el) {
   if (!linkAlive()) { NET.linkUpSince = 0; NET.linkWasDown = true; return; }   // my own connection is down: I must not replace anybody
   if (NET.linkWasDown) {
     if (!NET.linkUpSince) NET.linkUpSince = now;
-    if (now - NET.linkUpSince < 2500) return;                         // my connection only just came back: give the host time to answer my knock first
+    if (now - NET.linkUpSince < LINK_UP_GRACE_MS) return;                         // my connection only just came back: give the host time to answer my knock first
   }
   if (now < NET.noElectUntil || !G) return;
   const me = NET.myPlayerIndex;
@@ -1207,7 +1251,7 @@ function becomeHost(epoch) {
   setTimeout(() => {
     if (!NET.isHost || NET.retired || !G || G.winner) return;
     if (typeof play === "function") play({ resume: true });
-  }, 1500);
+  }, RESUME_GRACE_MS);
 }
 
 // ---- two hosts alive at once (rare: a host that was only cut off for a while, or a wrong election): they compare notes and one steps down ----
@@ -1227,9 +1271,9 @@ function watchOldHosts() {
   if (NET.probeTimer) clearInterval(NET.probeTimer);
   let n = 0;
   NET.probeTimer = setInterval(() => {
-    if (!NET.isHost || NET.retired || ++n > 15) { clearInterval(NET.probeTimer); NET.probeTimer = null; return; }
+    if (!NET.isHost || NET.retired || ++n > PROBE_MAX) { clearInterval(NET.probeTimer); NET.probeTimer = null; return; }
     probeOtherHosts(0, NET.epoch - 1);
-  }, 2000);
+  }, PROBE_EVERY_MS);
 }
 function probeOtherHosts(fromEpoch, toEpoch) {
   for (let e = fromEpoch; e <= toEpoch; e++) {
@@ -1244,7 +1288,7 @@ function stepDown() {
   NET.retired = true;
   stopHeartbeat();
   showNetworkBanner("Another host is running this game. Rejoining...");
-  setTimeout(() => location.reload(), 600);
+  setTimeout(() => location.reload(), RELOAD_SOON_MS);
 }
 
 // onHostSelfLost(): the HOST's own connection died. Keep the game as it is, do not blame the guests; when the link returns check whether somebody took over meanwhile.
@@ -1266,8 +1310,8 @@ function onHostSelfLost() {
       const now = performance.now();
       NET.connections.forEach(c => { c.lastRx = now; });
       hideNetworkBanner();
-    }, 3000);
-  }, 1000);
+    }, RECHECK_MS);
+  }, RECHECK_FIRST_MS);
 }
 
 // endLobby(text): nobody is left to host: the saved seat is useless now
@@ -1331,8 +1375,8 @@ function hideNetworkBanner() {
 // manualRejoin(raw): the player typed a room code (optionally followed by a switch-device code) into the banner
 function manualRejoin(raw) {
   const s = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  if (s.length < 5) return;
-  const room = s.slice(0, 5), xfer = s.length >= 11 ? s.slice(5, 11) : null;
+  if (s.length < ROOM_CODE_LENGTH) return;
+  const room = s.slice(0, ROOM_CODE_LENGTH), xfer = s.length >= ROOM_CODE_LENGTH + XFER_CODE_LENGTH ? s.slice(ROOM_CODE_LENGTH, ROOM_CODE_LENGTH + XFER_CODE_LENGTH) : null;
   if (room !== NET.roomCode) {       // another lobby: start a fresh page, the start screen joins it (with this device's seat there, if it has one)
     location.href = location.pathname + "?room=" + room;
     return;
@@ -1373,7 +1417,7 @@ function showReconnectCountdown(idx, ms) {
     setPrompt(`Waiting for ${name} to reconnect... ${s}`);
   };
   tick();
-  NET.rcTimer = setInterval(tick, 250);
+  NET.rcTimer = setInterval(tick, COUNTDOWN_TICK_MS);
 }
 function hideReconnectCountdown() {
   if (NET.rcTimer) {
@@ -1405,8 +1449,8 @@ function buildSnapshot() {
     cat: G.cat, catSkin: G.catSkin, catNow: !!G.catNow,
     curIndex: G.cur ? G.players.indexOf(G.cur) : null,
     winnerIndex: G.winner ? G.players.indexOf(G.winner) : null,
-    logHtml: logTailHtml(80),
-    chat: NET.chatHistory.slice(-40).map(c => ({ sender: c.sender, text: c.text, color: c.color }))
+    logHtml: logTailHtml(SYNC_LOG_LINES),
+    chat: NET.chatHistory.slice(-SYNC_CHAT_LINES).map(c => ({ sender: c.sender, text: c.text, color: c.color }))
   };
 }
 
@@ -1466,11 +1510,11 @@ function hostRejoin(msg, hc) {
     const k = NET.xferCodes.findIndex(c => c.secret === secret && c.exp > Date.now());
     if (k >= 0) {
       idx = NET.xferCodes[k].idx; NET.xferCodes.splice(k, 1); viaXfer = true; NET.xferFails = 0;
-      rec = { secret, idx, peer: hc.peer, exp: Date.now() + 60000, token: null, reply: null, handover: idx === NET.myPlayerIndex };
+      rec = { secret, idx, peer: hc.peer, exp: Date.now() + XFER_ATTEMPT_MS, token: null, reply: null, handover: idx === NET.myPlayerIndex };
       NET.xferUsed.push(rec);
     }
     else {
-      if (++NET.xferFails >= 6) { NET.xferCodes = []; NET.xferFails = 0; NET.xferLockUntil = now + 30000; }
+      if (++NET.xferFails >= XFER_MAX_FAILS) { NET.xferCodes = []; NET.xferFails = 0; NET.xferLockUntil = now + XFER_LOCK_MS; }
       hc.send({ type: "JOIN_DENIED", reason: "That code is wrong or has expired." });
       return;
     }
@@ -1556,7 +1600,7 @@ function requestTransferCode() {
     if (NET.isHost) return resolve(makeTransferCode(NET.myPlayerIndex));
     if (!NET.hostConn || NET.hostLost) return reject(new Error("Not connected right now."));
     if (NET.xferWaiter) clearTimeout(NET.xferWaiter.t);
-    NET.xferWaiter = { resolve, reject, t: setTimeout(() => { NET.xferWaiter = null; reject(new Error("The host did not answer.")); }, 5000) };
+    NET.xferWaiter = { resolve, reject, t: setTimeout(() => { NET.xferWaiter = null; reject(new Error("The host did not answer.")); }, XFER_ANSWER_MS) };
     NET.hostConn.send({ type: "XFER_REQ" });
   });
 }
@@ -1638,7 +1682,7 @@ function handleNetData(msg, fromConn) {
   if (msg._mid) {
     if (NET.seenMsgs.has(msg._mid)) return;
     NET.seenMsgs.add(msg._mid);
-    if (NET.seenMsgs.size > 1200) {
+    if (NET.seenMsgs.size > SEEN_MSGS_MAX) {
       const first = NET.seenMsgs.values().next().value;
       NET.seenMsgs.delete(first);
     }
@@ -1746,7 +1790,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "PONG": {
-      if (!NET.isHost && msg.unknown && G && NET.gameStarted && nowT - NET.joinedAt > 2500) onHostLost("unknown seat");
+      if (!NET.isHost && msg.unknown && G && NET.gameStarted && nowT - NET.joinedAt > UNKNOWN_SEAT_GRACE_MS) onHostLost("unknown seat");
       break;
     }
     case "REJOIN_ACK": {
@@ -1761,7 +1805,7 @@ function handleNetData(msg, fromConn) {
       if (NET.isHost || !G || !msg.hostId) break;
       NET.epoch = msg.epoch;
       NET.hostIdx = msg.hostIdx;
-      NET.noElectUntil = nowT + 10000;
+      NET.noElectUntil = nowT + NO_ELECT_MS;
       if (NET.hostConn) { NET.hostConn.peer = msg.hostId; NET.hostConn.rtcConn = null; }
       NET.hostLost = true;
       NET.hostLostAt = nowT;
@@ -1997,7 +2041,7 @@ function forwardToOtherGuests(msg, excludePlayerIdx) {
 function sendDragPreview(payload) {
   if (!NET.active) return;
   const now = performance.now();
-  if (payload.kind !== "end" && now - NET.lastDragSentAt < 45) return;
+  if (payload.kind !== "end" && now - NET.lastDragSentAt < DRAG_SEND_MIN_MS) return;
   NET.lastDragSentAt = now;
   const msg = { type: "DRAG_MOVE", playerIndex: NET.myPlayerIndex, ...payload };
   if (NET.isHost) {
@@ -2278,7 +2322,7 @@ function applyStateSync(msg) {
   if (msg.curIndex != null) G.cur = G.players[msg.curIndex];
   if (msg.winnerIndex != null) G.winner = G.players[msg.winnerIndex];
 
-  if (movedRemotely) sfx("tock", 270);
+  if (movedRemotely) sfx("tock", LAND_TOCK_DELAY_MS);
   render();
 }
 

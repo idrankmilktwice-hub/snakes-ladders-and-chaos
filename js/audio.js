@@ -21,18 +21,18 @@ const MUSIC = [
 const MUSIC_GAIN = 0.6;
 
 // VOLUME = sound-effects volume as a step from 0 (mute) to 10 (full). Set from the Settings tab (setVolume in main.js); remembered between visits when the browser allows it.
-let VOLUME = 7;
+let VOLUME = DEFAULT_VOLUME;
 // MUSIC_VOL = music volume, same 0-10 steps. MUTED = true when the mute switch is on (silences music and effects).
-let MUSIC_VOL = 5;
+let MUSIC_VOL = DEFAULT_MUSIC_VOL;
 let MUTED = false;
 // SHUFFLE = the next song is picked at random instead of the next one in the list (ON by default). LOOP = the current song repeats instead of moving on (off by default). Both are remembered between visits.
 let SHUFFLE = true;
 let LOOP = false;
 try {
   const v = parseInt(localStorage.getItem("snc_volume"), 10);
-  if (v >= 0 && v <= 10) VOLUME = v;
+  if (v >= 0 && v <= VOLUME_MAX) VOLUME = v;
   const m = parseInt(localStorage.getItem("snc_music_vol"), 10);
-  if (m >= 0 && m <= 10) MUSIC_VOL = m;
+  if (m >= 0 && m <= VOLUME_MAX) MUSIC_VOL = m;
   MUTED = localStorage.getItem("snc_muted") === "1";
   if (localStorage.getItem("snc_shuffle") !== null) SHUFFLE = localStorage.getItem("snc_shuffle") === "1";
   LOOP = localStorage.getItem("snc_loop") === "1";
@@ -82,10 +82,10 @@ function sfx(name, delayMs) {
   const src = ACTX.createBufferSource(),
     gain = ACTX.createGain();
   src.buffer = buf;
-  gain.gain.value = ((s.volume || 1) * VOLUME) / 10; // master volume from the Settings tab
+  gain.gain.value = ((s.volume || 1) * VOLUME) / VOLUME_MAX; // master volume from the Settings tab
   src.connect(gain);
   gain.connect(ACTX.destination);
-  src.start(ACTX.currentTime + (delayMs || 0) / 1000, s.skip || 0);
+  src.start(ACTX.currentTime + (delayMs || 0) / MS_PER_SECOND, s.skip || 0);
 }
 
 // ---- GAME-EVENT SOUNDS ----
@@ -112,7 +112,7 @@ function voice(name, delayMs, chain) {
 }
 function voiceNow(name, chain) {
   if (MUTED || !ACTX || !BUF[name]) return;
-  if (VOICE && VOICE.ends + 0.5 < ACTX.currentTime) VOICE = null; // (safety: a sound that should long be over never blocks the channel)
+  if (VOICE && VOICE.ends + VOICE_STALE_S < ACTX.currentTime) VOICE = null; // (safety: a sound that should long be over never blocks the channel)
   if (!VOICE) return startVoice(name); // channel free: play right away
   if (chain) { if (!VOICE_NEXT) VOICE_NEXT = name; return; } // same event: wait for the current sound to end by itself
   VOICE_NEXT = name; // a new event replaces whatever was waiting...
@@ -123,10 +123,10 @@ function startVoice(name) {
   const buf = BUF[name], s = SOUNDS[name], skip = s.skip || 0;
   const src = ACTX.createBufferSource(), gain = ACTX.createGain(), t0 = ACTX.currentTime;
   src.buffer = buf;
-  gain.gain.value = ((s.volume || 1) * VOLUME) / 10;
+  gain.gain.value = ((s.volume || 1) * VOLUME) / VOLUME_MAX;
   src.connect(gain);
   gain.connect(ACTX.destination);
-  const v = { src, ends: t0 + Math.max(0.01, buf.duration - skip), wrapping: false };
+  const v = { src, ends: t0 + Math.max(MIN_VOICE_S.start, buf.duration - skip), wrapping: false };
   VOICE = v;
   src.onended = () => {
     if (VOICE === v) VOICE = null;
@@ -139,8 +139,8 @@ function wrapUpVoice() {
   const v = VOICE;
   if (!v || v.wrapping) return;
   v.wrapping = true;
-  const now = ACTX.currentTime, left = Math.max(0.02, v.ends - now); // seconds of sound still to come at normal speed
-  const rate = Math.min(8, Math.max(1.5, left / VOICE_WRAP_S));
+  const now = ACTX.currentTime, left = Math.max(MIN_VOICE_S.left, v.ends - now); // seconds of sound still to come at normal speed
+  const rate = Math.min(WRAP_RATE.max, Math.max(WRAP_RATE.min, left / VOICE_WRAP_S));
   try { v.src.playbackRate.cancelScheduledValues(now); v.src.playbackRate.setValueAtTime(rate, now); } catch (e) { /* old browser: it simply plays on */ }
   v.ends = now + left / rate;
 }
@@ -205,7 +205,7 @@ function songName() {
 }
 // applyMusicVolume(): set the music loudness from MUSIC_VOL, MUSIC_GAIN and the mute switch.
 function applyMusicVolume() {
-  const v = MUTED ? 0 : (MUSIC_VOL / 10) * MUSIC_GAIN;
+  const v = MUTED ? 0 : (MUSIC_VOL / VOLUME_MAX) * MUSIC_GAIN;
   if (MUSIC_NODE) MUSIC_NODE.gain.value = v;
   else if (MUSIC_EL) MUSIC_EL.volume = Math.min(1, v);
 }
@@ -243,7 +243,7 @@ function nextIndex() {
 function playSong(i, back) {
   if (!MUSIC.length) return;
   if (!MUSIC_EL) { SONG = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length; return startMusic(); }
-  if (!back && MUSIC_EL.getAttribute("src")) { SONG_HISTORY.push(SONG); if (SONG_HISTORY.length > 30) SONG_HISTORY.shift(); } // remember the song we are leaving
+  if (!back && MUSIC_EL.getAttribute("src")) { SONG_HISTORY.push(SONG); if (SONG_HISTORY.length > SONG_HISTORY_MAX) SONG_HISTORY.shift(); } // remember the song we are leaving
   SONG = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length;
   MUSIC_PAUSED = false; // choosing a song always plays it
   MUSIC_EL.loop = LOOP;
@@ -307,7 +307,7 @@ function muteSwitchHtml() {
 function musicPanelHtml(kind) {
   const tt = kind === "tt";
   let bar = "";
-  for (let i = 1; i <= 10; i++)
+  for (let i = 1; i <= VOLUME_MAX; i++)
     bar += `<div class="${tt ? "tt-seg" : "seg"} mu-seg${i <= MUSIC_VOL ? " on" : ""}" data-mu="vol" data-v="${i}" title="${i * 10}%"></div>`;
   const chev = (d) => `<svg viewBox="0 0 14 20" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const ico = (d, extra) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>${extra || ""}</svg>`;
@@ -316,7 +316,7 @@ function musicPanelHtml(kind) {
   const loopIco = ico("M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3", `<path d="M11 10h1v4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`); // "repeat one" arrows
   const shufIco = ico("M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M18 2l4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4"); // crossing arrows
   return `<div class="mu-wrap">
-    <div class="mu-head"><span class="mu-title">Music</span><span class="mu-num">${MUSIC_VOL ? MUSIC_VOL * 10 + "%" : "Off"}</span></div>
+    <div class="mu-head"><span class="mu-title">Music</span><span class="mu-num">${MUSIC_VOL ? MUSIC_VOL * VOLUME_STEP_PERCENT + "%" : "Off"}</span></div>
     <div class="${tt ? "tt-vol" : "volbar"}">${bar}</div>
     <div class="mu-now">
       <button class="mu-btn" data-mu="prev" title="Previous song" aria-label="Previous song">${chev("M11 2.5L3 10l8 7.5")}</button>
@@ -337,7 +337,7 @@ function muteRowHtml() {
 // refreshMusicUi(): update every music control that is on screen (song name, volume bar, switch position). Called after anything changes.
 function refreshMusicUi() {
   document.querySelectorAll(".mu-name").forEach((el) => (el.textContent = songName()));
-  document.querySelectorAll(".mu-num").forEach((el) => (el.textContent = MUSIC_VOL ? MUSIC_VOL * 10 + "%" : "Off"));
+  document.querySelectorAll(".mu-num").forEach((el) => (el.textContent = MUSIC_VOL ? MUSIC_VOL * VOLUME_STEP_PERCENT + "%" : "Off"));
   document.querySelectorAll(".mu-seg").forEach((el) => el.classList.toggle("on", +el.dataset.v <= MUSIC_VOL));
   document.querySelectorAll(".msw").forEach((el) => el.setAttribute("aria-checked", MUTED));
   document.querySelectorAll(".mu-play").forEach((el) => el.setAttribute("data-paused", MUSIC_PAUSED)); // shows the play or the pause picture

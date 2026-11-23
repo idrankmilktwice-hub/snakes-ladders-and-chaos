@@ -7,24 +7,24 @@
 // rc(n): square number -> [row, column]. Row 0 is the bottom row, column 0 the left column.
 const rc = (n) => {
   const i = n - 1,
-    r = Math.floor(i / 10);
-  return [r, r % 2 ? 9 - (i % 10) : i % 10];
+    r = Math.floor(i / BOARD_COLS);
+  return [r, r % 2 ? LAST_COL - (i % BOARD_COLS) : i % BOARD_COLS];
 };
 // toN(r,c): the opposite - [row, column] -> square number.
-const toN = (r, c) => r * 10 + (r % 2 ? 9 - c : c) + 1;
+const toN = (r, c) => r * BOARD_COLS + (r % 2 ? LAST_COL - c : c) + 1;
 // cellPx(c, vr): on-screen pixel centre of the tile in column c, "visual row" vr (0 = TOP row of the screen).
 // Tiles are rectangular now: the centre is half a tile width across and half the TOP FACE height (TH) down (see config.js).
 const cellPx = (c, vr) => [BX0 + c * CX + TW / 2, BY0 + vr * CY + TH / 2];
 // xy(n): on-screen pixel centre of square n. Used by pawns, ladders, snakes.
 function xy(n) {
   const [r, c] = rc(n);
-  return cellPx(c, 9 - r);
+  return cellPx(c, LAST_ROW - r);
 }
 // squareAt(x, y): which square (1-100) is at a screen position? Returns 0 if the position is off the board. Used when dropping a piece.
 function squareAt(x, y) {
   const c = Math.floor((x - BX0) / CX),
     vr = Math.floor((y - BY0) / CY);
-  return c < 0 || c > 9 || vr < 0 || vr > 9 ? 0 : toN(9 - vr, c);
+  return c < 0 || c > LAST_COL || vr < 0 || vr > LAST_ROW ? 0 : toN(LAST_ROW - vr, c);
 }
 
 // tryBoard(): one attempt at a random board following the layout rules. Returns null if the attempt breaks a rule.
@@ -36,7 +36,7 @@ function tryBoard() {
     Sn = {};
   // ok(n,g): is square n free and at least g squares away from every used square?
   const ok = (n, g) =>
-    n > 1 && n < 100 && used.every((u) => Math.abs(u - n) >= g);
+    n > 1 && n < SQUARES && used.every((u) => Math.abs(u - n) >= g);
   // add(g, ...squares): claim squares if they are all free and not too close to each other
   const add = (g, ...ns) => {
     for (let i = 0; i < ns.length; i++) {
@@ -49,33 +49,33 @@ function tryBoard() {
     used.push(...ns);
     return true;
   };
-  const h1 = rnd(91, 95),
-    h2 = rnd(h1 + 4, 99),
-    e = rnd(h1 + 2, h2 - 2); // two top snake heads and the ladder's top square between them
-  const t1 = h1 - rnd(8, 14),
-    t2 = h2 - rnd(35, 55); // snake 1 is short, snake 2 is long
-  if (!add(2, h1, h2, e, t1, t2)) return null;
+  const h1 = rnd(...TOP_HEAD_1),
+    h2 = rnd(h1 + TOP_HEAD_GAP, TOP_HEAD_2_MAX),
+    e = rnd(h1 + TOP_LADDER_MARGIN, h2 - TOP_LADDER_MARGIN); // two top snake heads and the ladder's top square between them
+  const t1 = h1 - rnd(...SHORT_SNAKE_DROP),
+    t2 = h2 - rnd(...LONG_SNAKE_DROP); // snake 1 is short, snake 2 is long
+  if (!add(MIN_GAP_STRICT, h1, h2, e, t1, t2)) return null;
   Sn[h1] = t1;
   Sn[h2] = t2;
   let s = 0; // the ladder that ends at e: find a bottom square 20-50 below, no more than 4 columns away
-  for (let k = 0; k < 60 && !L[s]; k++) {
-    s = e - rnd(20, 50);
-    if (s > 1 && Math.abs(rc(s)[1] - rc(e)[1]) <= 4 && add(2, s)) L[s] = e;
+  for (let k = 0; k < TOP_LADDER_TRIES && !L[s]; k++) {
+    s = e - rnd(...TOP_LADDER_RISE);
+    if (s > 1 && Math.abs(rc(s)[1] - rc(e)[1]) <= TOP_LADDER_MAX_COLS && add(MIN_GAP_STRICT, s)) L[s] = e;
   }
   if (!L[s]) return null;
   const wr = []; // weighted list of head rows: higher rows appear more often
-  for (let r = 1; r <= 8; r++) for (let k = 0; k < r * r; k++) wr.push(r);
+  for (let r = 1; r <= SNAKE_HEAD_ROWS; r++) for (let k = 0; k < r * r; k++) wr.push(r);
   for (let i = 2; i < CONFIG.SNAKES; i++) {
     // the remaining snakes
     let done = false;
-    for (let k = 0; k < 80 && !done; k++) {
+    for (let k = 0; k < PLACE_TRIES && !done; k++) {
       const hr = wr[rnd(0, wr.length - 1)],
-        tr = Math.max(0, hr - rnd(1, 4)),
-        hc = rnd(0, 9),
-        tc = cl(hc + rnd(-4, 4), 0, 9);
+        tr = Math.max(0, hr - rnd(...SNAKE_DROP_ROWS)),
+        hc = rnd(0, LAST_COL),
+        tc = cl(hc + rnd(-SNAKE_TAIL_SHIFT, SNAKE_TAIL_SHIFT), 0, LAST_COL);
       const h = toN(hr, hc),
         t = toN(tr, tc);
-      if (h - t >= 6 && add(k < 40 ? 2 : 1, h, t)) {
+      if (h - t >= SNAKE_MIN_DROP && add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, h, t)) {
         Sn[h] = t;
         done = true;
       }
@@ -86,21 +86,21 @@ function tryBoard() {
   for (let i = 1; i < CONFIG.LADDERS; i++) {
     // the remaining ladders
     let done = false;
-    for (let k = 0; k < 80 && !done; k++) {
-      const horiz = !wide && Math.random() < 0.15,
-        sr = rnd(0, 7),
-        sc = rnd(0, 9);
-      const er = sr + (horiz ? rnd(1, 2) : rnd(2, 5)),
+    for (let k = 0; k < PLACE_TRIES && !done; k++) {
+      const horiz = !wide && Math.random() < WIDE_LADDER_CHANCE,
+        sr = rnd(0, LADDER_START_ROW_MAX),
+        sc = rnd(0, LAST_COL);
+      const er = sr + (horiz ? rnd(...WIDE_LADDER_RISE) : rnd(...TALL_LADDER_RISE)),
         ec = cl(
           sc +
-            (horiz ? (Math.random() < 0.5 ? -1 : 1) * rnd(6, 9) : rnd(-3, 3)),
+            (horiz ? (Math.random() < 0.5 ? -1 : 1) * rnd(...WIDE_LADDER_SHIFT) : rnd(...TALL_LADDER_SHIFT)),
           0,
-          9,
+          LAST_COL,
         );
-      if (er > 8 || (horiz && Math.abs(ec - sc) < 5)) continue;
+      if (er > LADDER_TOP_ROW_MAX || (horiz && Math.abs(ec - sc) < WIDE_LADDER_MIN_SHIFT)) continue;
       const a = toN(sr, sc),
         b = toN(er, ec);
-      if (add(k < 40 ? 2 : 1, a, b)) {
+      if (add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, a, b)) {
         L[a] = b;
         if (horiz) wide++;
         done = true;
@@ -116,21 +116,21 @@ function tryBoard() {
       ...Object.values(Sn),
     ].map(Number),
     rows = new Set(pts.map((n) => rc(n)[0]));
-  for (let r = 1; r < 10; r++) if (!rows.has(r)) return null;
+  for (let r = 1; r < BOARD_ROWS; r++) if (!rows.has(r)) return null;
   const cb = [0, 0, 0];
-  pts.forEach((n) => cb[rc(n)[1] < 3 ? 0 : rc(n)[1] < 7 ? 1 : 2]++);
-  if (cb.some((x) => x < 5)) return null;
+  pts.forEach((n) => cb[rc(n)[1] < COLUMN_THIRDS[0] ? 0 : rc(n)[1] < COLUMN_THIRDS[1] ? 1 : 2]++);
+  if (cb.some((x) => x < MIN_PER_THIRD)) return null;
   if (
     Object.keys(Sn)
       .map(Number)
-      .filter((h) => rc(h)[0] < 5).length > 2
+      .filter((h) => rc(h)[0] < LOW_ROW_LIMIT).length > MAX_LOW_SNAKES
   )
     return null;
   return { L, S: Sn, cobra: t2 }; // "cobra" = the tail square of the long snake; that snake wears the cobra head
 }
 // genBoard(): keep trying until a valid board comes out. Returns { L, S, cobra }.
 function genBoard() {
-  for (let i = 0; i < 3000; i++) {
+  for (let i = 0; i < BOARD_TRIES; i++) {
     const b = tryBoard();
     if (b) return b;
   }

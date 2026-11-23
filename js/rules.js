@@ -41,7 +41,7 @@ function cheer(p) { CHEERED.add(p); gameSfx("happy_" + p.character); }
 // quiet = true when the "tock" sound has already played (a drag and drop plays it at the instant of the drop).
 // Otherwise the tock is timed to land when the pawn arrives (its slide takes ~0.3s; the sound has 60ms of silence trimmed off).
 async function set(o, n, quiet) {
-  if (!quiet) sfx("tock", 270);
+  if (!quiet) sfx("tock", LAND_TOCK_DELAY_MS);
   o.pos = n; render();
   syncGameState();
   await sleep(CONFIG.STEP_MS);
@@ -85,7 +85,7 @@ async function slide(p) {
   const n = p.pos, L = G.L[n], Sn = G.S[n];
   if (L) {
     if (p.character === "struggler" && !p.disconnected) {   // Struggler picks two "failure" numbers, then rolls: hitting one means no climb (a disconnected player is an ordinary pawn: no abilities)
-      const nums = [1, 2, 3, 4, 5, 6].map(x => ({ label: String(x), value: x }));
+      const nums = DIE_FACE_LIST.map(x => ({ label: String(x), value: x }));
       const f1_ = await ask(`${p.name}: pick your first failure number for this ladder`, nums, p);
       const f2_ = await ask(`${p.name}: pick a second failure number`, nums.filter(o => o.value !== f1_), p);
       if (!p.disconnected) {   // (they may have dropped while choosing)
@@ -105,10 +105,10 @@ async function slide(p) {
 }
 // go(p, t): normal move for a roll - drag to t, win if t is 100, otherwise take any snake/ladder.
 async function go(p, t) {
-  if (t > 100) { log(FLAVOR.exact(p.name)); return; }
+  if (t > FINISH_SQUARE) { log(FLAVOR.exact(p.name)); return; }
   if (t === p.pos) { log(FLAVOR.stay(p.name)); return; }
   await selfMove(p, t);
-  if (t === 100) return win(p);
+  if (t === FINISH_SQUARE) return win(p);
   await slide(p);
 }
 // hit(v, np, why): another player's effect moves victim v to square np (pushed, pulled, nudged, knocked down...). The Struggler may dodge. Returns true if v moved.
@@ -124,7 +124,7 @@ async function hit(v, np, why) {
   else if (why === "pushed" || why === "pulled") gameSfx("bad_" + v.character);   // the Bully shoves or drags them
   else if (why === "nudged") gameSfx("bully_nudge");                          // the Bully nudges them 1 square
   await set(v, np);
-  if (np === 100) { win(v); return true; }
+  if (np === FINISH_SQUARE) { win(v); return true; }
   await slide(v);
   return true;
 }
@@ -151,7 +151,7 @@ async function roll(p, label) {
   setPrompt(`${p.name}: ${label || "grab the die and throw it, or press ROLL / Space"}.`);
   const [r] = await rollDice(1);
   setPrompt(""); log(FLAVOR.rolled(p.name, r));
-  if (!label && r === 6) SIX_BY = p;   // a main roll of 6 (the cat's own roll passes a label, so it does not count)
+  if (!label && r === BONUS_FACE) SIX_BY = p;   // a main roll of 6 (the cat's own roll passes a label, so it does not count)
   return r;
 }
 // roll2(p): same with two dice (Gambler). Returns [a, b].
@@ -159,7 +159,7 @@ async function roll2(p) {
   setPrompt(`${p.name}: throw both dice, or press ROLL / Space.`);
   const v = await rollDice(2);
   setPrompt(""); log(`${p.name} throws ${v[0]} and ${v[1]}.`);
-  if (v[0] === 6 && v[1] === 6) SIX_BY = p;   // the Gambler counts double 6s
+  if (v[0] === BONUS_FACE && v[1] === BONUS_FACE) SIX_BY = p;   // the Gambler counts double 6s
   return v;
 }
 
@@ -177,19 +177,19 @@ async function rollCheck(p, what) {
 // ------------------------------------------------------------------ CHARACTER LOGIC  (each returns true if the player gets another turn)
 const LOGIC = {
   // Plain roll-and-move (also used by the Struggler): roll, subtract any cat penalty, move. A 6 gives another turn.
-  async base(p) { const r = await roll(p), net = rollBonus(p); await go(p, p.pos + Math.max(0, r + net)); return r === 6; },
+  async base(p) { const r = await roll(p), net = rollBonus(p); await go(p, p.pos + Math.max(0, r + net)); return r === BONUS_FACE; },
 
   // BULLY: only asks Push/Pull if someone is within 6 squares ahead (otherwise he cannot land on anyone).
   async bully(p) {
-    const inRange = G.players.some(q => q !== p && q.pos > p.pos && q.pos <= p.pos + 6);
+    const inRange = G.players.some(q => q !== p && q.pos > p.pos && q.pos <= p.pos + BULLY_RANGE);
     let dir = null;
     if (inRange && !p.disconnected) dir = await ask(`${p.name}: Push or Pull?`, ["Push", "Pull"]);
     else if (!inRange) log(`${p.name} looks around: nobody within reach. No one to bully this turn!`);
     const r = await roll(p), net = rollBonus(p), from = p.pos, t = from + Math.max(0, r + net);
-    if (t > 100) { log(FLAVOR.exact(p.name)); return r === 6; }
-    if (t === from) { log(FLAVOR.stay(p.name)); return r === 6; }
+    if (t > FINISH_SQUARE) { log(FLAVOR.exact(p.name)); return r === BONUS_FACE; }
+    if (t === from) { log(FLAVOR.stay(p.name)); return r === BONUS_FACE; }
     await selfMove(p, t);
-    if (t === 100) { win(p); return false; }
+    if (t === FINISH_SQUARE) { win(p); return false; }
     // passing over players: nudge each one forward or back 1
     for (const q of G.players.filter(q => q !== p && q.pos > from && q.pos < t)) {
       if (p.disconnected) break;                                   // a disconnected Bully is an ordinary pawn: no nudging
@@ -209,40 +209,40 @@ const LOGIC = {
         const x = await rollCheck(p, `roll to ${dir.toLowerCase()} ${v.name}`);   // the Bully throws the die himself
         log(`${p.name} looms over ${v.name} and rolls ${x} to ${dir.toLowerCase()} them.`);
         const np = dir === "Push" ? v.pos + x : Math.max(1, v.pos - x);
-        if (np > 100) log("Overpushed! " + v.name + " stays put."); else await hit(v, np, dir === "Push" ? "pushed" : "pulled");
+        if (np > FINISH_SQUARE) log("Overpushed! " + v.name + " stays put."); else await hit(v, np, dir === "Push" ? "pushed" : "pulled");
       }
     }
     if (!G.winner) await slide(p);
-    return r === 6;
+    return r === BONUS_FACE;
   },
 
   // GAMBLER: two dice. A 1 = go back by the other die; double 1s stay; double 6s = another turn; special finish on 97-99.
   async gambler(p) {
-    const [a, b] = await roll2(p), again = a === 6 && b === 6, net = rollBonus(p), need = 100 - p.pos;
+    const [a, b] = await roll2(p), again = a === BONUS_FACE && b === BONUS_FACE, net = rollBonus(p), need = FINISH_SQUARE - p.pos;
     if (p.disconnected) { await go(p, p.pos + a + b); return false; }   // dropped: an ordinary pawn that just moves the dice total
-    if (need < 4 && (a === need || b === need)) { log(`${p.name} rolls the exact ${need} and finishes!`); await selfMove(p, 100); win(p); return false; }
-    if (need < 4 && a !== 1 && b !== 1) { log("No exact number: the Gambler stays put."); return again; }
+    if (need < GAMBLER_EXACT_WINDOW && (a === need || b === need)) { log(`${p.name} rolls the exact ${need} and finishes!`); await selfMove(p, FINISH_SQUARE); win(p); return false; }
+    if (need < GAMBLER_EXACT_WINDOW && a !== 1 && b !== 1) { log("No exact number: the Gambler stays put."); return again; }
     if (a === 1 && b === 1) { log("Snake eyes! Double 1s: the Gambler stays put."); return false; }
     if (a === 1 || b === 1) { const x = a === 1 ? b : a; log(`A 1! The gamble backfires: back ${x}.`); await selfMove(p, Math.max(1, p.pos - x)); await slide(p); return false; }
     let t = p.pos + Math.max(0, a + b + net);
-    if (t > 100) { t = 200 - t; log(`Overshoot! The Gambler bounces back to ${t}.`); }
+    if (t > FINISH_SQUARE) { t = 2 * FINISH_SQUARE - t; log(`Overshoot! The Gambler bounces back to ${t}.`); }
     await selfMove(p, t);
-    if (t === 100) win(p); else await slide(p);
+    if (t === FINISH_SQUARE) win(p); else await slide(p);
     return again;
   },
 
   // ORACLE: calls a number first. Right call = bonus d3 added to the move, and snakes can't bite on that move.
   async oracle(p) {
-    const call = p.disconnected ? 0 : await ask(`${p.name}: call the number you will roll`, [1, 2, 3, 4, 5, 6].map(n => ({ label: String(n), value: n })));
+    const call = p.disconnected ? 0 : await ask(`${p.name}: call the number you will roll`, DIE_FACE_LIST.map(n => ({ label: String(n), value: n })));
     const r = await roll(p), net = rollBonus(p);
-    if (p.disconnected || call !== r) { if (!p.disconnected) log(`${p.name} called ${call}: the vision was wrong. No bonus.`); await go(p, p.pos + Math.max(0, r + net)); return r === 6; }
-    const b = rnd(1, 3), t = p.pos + Math.max(0, r + net) + b;
+    if (p.disconnected || call !== r) { if (!p.disconnected) log(`${p.name} called ${call}: the vision was wrong. No bonus.`); await go(p, p.pos + Math.max(0, r + net)); return r === BONUS_FACE; }
+    const b = rnd(...ORACLE_BONUS_DIE), t = p.pos + Math.max(0, r + net) + b;
     log(`The vision was right! Bonus d3 shows ${b}: ${r + b} squares in total, and snakes can\u2019t bite this move.`);
-    if (t > 100) { log(FLAVOR.exact(p.name)); return r === 6; }
+    if (t > FINISH_SQUARE) { log(FLAVOR.exact(p.name)); return r === BONUS_FACE; }
     await selfMove(p, t);
-    if (t === 100) { win(p); return false; }
+    if (t === FINISH_SQUARE) { win(p); return false; }
     if (G.S[t]) log("The Oracle is immune to the snake!"); else await slide(p);
-    return r === 6;
+    return r === BONUS_FACE;
   }
 };
 LOGIC.struggler = LOGIC.base;   // the Struggler's special rules live inside slide(), hit() and infatuate()
@@ -251,15 +251,15 @@ LOGIC.struggler = LOGIC.base;   // the Struggler's special rules live inside sli
 LOGIC.cat = async p => {
   const r = await roll(p), net = rollBonus(p);
   await go(p, p.pos + Math.max(0, r + net));
-  return r === 6;
+  return r === BONUS_FACE;
 };
 
 // charmerRange(p): the snake heads (squares) the Charmer may move: on his row or the rows directly above/below.
-const charmerRange = p => Object.keys(G.S).map(Number).filter(h => Math.abs(Math.floor((h - 1) / 10) - Math.floor((p.pos - 1) / 10)) <= 1);
+const charmerRange = p => Object.keys(G.S).map(Number).filter(h => Math.abs(Math.floor((h - 1) / BOARD_COLS) - Math.floor((p.pos - 1) / BOARD_COLS)) <= CHARMER_ROW_REACH);
 // headTargets(h): free squares on head h's row where it may be moved (must stay above its own tail, avoid snakes/ladders).
 function headTargets(h) {
-  const t = G.S[h], r0 = Math.floor((h - 1) / 10), used = new Set([...Object.keys(G.S), ...Object.values(G.S), ...Object.keys(G.L), ...Object.values(G.L)].map(Number)), out = [];
-  for (let n = r0 * 10 + 1; n <= r0 * 10 + 10; n++) if (n !== h && n > t && n > 1 && n < 100 && !used.has(n)) out.push(n);
+  const t = G.S[h], r0 = Math.floor((h - 1) / BOARD_COLS), used = new Set([...Object.keys(G.S), ...Object.values(G.S), ...Object.keys(G.L), ...Object.values(G.L)].map(Number)), out = [];
+  for (let n = r0 * BOARD_COLS + 1; n <= r0 * BOARD_COLS + BOARD_COLS; n++) if (n !== h && n > t && n > 1 && n < FINISH_SQUARE && !used.has(n)) out.push(n);
   return out;
 }
 // ghostSvg(h,x,y): picture of snake head h drawn at mouse position (x,y) while the Charmer drags it.
@@ -304,14 +304,14 @@ async function catTurn(p) {
     const r = await roll(p, "roll for the cat");
     log(FLAVOR.catRoll(p.name, r));
     const from = G.cat.pos, path = new Set();
-    for (let i = 1; i < r; i++) { const x = from + i; path.add(x > 100 ? x - 100 : x); }   // squares jumped over
-    let t = from + r; if (t === 100) t = 1; else if (t > 100) t -= 100;
+    for (let i = 1; i < r; i++) { const x = from + i; path.add(x > FINISH_SQUARE ? x - FINISH_SQUARE : x); }   // squares jumped over
+    let t = from + r; if (t === FINISH_SQUARE) t = 1; else if (t > FINISH_SQUARE) t -= FINISH_SQUARE;
     await set(G.cat, t); switchCat();                       // the cat moved: it changes picture
-    again = r === 6;
+    again = r === BONUS_FACE;
     for (const v of G.players.filter(q => q !== p && q.pos !== t && path.has(q.pos))) await infatuate(v);
     let k = 0;
-    for (const v of G.players.filter(q => q !== p && q.pos === t)) if (await hit(v, v.pos > 10 ? v.pos - 10 : 1, "knocked down by the cat")) k++;
-    if (k) { p.cb = (p.cb || 0) + 3 * k; log(`${p.name} gains +${3 * k} on her next roll. Good kitty!`); render(); syncGameState(); }
+    for (const v of G.players.filter(q => q !== p && q.pos === t)) if (await hit(v, v.pos > CAT_KNOCKDOWN ? v.pos - CAT_KNOCKDOWN : 1, "knocked down by the cat")) k++;
+    if (k) { p.cb = (p.cb || 0) + CAT_BONUS_PER_HIT * k; log(`${p.name} gains +${CAT_BONUS_PER_HIT * k} on her next roll. Good kitty!`); render(); syncGameState(); }
   }
   G.catNow = false; render(); syncGameState();
 }
@@ -341,21 +341,21 @@ let ERRORS = 0;
 //   stick  - nudge any snake head 1 square sideways          brick - set a trap (-3 on the next roll of whoever steps on it, even you) in your row or the rows above/below
 //   drink  - +3 on your next roll (and your pawn puffs up for the turn)          stone - hit another player: -1 on their next roll
 // rowOf(sq): the board row of a square (0 = bottom row).
-const rowOf = sq => Math.floor((sq - 1) / 10);
+const rowOf = sq => Math.floor((sq - 1) / BOARD_COLS);
 // itemAt(sq): the item (or trap) lying on a square, if any.
 const itemAt = sq => G.items.find(i => i.sq === sq);
 // spawnWeight(sq, initial): how likely a square is to get the next item. The 6 STARTING items (initial = true) have a tiny bias for the bottom half of
 // the board; items that appear later have a tiny bias for squares near the player furthest from 100 (the one who is furthest behind).
 function spawnWeight(sq, initial) {
-  if (initial) return rowOf(sq) < 5 ? 1.25 : 1;
+  if (initial) return rowOf(sq) < ITEM_START_ROWS ? ITEM_START_WEIGHT : 1;
   const last = G.players.reduce((a, q) => q.pos < a.pos ? q : a, G.players[0]);        // the player furthest from 100
-  return 1 + .6 * Math.max(0, 1 - Math.abs(sq - last.pos) / 30);
+  return 1 + ITEM_NEAR_BOOST * Math.max(0, 1 - Math.abs(sq - last.pos) / ITEM_NEAR_SQUARES);
 }
 // spawnItem(quiet): put a random item on a random empty square (never 1 or 100, never under a pawn, the cat or another item, never on a snake head or the bottom of a ladder).
 // quiet = true for the starting items (no log line each, and they use the bottom-half bias).
 function spawnItem(quiet) {
   const free = [];
-  for (let sq = 2; sq <= 99; sq++) if (!G.S[sq] && !G.L[sq] && !itemAt(sq) && !G.players.some(q => q.pos === sq) && !(G.cat && G.cat.pos === sq)) free.push(sq);
+  for (let sq = FIRST_ITEM_SQUARE; sq <= LAST_ITEM_SQUARE; sq++) if (!G.S[sq] && !G.L[sq] && !itemAt(sq) && !G.players.some(q => q.pos === sq) && !(G.cat && G.cat.pos === sq)) free.push(sq);
   if (!free.length) return;
   let r = Math.random() * free.reduce((a, sq) => a + spawnWeight(sq, quiet), 0), sq = free[free.length - 1];   // weighted random pick
   for (const f of free) { r -= spawnWeight(f, quiet); if (r <= 0) { sq = f; break; } }
@@ -372,7 +372,7 @@ async function landOn(p) {
   const it = itemAt(p.pos);
   if (!it || p.disconnected) return;                                // a disconnected pawn picks nothing up and trips nothing
   if (it.trap) {                                                    // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
-    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + 3; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, 150); render(); syncGameState(); return;   // ouch: the character reacts just after the thud
+    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + BRICK_PENALTY; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, TRAP_YELP_DELAY_MS); render(); syncGameState(); return;   // ouch: the character reacts just after the thud
   }
   const name = ITEMS[it.type].name;
   if (p.items.length < ITEM_MAX) { G.items.splice(G.items.indexOf(it), 1); p.items.push(it.type); log(FLAVOR.pickup(p.name, name)); sfx("small"); cheer(p); render(); syncGameState(); return; }
@@ -396,7 +396,7 @@ async function useItem(p, i) {
     p.items.splice(i, 1); render(); syncGameState();
     await flyItem("drink", from, elCenter($("pw" + pi)), "toss");
     gameSfx("drink");   // glug!
-    p.cb = (p.cb || 0) + 3; p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
+    p.cb = (p.cb || 0) + ENERGY_DRINK_BONUS; p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
   } else if (type === "stone") {                                    // -1 for another player (never the cat)
     const others = G.players.filter(q => q !== p);
     if (!others.length) { log("There is nobody to throw the stone at."); return; }
@@ -414,9 +414,9 @@ async function useItem(p, i) {
     v.pen = (v.pen || 0) + 1; log(FLAVOR.stone(p.name, v.name)); render(); syncGameState();
   } else if (type === "brick") {                                    // a trap in your row or the rows above/below
     const targets = [], row = rowOf(p.pos);
-    for (let r = Math.max(0, row - 1); r <= Math.min(9, row + 1); r++) for (let c = 0; c < 10; c++) {
+    for (let r = Math.max(0, row - 1); r <= Math.min(LAST_ROW, row + 1); r++) for (let c = 0; c < BOARD_COLS; c++) {
       const sq = toN(r, c);
-      if (sq !== 100 && !itemAt(sq) && !G.players.some(q => q.pos === sq) && !(G.cat && G.cat.pos === sq)) targets.push(sq);
+      if (sq !== FINISH_SQUARE && !itemAt(sq) && !G.players.some(q => q.pos === sq) && !(G.cat && G.cat.pos === sq)) targets.push(sq);
     }
     if (!targets.length) { log("There is no free square to put the brick on."); return; }
     const sq = await awaitTarget({ targets, text: `${p.name}: click a square (your row, or the row above/below) for the toy brick.` });
@@ -464,7 +464,7 @@ async function play(opts) {
         // Their turn begins: give them 5 seconds (once per absence) to come back. If they do, they play normally; if not, the turn is skipped (the cat's too).
         if (!p.missed && typeof waitForReconnect === "function") {
           G.cur = p; render(); syncGameState();
-          const back = await waitForReconnect(p, CONFIG.RECONNECT_MS || 5000);
+          const back = await waitForReconnect(p, CONFIG.RECONNECT_MS || RECONNECT_DEFAULT_MS);
           if (!back) { p.missed = true; log(`${esc(p.name)} did not come back in time: turn skipped.`); }
         }
         if (p.disconnected) continue;
@@ -492,13 +492,13 @@ async function play(opts) {
         console.error("Turn crashed:", err);
         ERRORS++;
         resetInteraction();
-        if (ERRORS >= 3) {                                        // repeated crashes: stop here and tell the player
+        if (ERRORS >= CRASH_LIMIT) {                                        // repeated crashes: stop here and tell the player
           log(`<b>The game hit repeated errors (${esc(err.message || err)}). Please reload the page.</b>`);
           await choose("Something went wrong.", [{ label: "Reload", value: 1 }]);
           location.reload(); return;
         }
         log(`<b>Something went wrong during ${esc(p.name)}\u2019s turn (${esc(err.message || err)}). Moving on to the next player.</b>`);
-        await sleep(800);
+        await sleep(CRASH_PAUSE_MS);
       }
     }
     startIdx = 0;
