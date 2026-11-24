@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=24">
+  <link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -15,15 +15,21 @@
       <div id="board"></div>                     <!-- left: the board SVG (render.js buildBoard) -->
       <div id="tray"><div id="dice"></div></div> <!-- the dice layer: covers the board while dice are on the table (input.js) -->
       <button id="rollBtn" onclick="rollPressed()"><img class="rsh" src="assets/button_roll_shadow.svg" alt=""><img class="rface" src="assets/button_roll.svg" alt=""></button>   <!-- big ROLL button in the middle of the board -->
-      <div id="prompt">                          <!-- message over the board: a small banner at the top, or a dialog in the middle (input.js setPrompt) -->
-        <div id="ptxt"></div><div id="btns"></div>
-        <button id="moveBtn" class="cbtn alt"><span>Move for me</span></button>   <!-- helper button: "Move for me" / "Roll" / "Cancel" (hidden unless needed) -->
+      <div id="prompt"><div id="ptxt"></div><div id="btns"></div></div>   <!-- the game-over box only (centred dialog over the darkened board); plain messages live in the Current Event panel -->
+      <div id="scene">                           <!-- PROMPT SCENE (js/prompts.js): the player's full-body character + a light panel, over the darkened board -->
+        <img id="sceneChar" alt="">
+        <div id="sceneRoll"></div>               <!-- heading above the dice while rolling -->
+        <div id="scenePanelWrap"><div id="scenePanel" class="lp"><div id="sceneText"></div><div id="sceneBtns"></div></div></div>
       </div>
+      <button id="eyeBtn" title="Show / hide the prompt to see the board" aria-label="Show or hide the prompt" onclick="toggleEye()"><svg class="eo" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="11" r="4.200" fill="currentColor"/></svg><svg class="ec" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M4 20L28 2" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/></svg></button>   <!-- the eye: peek at the board while a prompt is up -->
       <div id="shade"></div>                     <!-- dark layer over the board while the active player must act (shown by "#prompt.choice ~ #shade" in css) -->
       <div id="panels"></div>                    <!-- right, top: the player panels (render.js buildPanels / placePanels) -->
       <!-- right column below the player panels: ONE view at a time (main.js showTab); each panel (class "rp") slides in from the right edge -->
       <div id="sidebox">
-        <div id="evPanel" class="rp lp"><div id="evText"></div></div>            <!-- Current Event: the latest log / flavour lines in a big font (default view) -->
+        <div id="evPanel" class="rp lp">
+          <div id="evText"></div>
+          <div id="evMsg"><div id="evPtxt"></div><div id="evAct"><button id="moveBtn" class="pbtn long mv"><img src="assets/button_prompt_long.svg" alt=""><span class="pbl"><span class="lbl">Move me</span><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.600" stroke-linecap="round" stroke-linejoin="round"/></svg></span><i class="tb-shine"></i></button></div></div>   <!-- current prompt text + the helper button ("Move me", "Cancel"...) -->
+        </div>            <!-- Current Event: the latest log / flavour lines in a big font (default view) -->
         <div id="aboutPanel" class="rp lp">                                       <!-- Information (can expand) -->
           <button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
           <div id="about"></div>
@@ -54,18 +60,19 @@
   <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=24"></script>
-  <script src="js/board.js?v=24"></script>
-  <script src="js/art.js?v=24"></script>
-  <script src="js/audio.js?v=24"></script>
-  <script src="js/preload.js?v=24"></script>
-  <script src="js/render.js?v=24"></script>
-  <script src="js/network.js?v=24"></script>
-  <script src="js/input.js?v=24"></script>
-  <script src="js/rules.js?v=24"></script>
-  <script src="js/rulebook.js?v=24"></script>
-  <script src="js/main.js?v=24"></script>
-  <script src="js/title.js?v=24"></script>
-  <script src="js/local.js?v=24"></script>
+  <script src="js/config.js?v=25"></script>
+  <script src="js/board.js?v=25"></script>
+  <script src="js/art.js?v=25"></script>
+  <script src="js/audio.js?v=25"></script>
+  <script src="js/preload.js?v=25"></script>
+  <script src="js/render.js?v=25"></script>
+  <script src="js/network.js?v=25"></script>
+  <script src="js/input.js?v=25"></script>
+  <script src="js/prompts.js?v=25"></script>
+  <script src="js/rules.js?v=25"></script>
+  <script src="js/rulebook.js?v=25"></script>
+  <script src="js/main.js?v=25"></script>
+  <script src="js/title.js?v=25"></script>
+  <script src="js/local.js?v=25"></script>
 </body>
 </html>

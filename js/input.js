@@ -17,7 +17,12 @@ function stagePt(e) {
 // setPrompt(text): show a message in the prompt box (empty text clears it and hides the box) and remove old buttons.
 // The box has two looks (css/style.css): a small BANNER at the top of the board (plain messages, the board stays clear), and a DIALOG in the middle of the board
 // (CSS class "choice": used while the active player must pick something, hit Roll or throw the dice). The dialog darkens the board behind it - only on the screen of the player who has to act.
-function setPrompt(t) { $("ptxt").textContent = t; $("btns").innerHTML = ""; $("prompt").classList.remove("choice", "roll"); $("prompt").classList.toggle("has", !!t); }
+function setPrompt(t) {
+  $("ptxt").textContent = t; $("evPtxt").textContent = t; $("btns").innerHTML = "";
+  $("prompt").classList.remove("choice", "roll"); $("prompt").classList.toggle("has", !!t);   // (#prompt is only used for the game-over box now; plain messages show in the Current Event panel)
+  $("evPanel").classList.toggle("prompting", !!t);                                          // the Current Event panel shows the message (and the helper button) instead of the log lines
+  if (!t) closeSceneSoon();                                                                 // an empty message ends any prompt scene (see prompts.js)
+}
 // makeBtn(label, alt): a button drawn with the counter art (see .cbtn in css/style.css). alt = true gives the blue (debuff) version.
 function makeBtn(label, alt) {
   const b = document.createElement("button");
@@ -57,19 +62,12 @@ function choose(msg, opts, p) {
 
   return new Promise(res => {
     setPrompt(msg);
-    opts.forEach(o => {
-      const b = makeBtn(o.label ?? o, o.alt);
-      b.onclick = () => {
-        setPrompt("");
-        const val = o.value ?? o;
-        if (NET.active) {
-          sendAction({ type: "CHOOSE", val });
-        }
-        res(val);
-      };
-      $("btns").appendChild(b);
+    const kind = promptKindOf(msg, opts);                   // bully / oracle / struggler get their own prompt; everything else a plain panel (prompts.js)
+    showChoiceScene(actor, kind, msg, opts, val => {
+      setPrompt("");
+      if (NET.active) sendAction({ type: "CHOOSE", val });
+      res(val);
     });
-    if (opts.length) $("prompt").classList.add("choice");
   });
 }
 // ask(msg, opts, p): like choose(), BUT if there is only ONE option it is picked automatically with no prompt at all.
@@ -117,11 +115,11 @@ async function awaitMove({ pieces, text, button }) {
   }
 
   pieces.forEach(p => { if (p.el) p.el.classList.add("grab"); });
-  setPrompt(text);
+  setPrompt(text); showTab("event"); placeHelper();      // the message + "Move me" button are in the Current Event panel: make sure that panel is the one showing
   const mb = $("moveBtn");
   const pressed = new Promise(res => {
     if (!button) return;                                    // no helper button for this move: only a drop can finish it
-    mb.querySelector("span").textContent = button.label; mb.style.display = "block";
+    mb.querySelector(".lbl").textContent = button.label; mb.style.display = "block";
     mb.onclick = () => {
       mb.onclick = null;
       mb.style.display = "none";
@@ -155,7 +153,6 @@ window.addEventListener("keydown", e => {
   else if ($("moveBtn").style.display === "block" && $("moveBtn").onclick) { sfx("small"); $("moveBtn").click(); }
 });
 
-let CAT_CLICK_AT = 0;   // when the cat last made its click sound (Date.now() value), for the cooldown
 // Mouse pressed: grab a piece, throw a die, or click the cat.
 window.addEventListener("pointerdown", e => {
   const t = e.target;
@@ -165,11 +162,9 @@ window.addEventListener("pointerdown", e => {
     const [x, y] = stagePt(e), sq = squareAt(x, y);
     if (TGT.targets.includes(sq)) { e.preventDefault(); const fn = TGT.res; TGT = null; fn(sq); return; }
   }
-  if (t.closest && t.closest(".cat")) {                                             // 4. clicking the cat changes its picture (any time, any player)...
-    switchCat();
-    const now = Date.now();                                                         // ...and makes the cat's sound, but at most once every CAT_CLICK_COOLDOWN ms (config.js), and only if no game sound is playing.
-    if (now - CAT_CLICK_AT >= CAT_CLICK_COOLDOWN && voiceIfFree("cat")) CAT_CLICK_AT = now;
-    else sfx("small");                                                              // otherwise the usual small click
+  if (t.closest && t.closest(".cat")) {                                             // 4. clicking the cat changes its picture (any time, any player) and plays the cat's sound only for the player who clicked
+    switchCat();                                                                    // (no cool-down and no extra click sound; a game sound that is playing is not interrupted)
+    voiceIfFree("cat");
   }
   const die = t.closest && t.closest(".die");
   if (die && DICE.waiting && !DICE.flying && DICE.canInteract) { e.preventDefault(); dieDown(+die.dataset.i, e); return; }   // 3. grab a die (only on your turn)
@@ -242,9 +237,10 @@ let ITEMWAIT = null, TGT = null;
 // showHelper(label, onclick): show the big helper button on the rolling board with a label (it doubles as the Space-bar action).
 function showHelper(label, fn) {
   const mb = $("moveBtn");
-  mb.querySelector("span").textContent = label;
+  mb.querySelector(".lbl").textContent = label;
   mb.style.display = "block";
   mb.onclick = () => { mb.onclick = null; mb.style.display = "none"; fn(); };
+  placeHelper();                                        // it sits in the prompt panel (if a scene is open) or in the Current Event panel
 }
 function hideHelper() { const mb = $("moveBtn"); mb.style.display = "none"; mb.onclick = null; }
 // awaitItemChoice(p, text, label): make player p's items glow and wait. Resolves with the SLOT NUMBER of the item they click, or null if they press the helper button (label, e.g. "Roll").
@@ -268,7 +264,7 @@ async function awaitItemChoice(p, text, label) {
   const idx = pIdx;
   const slots = [...document.querySelectorAll(`.slot[data-p="${idx}"]`)].filter(s => s.dataset.t);
   slots.forEach(s => s.classList.add("usable"));                  // pulse + lime glow (CSS .slot.usable)
-  setPrompt(text); $("prompt").classList.add("choice");           // dialog in the middle of the darkened board; it clears as soon as an item is picked (then the board is clear for the item's target / animation)
+  setPrompt(text); showItemsScene(p, text);           // dialog in the middle of the darkened board; it clears as soon as an item is picked (then the board is clear for the item's target / animation)
   const pressed = new Promise(res => showHelper(label, () => {
     if (NET.active) sendAction({ type: "ITEM_CHOICE", val: null });
     res(null);
@@ -304,7 +300,7 @@ async function awaitTarget({ targets, text, label }) {
     }
   }
 
-  setHL(targets); setPrompt(text);
+  setHL(targets); setPrompt(text); showTab("event");
   const pressed = new Promise(res => showHelper(label || "Cancel", () => {
     if (NET.active) sendAction({ type: "TARGET", val: null });
     res(null);
@@ -379,7 +375,7 @@ function spawnDiceElements(n, canGrab) {
     el.style.pointerEvents = canGrab ? "auto" : "none";
     el.style.cursor = canGrab ? "grab" : "default";
     // waiting dice are centred above the ROLL button: one die exactly in the middle, two dice (Gambler) side by side, DICE_GAP apart
-    const idlePos = [(DICE_AREA.x1 + DICE_AREA.x2) / 2 + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
+    const idlePos = [ROLL_SCENE_X - TRAY.x + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
     el.innerHTML = `<div class="cube">${[1, 2, 3, 4, 5, 6].map(v => `<img class="df df${v}" src="${A(`dice_no_${v}.svg`)}" alt="" draggable="false">`).join("")}</div>`;
     $("dice").appendChild(el);
     const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, DICE_START_ANGLE_MAX), ry: rnd(0, DICE_START_ANGLE_MAX), mode: "idle", val: 1 };
@@ -420,7 +416,7 @@ function rollDice(n, who) {
 
     if (isMyTurn) {
       if (!$("ptxt").textContent) setPrompt(`${roller ? roller.name : "Player"}: grab the die and throw it, or press ROLL / Space.`);
-      $("prompt").classList.add("choice", "roll");    // the board darkens (for the player who must throw only) and the prompt sits in the middle
+      showRollScene(roller || G.cur);                 // the board darkens (for the player who must throw only) and the character stands next to the dice
       $("rollBtn").classList.add("ready");   // the ROLL button appears only for the active player
     } else {
       $("rollBtn").classList.remove("ready");

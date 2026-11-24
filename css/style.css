@@ -132,9 +132,16 @@ b, strong { font-weight: normal; }
 #evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
 #chatPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
-#evText { position: absolute; inset: 0; padding: 18px 24px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; line-height: 1.15; }
+#evPanel { display: flex; flex-direction: column; justify-content: flex-end; padding: 14px 22px 16px; }
+#evText { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; line-height: 1.15; }
 #evText .evl { margin-top: 6px; font-size: 22px; opacity: .45; } #evText .evl.new { font-size: 34px; opacity: 1; }
 #evText b { font-weight: normal; color: #6b5a10; }
+/* while the game waits for YOU (move your piece, pick a target...) the Current Event panel shows that message and the helper button under one small line of the log */
+#evMsg { display: none; flex-direction: column; align-items: stretch; }
+#evPanel.prompting #evMsg { display: flex; } #game.scened #evMsg { display: none; }
+#evPanel.prompting #evText .evl { display: none; } #evPanel.prompting #evText .evl.new { display: block; font-size: 20px; color: #7d9926; opacity: 1; margin: 0 0 4px; }
+#evPtxt { font-size: 26px; line-height: 1.15; }
+#evAct { display: flex; justify-content: center; margin-top: 12px; }
 /* Information */
 #about { position: absolute; left: 0; right: 0; bottom: 0; top: 54px; padding: 4px 24px 16px 22px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
 #about p { margin: 0 0 10px; }
@@ -181,15 +188,15 @@ b, strong { font-weight: normal; }
 /* ---- the prompt over the board. Two looks: a small BANNER at the top of the board (plain messages: the board stays clear), and a DIALOG in the middle (class "choice": the board
    behind it is darkened by #shade, but only on the screen of the player who has to act). "roll" moves the dialog above the dice. ---- */
 #prompt { display: none; position: absolute; left: 146px; top: 24px; width: 1000px; box-sizing: border-box; padding: 10px 22px 12px; background: #2f2504; border: 4px solid #c3f73a; border-radius: 16px; color: #fff3cf; font-size: 26px; line-height: 1.25; text-align: center; z-index: 8; pointer-events: none; }
-#prompt.has { display: flex; flex-direction: column; align-items: center; }
+#prompt.has { display: flex; flex-direction: column; align-items: center; } #prompt.has:not(.choice) { display: none; }   /* plain messages no longer sit on the board: they are in the Current Event panel */
 #prompt.choice { top: 540px; left: 296px; width: 700px; transform: translateY(-50%); padding: 26px 32px 30px; font-size: 32px; border-width: 5px; pointer-events: auto; }
 #prompt.choice.roll { top: 120px; transform: none; }
-#prompt.choice ~ #shade { opacity: 1; }
+#prompt.choice ~ #shade, #game.scened #shade { opacity: 1; } #game.peek #shade { opacity: 0; }   /* the dark layer: game-over box or a prompt scene; the eye button ("peek") hides it */
 #btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; pointer-events: auto; }
 #btns:empty { display: none; }
 #btns .cbtn { --s: 1.6; flex: 1 1 30%; }                 /* 3 per row; 2 options share the row; a single button takes the full width */
 #btns .cbtn:only-child { flex-basis: 100%; }
-#shade { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; box-sizing: border-box; background: rgba(15, 10, 0, .7); border-radius: 10px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; }
+#shade { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; box-sizing: border-box; background: rgba(15, 10, 0, .7); border-radius: 24px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; }
 
 /* ---- the dice layer: it covers the whole board area while the dice are on the table (js/input.js trayShow / trayHide) ---- */
 #tray { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; pointer-events: none; touch-action: none; z-index: 6; }
@@ -201,9 +208,8 @@ b, strong { font-weight: normal; }
 .cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; }
 .df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
 .df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
-#moveBtn { --s: 1.15; display: none; margin-top: 12px; width: 230px; pointer-events: auto; }   /* helper button inside the prompt: "Move for me" / "Roll" / "Cancel" */
-#prompt.choice #moveBtn { --s: 1.6; width: 320px; }
-#rollBtn { --k: 1.9; display: none; position: absolute; left: 540px; top: 600px; width: calc(112px * var(--k)); height: calc(56px * var(--k)); padding: 0; border: 0; background: none; cursor: pointer; z-index: 8; }   /* the big ROLL button under the dice (centre of the board); hidden except while the active player waits to throw */
+#moveBtn { display: none; }   /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */
+#rollBtn { --k: 1.9; display: none; position: absolute; left: calc(var(--scene-x, 860px) - 112px * var(--k) / 2); top: 600px; width: calc(112px * var(--k)); height: calc(56px * var(--k)); padding: 0; border: 0; background: none; cursor: pointer; z-index: 8; }   /* the big ROLL button under the dice (centre of the board); hidden except while the active player waits to throw */
 #rollBtn img { position: absolute; left: 0; top: 0; }
 #rollBtn .rsh { width: calc(113.4px * var(--k)); left: calc(-2px * var(--k)); } #rollBtn .rface { width: calc(108.7px * var(--k)); }
 #rollBtn.ready { display: block; animation: rdy .7s ease-in-out infinite alternate; }
@@ -398,7 +404,7 @@ html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 .lrow { position: absolute; width: 938px; height: 99px; transform-origin: 0 0; transition: top .3s, transform .3s, opacity .25s; }
 .lin { position: absolute; inset: 0; }
 .lname { position: absolute; left: 143px; top: 2px; width: 376px; height: 96px; box-sizing: border-box; padding: 12.4px 30px 0; line-height: 1; border: 0; border-radius: 9px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 49.8px; outline: none; transition: background-color .35s; }
-.lname::placeholder { color: #fff; opacity: .92; } .lname:focus { box-shadow: 0 0 0 4px var(--tt-ink); }
+.lname::placeholder { color: #8f8a78; opacity: 1; }   /* the default "Player 1, 2..." in the name boxes is grey; typed names are white */ .lname:focus { box-shadow: 0 0 0 4px var(--tt-ink); }
 .pk-pick:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }
 #tCnt { position: absolute; left: 1208px; top: 85px; width: 412px; height: 95px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; }   /* label + number box stay together at the right edge */
 #tCnt .cl { font-family: LM, monospace; font-size: 42px; line-height: 1; transform: translateY(.1em); color: var(--tt-ink); white-space: nowrap; transition: color .35s; }   /* Little Monster, same size as the small buttons' labels; translateY centres its capitals (they sit high in the font) */
@@ -577,3 +583,38 @@ body:not(.on-title) #tReconn { display: none !important; }
 .tp-card .mu-ctl .mu-btn { width: 56px; height: 56px; }
 .tp-card .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: var(--tt-ink); }   /* loop / shuffle switched ON: orange */
 #settings .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: #2f2504; }
+
+/* =============================== PROMPT BUTTONS (orange, from the art) =============================== */
+.pbtn { position: relative; padding: 0; border: 0; background: none; cursor: pointer; width: calc(var(--w) * var(--k, 1)); height: calc(var(--h) * var(--k, 1)); font-family: Blustrue, MC, monospace; }
+.pbtn.long { --w: 225.43px; --h: 80.4px; --fh: 70.59px; } .pbtn.short { --w: 129.13px; --h: 114.63px; --fh: 100.64px; }   /* sizes of the art; --fh = height of the lit face (the rest is the dark-red base) */
+.pbtn::before { content: ""; position: absolute; left: calc(-4px * var(--k, 1)); top: calc(-4px * var(--k, 1)); right: calc(-4px * var(--k, 1)); bottom: calc(-9px * var(--k, 1)); border-radius: calc(14px * var(--k, 1)); background: #2f2504; }   /* the brown outline, thicker at the bottom (offset shadow) */
+.pbtn > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.pbtn .pbl { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--fh) * var(--k, 1)); display: flex; align-items: center; justify-content: center; gap: .25em; color: #fff; text-transform: uppercase; padding-top: .05em; line-height: 1; }
+.pbtn .tb-shine { inset: 0 0 calc((var(--h) - var(--fh)) * var(--k, 1)) 0; border-radius: calc(10px * var(--k, 1)); }
+.pbtn:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }   /* the same shine sweep as the title buttons */
+.pbtn:active:not(.off) { transform: translateY(3px); }
+.pbtn.off { opacity: .5; cursor: default; filter: saturate(.5); }
+.pbtn.mv .pbl { font-family: MC, monospace; font-size: calc(34px * var(--k, 1)); }   /* "MOVE ME >" uses the pixel font */
+.pbtn.mv .pbl svg { height: .8em; width: auto; color: #c3f73a; }
+
+/* =============================== PROMPT SCENE (js/prompts.js) =============================== */
+/* The scene covers the whole stage (so positions are stage pixels). The character and the panel slide in / out VERY quickly, the panel a hair after the character on the way in and
+   a hair BEFORE it on the way out. */
+#scene { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 7; }
+#sceneChar { position: absolute; opacity: 0; transform: translateX(-140px); transition: transform .15s cubic-bezier(.2, .9, .3, 1), opacity .1s; transition-delay: .035s; }
+#scene.on #sceneChar { opacity: 1; transform: none; transition-delay: 0s; }
+#scenePanelWrap { position: absolute; left: calc(var(--panel-x, 810px) - var(--panel-w, 660px) / 2); top: var(--panel-y, 610px); width: var(--panel-w, 660px); transform: translateY(-50%); z-index: -1; }   /* (behind the character: his arm / sleeve overlaps the panel) */
+#scenePanel { box-sizing: border-box; padding: 24px 30px 34px; text-align: center; font-family: Blustrue, MC, monospace; text-transform: uppercase; opacity: 0; transform: translateX(60px) scale(.95); transition: transform .15s cubic-bezier(.2, .9, .3, 1), opacity .1s; transition-delay: 0s; }
+#scene.on #scenePanel { opacity: 1; transform: none; transition-delay: .035s; pointer-events: auto; }
+#scene.rollmode #scenePanelWrap { display: none; }
+#scenePanel .st { font-size: 58px; line-height: 1; } #scenePanel .sh { font-size: 48px; line-height: 1.05; margin-top: 14px; } #scenePanel .sb2 { font-size: 42px; line-height: 1.05; margin-top: 18px; } #scenePanel .ss { font-size: 28px; line-height: 1.1; margin-top: 6px; }
+#sceneBtns.row { display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; gap: 28px; margin-top: 30px; padding: 0 10px; }
+#sceneBtns.grid { display: grid; grid-template-columns: repeat(3, 129.13px); gap: 22px 18px; justify-content: center; margin-top: 24px; }
+#sceneBtns .pbtn { margin-bottom: 9px; }
+#sceneBtns #moveBtn { margin: 0 auto 9px; }
+#sceneRoll { display: none; position: absolute; left: calc(var(--scene-x, 860px) - 450px); width: 900px; top: 230px; text-align: center; color: #fff; font-family: Blustrue, MC, monospace; text-transform: uppercase; -webkit-text-stroke: 9px #2f2504; paint-order: stroke fill; }
+#scene.rollmode #sceneRoll { display: block; } #sceneRoll .st { font-size: 68px; line-height: 1; } #sceneRoll .ss { font-size: 32px; margin-top: 8px; -webkit-text-stroke-width: 6px; }
+#game.peek #scene { visibility: hidden; }
+/* the eye button: peek at the board while a prompt is up */
+#eyeBtn { display: none; position: absolute; left: 1216px; top: 24px; width: 54px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; box-shadow: 0 5px 0 #2f2504; cursor: pointer; align-items: center; justify-content: center; z-index: 9; }
+#eyeBtn.on { display: flex; } #eyeBtn svg { width: 30px; height: auto; } #eyeBtn .ec { display: none; } #eyeBtn.closed .eo { display: none; } #eyeBtn.closed .ec { display: block; } #eyeBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f2504; }

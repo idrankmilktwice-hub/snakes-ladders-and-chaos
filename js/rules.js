@@ -69,12 +69,12 @@ function syncGameState() {
 // win(p): mark player p as the winner.
 function win(p) { voice("win"); G.winner = p; log(`<b>${FLAVOR.win(p.name)}</b>`); syncGameState(); }
 
-// selfMove(p, t): the player moves THEIR OWN pawn to square t. They drag the pawn onto the glowing square, or press "Move for me".
+// selfMove(p, t): the player moves THEIR OWN pawn to square t. They drag the pawn onto the glowing square, or press "Move me".
 // (Used for the move a roll decides - never for snakes, ladders, pushes or the cat.)
 async function selfMove(p, t) {
   if (t === p.pos) { log(FLAVOR.stay(p.name)); return; }   // the target is the square the pawn already stands on: nothing to drag (e.g. Gambler failing on square 1)
   const el = $("pw" + G.players.indexOf(p));
-  const r = await awaitMove({ pieces: [{ key: "pawn", el, targets: [t] }], text: `${p.name}: drag your piece to square ${t}, or press Space.`, button: { label: "Move for me", value: 1 } });
+  const r = await awaitMove({ pieces: [{ key: "pawn", el, targets: [t] }], text: `${p.name}: drag your piece to square ${t}, or press Space.`, button: { label: "Move me", value: 1 } });
   log(FLAVOR.move(p.name, p.pos, t));
   const isRemoteActor = NET.active && G.players.indexOf(p) !== NET.myPlayerIndex;
   await set(p, t, r !== null && !isRemoteActor);   // r !== null means the local player dragged and dropped (sound already played locally)

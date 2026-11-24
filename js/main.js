@@ -492,8 +492,15 @@ function expandPanel() {   // the Expand button of the small Information / Ruleb
   else if (TAB === "boardlog") openLog();
   else openModal("Information", `<div class="big">${$("about").innerHTML}</div>`);
 }
-$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="bsh" src="${A("button_shadow.svg")}" alt=""><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
+$("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
 
+// applyLayoutVars(): hand the prompt-scene positions from config.js to the style sheet (as CSS variables) so both always agree.
+function applyLayoutVars() {
+  const r = document.documentElement.style, P = PROMPT_SCENE;
+  r.setProperty("--scene-x", P.rollCenterX + "px");                 // centre of the dice + ROLL button while rolling
+  r.setProperty("--panel-x", P.panelCenterX + "px"); r.setProperty("--panel-y", P.panelCenterY + "px"); r.setProperty("--panel-w", P.panelWidth + "px");
+}
+applyLayoutVars();
 // fit(): scale the fixed 1920x1080 stage to fill the window (with bars at the sides/top if the window isn't 16:9). Runs on load and whenever the window is resized.
 function fit() { const s = Math.min(innerWidth / STAGE_W, innerHeight / STAGE_H); document.documentElement.style.setProperty("--fit", s);
   document.documentElement.style.setProperty("--off", ((innerWidth - STAGE_W * s) / 2 / s + PANEL_OFFSCREEN_MARGIN) + "px");   // --off = how far (in stage pixels) a right-hand panel must sit to be completely beyond the window's right edge   // --fit = the stage scale, also used by the character pick panels (css)

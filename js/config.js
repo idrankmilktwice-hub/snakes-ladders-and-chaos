@@ -64,7 +64,6 @@ const SOUNDS = {
   happy_oracle_1: { file: "sounds/sound_oracle_happy_1.mp3", skip: 0.056, volume: 0.94 },
   happy_struggler_1: { file: "sounds/sound_struggler_happy_1.mp3", skip: 0.062, volume: 0.82 }
 };
-const CAT_CLICK_COOLDOWN = 1500;   // milliseconds: clicking the cat makes its sound at most this often (the picture still changes on every click)
 const STONE_BAD_DELAY = 450;   // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
 
@@ -337,6 +336,30 @@ const VOICE_STALE_S = 0.5;              // a sound that should have ended this l
 const WRAP_RATE = { min: 1.5, max: 8 }; // a cut-off sound plays out at this speed range
 const MIN_VOICE_S = { start: 0.01, left: 0.02 };   // smallest sound lengths the sound code accepts
 const SONG_HISTORY_MAX = 30;            // songs remembered for the "previous song" button
+// ---- Prompt scenes (prompts.js): the full-body character and the light panel that appear over the darkened board ----
+const FULL_ART = {                      // full-body picture of every character (file in assets/, and its size in its own units: drawn 1:1)
+  bully: { file: "full_bully.svg", w: 450.77, h: 827.6 },
+  gambler: { file: "full_gambler.svg", w: 365.88, h: 852.97 },
+  cat: { file: "full_catlady.svg", w: 474.2, h: 778.4 },
+  struggler: { file: "full_struggler.svg", w: 269.07, h: 781.02 },
+  oracle: { file: "full_oracle.svg", w: 315.16, h: 750.06 },
+  charmer: { file: "full_charmer.svg", w: 231.4, h: 823.78 }
+};
+const PROMPT_SCENE = {
+  charCenterX: 348, charBottom: 956,    // the character stands with its centre at this x and its feet at this y (stage pixels)
+  panelCenterX: 810, panelCenterY: 610, panelWidth: 660,   // the light panel: centre of its middle and its width
+  rollCenterX: 860,                     // while rolling, the dice and the ROLL button are centred on this x (right of the character)
+  closeGraceMs: 40                      // a closing scene waits this long, so a prompt that follows straight after reuses it without flicker
+};
+const ROLL_SCENE_X = PROMPT_SCENE.rollCenterX;   // (short name used by the dice code)
+const PROMPT_BTN = {                    // the orange prompt buttons (assets/button_prompt_long.svg / _short.svg): size, and how tall the lit "face" is (the rest is the dark-red base)
+  long: { file: "button_prompt_long.svg", w: 225.43, h: 80.4, faceH: 70.59 },
+  short: { file: "button_prompt_short.svg", w: 129.13, h: 114.63, faceH: 100.64 },
+  sceneScale: 1,                        // size of the helper button when it sits in a prompt panel...
+  eventScale: .72,                      // ...and when it sits in the Current Event panel
+  fontLong: 54, fontShort: 80,          // biggest label size (Blustrue) on a long / short button
+  labelWidth: .52                       // average width of a label character as a share of the font size (used to shrink long labels)
+};
 // ---- Maths helpers ----
 const GEOM_EPS = 1e-9;                  // "close enough to zero" for line-crossing maths
 const POINT_EPS = 1e-6;                 // two points closer than this are the same point

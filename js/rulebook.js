@@ -128,7 +128,7 @@ const RULES_HTML = () => `<div class="rb">
     k("2)") +
     " roll, " +
     k("3)") +
-    ' drag your pawn to the glowing target square (or press "Move for me" / Space). Throw the die by grabbing it, or use ROLL / Space.',
+    ' drag your pawn to the glowing target square (or press "Move me" / Space). Throw the die by grabbing it, or use ROLL / Space.',
   "You win by landing on 100 " +
     k("EXACTLY") +
     ". If your roll would take you past 100 you stay where you are (the Gambler is the exception).",
@@ -154,7 +154,7 @@ const RULES_HTML = () => `<div class="rb">
 ])}${ITEM_RULES.map((i) => `<h3>${i[0]}</h3><p>${i[1]}</p>`).join("")}
 <h2>Helpful controls</h2>${ul([
   k("Space bar") +
-    ': roll the dice, or press the helper button on the rolling board ("Move for me", "Just roll", "Roll", "Cancel").',
+    ': roll the dice, or press the helper button on the rolling board ("Move me", "Just roll", "Roll", "Cancel").',
   k("Settings tab") +
     ": sound-effects volume (10 steps; click step 1 again to mute).",
   k("Board log") + ": everything that happens, with a bit of flavour text.",
