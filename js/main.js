@@ -1,5 +1,5 @@
 // =====================================================================================
-//  main.js  -  the setup screen, the Start button, the bottom-right tab buttons (Settings / Chat / Info panel + Rulebook / Combat log pop-ups), and window scaling.
+//  main.js  -  the setup screen, the Start button, the bottom-right tab buttons (Settings / Chat / Info panel + Rulebook / Board log pop-ups), and window scaling.
 //  This file runs LAST. At the very bottom it draws the setup screen and starts loading the art.
 // =====================================================================================
 
@@ -298,8 +298,7 @@ function start() {
   play();
 }
 
-// ---- the five round buttons at the bottom right. Settings, Chat and Info are TABS: the selected one (light, pressed down) decides what the brown box above them shows.
-//      Rulebook and Combat log are not tabs: they open straight into a big window in the middle of the screen. ----
+// ---- the five buttons at the bottom right. Each one opens a view in the right-hand column (Settings, Rulebook, Board log, Chat, Information): the selected one is pressed down and orange.
 // openModal(title, html): show a big pop-up window centred on the SCREEN. It closes with the small X at its top right or by clicking anywhere outside the window.
 function openModal(title, html) {
   const m = $("modal");
@@ -307,9 +306,9 @@ function openModal(title, html) {
   m.style.display = "flex";
   attachScrollbar(m.querySelector(".mbody"));
 }
-// openRulebook() / openLog(): the big windows (opened by the Expand buttons of the small Rulebook / Combat log panels). (The log window keeps filling live: log() in config.js also writes to #biglog.)
+// openRulebook() / openLog(): the big windows (opened by the Expand buttons of the small Rulebook / Board log panels). (The log window keeps filling live: log() in config.js also writes to #biglog.)
 function openRulebook() { openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`); }
-function openLog() { openModal("Combat log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").parentElement.scrollTop = 1e9; }   // (1e9 = "as far down as it goes")
+function openLog() { openModal("Board log", `<div class="big biglog" id="biglog">${$("log").innerHTML}</div>`); $("biglog").parentElement.scrollTop = 1e9; }   // (1e9 = "as far down as it goes")
 // ---- attachScrollbar(el): a custom scroll bar for a scrolling area, drawn like the mockup (olive strip, dark arrow buttons, lime handle). ----
 // It appears ONLY when there is something to scroll to, and follows the text as it grows. The element's parent must be positioned (position:absolute / relative).
 // The browser's own scroll bar is hidden (class "scr" in css/style.css). All sizes come from SCROLLBAR in config.js.
@@ -362,7 +361,7 @@ function attachScrollbar(el) {
   return update;
 }
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
-const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Combat log"], ["chat", "Chat"], ["about", "Information"]];
+const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "Information"]];
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
 $("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
 $("ruleView").innerHTML = RULES_HTML();                     // the small Rulebook panel (the big window calls RULES_HTML() again)
@@ -465,8 +464,11 @@ function showTab(k) {
 }
 // ---- Current Event panel: shows the latest lines of the log (the flavour text) in a big font. A watcher on the hidden #log fills it, so lines from every source appear (host, guests, game rules). ----
 function updateEvent() {
-  const lines = [...$("log").children].slice(-EVENT_LINES);
-  $("evText").innerHTML = lines.map((l, i) => `<div class="evl${i === lines.length - 1 ? " new" : ""}">${l.innerHTML}</div>`).join("");   // newest line big, the two before it smaller and faded
+  const box = $("evText"), lines = [...$("log").children].slice(-EVENT_LINES);
+  const html = (l, i, n) => `<div class="evl${i === n - 1 ? " new" : ""}">${l.innerHTML}</div>`;   // the newest line is big, the ones before it small (css ".evl")
+  box.innerHTML = lines.map((l, i) => html(l, i, lines.length)).join("");
+  // The panel shows as many of the latest lines as fit (in order, oldest at the top, centred vertically): drop the oldest until nothing is cut off.
+  while (box.children.length > 1 && box.scrollHeight > box.clientHeight + 1) box.removeChild(box.firstChild);
 }
 new MutationObserver(updateEvent).observe($("log"), { childList: true });
 // ---- The game screen appears (or disappears): show / hide the tab buttons in the window corner, and play the first panel animation. ----
@@ -487,7 +489,7 @@ function chatSendPressed() {
   inp.value = "";
 }
 // expandPanel(): the Expand button of the Information panel - show its text in a big window.
-function expandPanel() {   // the Expand button of the small Information / Rulebook / Combat log panels: the same content in a big pop-up window
+function expandPanel() {   // the Expand button of the small Information / Rulebook / Board log panels: the same content in a big pop-up window
   if (TAB === "rulebook") openRulebook();
   else if (TAB === "boardlog") openLog();
   else openModal("Information", `<div class="big">${$("about").innerHTML}</div>`);
@@ -498,6 +500,7 @@ $("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" s
 function applyLayoutVars() {
   const r = document.documentElement.style, P = PROMPT_SCENE;
   r.setProperty("--scene-x", P.rollCenterX + "px");                 // centre of the dice + ROLL button while rolling
+  r.setProperty("--sb-w", SCROLLBAR.width + "px"); r.setProperty("--sb-edge", SCROLLBAR.edge + "px");   // scroll bar size + distance from the edge: the Expand and X buttons line up with it
   r.setProperty("--panel-x", P.panelCenterX + "px"); r.setProperty("--panel-y", P.panelCenterY + "px"); r.setProperty("--panel-w", P.panelWidth + "px");
 }
 applyLayoutVars();

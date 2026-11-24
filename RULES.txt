@@ -8,15 +8,18 @@ THE BASICS
 * The board has 100 squares, numbered in a zig-zag (1 bottom-left, 100 top-left). Everyone starts on square 1.
 * Every game has a random board: 9 snakes (one of them is a long cobra snake) and 9 ladders.
 * Landing on the BOTTOM of a ladder takes you up to its top. Landing on a snake's HEAD takes you down to its tail.
-* A turn is: (1) use items if you want, (2) roll, (3) drag your pawn to the glowing target square. (Press "Move for me" or Space instead
+* A turn is: (1) use items if you want, (2) roll, (3) drag your pawn to the glowing target square. (Press "Move me" or Space instead
   of dragging if you prefer.) The roll can be thrown by grabbing the die, or with the ROLL button / Space bar.
 * You win by landing on square 100 EXACTLY. If your roll would take you past 100 you stay where you are
   (the Gambler is the one exception, see below).
 * Rolling a 6 gives you another turn - EXCEPT where a character says otherwise (see the table below).
 * Turn order: the Snake Charmer always goes first, the owner of the Cat always goes last, everyone else goes in the order they were
   added on the start screen.
-* BUFF and DEBUFF counters (under each player's panel) show a bonus (+) or penalty (-) that is added to the player's NEXT roll and then
-  cleared. Bonuses and penalties add together. A move can never be less than 0 squares (it cannot push you backwards).
+* The NUMBER SQUARE at the right end of each player's panel shows a bonus (ORANGE) or penalty (BLUE) that is added to the player's NEXT roll
+  and then cleared. Bonuses and penalties add together, so the square shows the total (brown with a 0 when there is none). A move can
+  never be less than 0 squares (it cannot push you backwards).
+* On the right of the screen the player whose turn it is has the big panel on top; the other panels sit below it in a ring and glide round,
+  one place at a time, as the turns pass.
 * Anyone the game moves (pushed, pulled, nudged, knocked down, slid down a snake, climbed a ladder) takes snakes and ladders at the
   square they land on, just like a normal move - except where a character says otherwise.
 
@@ -64,7 +67,7 @@ THE ONE WITH THE CAT (CAT OWNER)
 * A player the cat LANDS ON is KNOCKED DOWN 10 squares (to square 1 if they were on 10 or below). They slide down a snake or climb a ladder
   if they land on one. For each player actually knocked down the owner gets +3 on her next roll (a Struggler who dodges does not count).
   If that roll overshoots 100 the bonus is lost.
-* Click the cat (any player, any time) to change its picture. It also changes whenever the cat moves to a new square.
+* Click the cat (any player, any time) to change its picture; you hear it meow, nobody else does. It also changes whenever the cat moves to a new square.
 
 STRUGGLER
 * Plain roll; a 6 gives another turn.
@@ -90,6 +93,21 @@ SNAKE CHARMER
 * After moving a head she must wait one turn before she can move another ("recharging"). She can always choose "Just roll" instead.
 * NO bonus roll on a 6 - she never gets another turn.
 
+PROMPTS (WHEN YOU HAVE TO DECIDE)
+---------------------------------
+* When you must decide something, the board goes dark ON YOUR SCREEN ONLY and your character steps in from the left. A panel next to them
+  asks the question; press a button to answer.
+    BULLY ....... PUSH or PULL (asked before he rolls, only if somebody is within 6 squares ahead)
+    ORACLE ...... predict a number from 1 to 6 (before she rolls)
+    STRUGGLER ... pick two numbers to FAIL the climb (when he lands on the bottom of a ladder)
+  Any other question (swap an item, pick a victim, Snake Charmer choices...) uses the same panel with the plain question.
+* Before you roll, the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; using one clears
+  the board for its animation. The "throw the die" heading disappears as soon as you grab the die, press ROLL or hit Space.
+* The small EYE button at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring
+  the prompt back.
+* Everyone else reads the CURRENT EVENT panel (bottom right). While the game waits for YOUR move or a target, that panel shows the message and a
+  MOVE ME button.
+
 ITEMS
 -----
 * The game starts with 6 random items lying on empty squares. A new item appears on a random empty square every 3rd turn of the game.
@@ -112,6 +130,14 @@ ITEMS
 
 HELPFUL CONTROLS
 ----------------
-* Space bar: roll the dice / press the helper button on the rolling board ("Move for me", "Just roll", "Roll", "Cancel").
-* Settings tab: sound-effects volume (10 steps; click step 1 again to mute).
-* Rulebook tab: a short version of these rules. Board log: everything that happens, with a bit of flavour text.
+* Space bar: roll the dice / press the helper button ("Move me", "Just roll", "Roll", "Cancel").
+* The five buttons at the bottom right of the window:
+    SETTINGS ..... Mute, SFX volume and Music volume (0-10 with the arrows), song controls (previous / next, play / pause, loop, shuffle),
+                   and Switch Device in online games.
+    RULEBOOK ..... a short version of these rules.
+    BOARD LOG .... everything that happens, with a bit of flavour text.
+    CHAT ......... messages to the other players (online games).
+    INFORMATION .. about the game and where to send bug reports and suggestions.
+  Pressing the open button again goes back to the CURRENT EVENT panel (the latest events, newest in big letters).
+* Rulebook, Board log and Information open in a small panel. Its EXPAND button opens the same text in a big window; close it with the X or by
+  clicking outside it.

@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=25">
+  <link rel="stylesheet" href="css/style.css?v=26">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -31,11 +31,11 @@
           <div id="evMsg"><div id="evPtxt"></div><div id="evAct"><button id="moveBtn" class="pbtn long mv"><img src="assets/button_prompt_long.svg" alt=""><span class="pbl"><span class="lbl">Move me</span><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.600" stroke-linecap="round" stroke-linejoin="round"/></svg></span><i class="tb-shine"></i></button></div></div>   <!-- current prompt text + the helper button ("Move me", "Cancel"...) -->
         </div>            <!-- Current Event: the latest log / flavour lines in a big font (default view) -->
         <div id="aboutPanel" class="rp lp">                                       <!-- Information (can expand) -->
-          <button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          <div class="ptitle">Information</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
           <div id="about"></div>
         </div>
-        <div id="rulePanel" class="rp lp"><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button><div id="ruleView"></div></div>      <!-- Rulebook (small version; Expand opens the big window) -->
-        <div id="logPanel" class="rp lp"><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button><div id="log"></div></div>            <!-- Combat log (small version): #log collects every log line -->
+        <div id="rulePanel" class="rp lp"><div class="ptitle">Rulebook</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button><div id="ruleView"></div></div>      <!-- Rulebook (small version; Expand opens the big window) -->
+        <div id="logPanel" class="rp lp"><div class="ptitle">Board log</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button><div id="log"></div></div>            <!-- Combat log (small version): #log collects every log line -->
         <div id="chatPanel" class="rp lp">                                        <!-- Chat -->
           <div id="chatView"></div>
           <div id="chatInputBar">
@@ -60,19 +60,19 @@
   <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=25"></script>
-  <script src="js/board.js?v=25"></script>
-  <script src="js/art.js?v=25"></script>
-  <script src="js/audio.js?v=25"></script>
-  <script src="js/preload.js?v=25"></script>
-  <script src="js/render.js?v=25"></script>
-  <script src="js/network.js?v=25"></script>
-  <script src="js/input.js?v=25"></script>
-  <script src="js/prompts.js?v=25"></script>
-  <script src="js/rules.js?v=25"></script>
-  <script src="js/rulebook.js?v=25"></script>
-  <script src="js/main.js?v=25"></script>
-  <script src="js/title.js?v=25"></script>
-  <script src="js/local.js?v=25"></script>
+  <script src="js/config.js?v=26"></script>
+  <script src="js/board.js?v=26"></script>
+  <script src="js/art.js?v=26"></script>
+  <script src="js/audio.js?v=26"></script>
+  <script src="js/preload.js?v=26"></script>
+  <script src="js/render.js?v=26"></script>
+  <script src="js/network.js?v=26"></script>
+  <script src="js/input.js?v=26"></script>
+  <script src="js/prompts.js?v=26"></script>
+  <script src="js/rules.js?v=26"></script>
+  <script src="js/rulebook.js?v=26"></script>
+  <script src="js/main.js?v=26"></script>
+  <script src="js/title.js?v=26"></script>
+  <script src="js/local.js?v=26"></script>
 </body>
 </html>

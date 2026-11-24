@@ -107,9 +107,9 @@ b, strong { font-weight: normal; }
 #modal { display: none; position: fixed; inset: 0; background: rgba(20, 14, 2, .72); align-items: center; justify-content: center; z-index: 60; font-family: MC, monospace; color: #2f2504; }   /* covers the WHOLE browser window (it lives outside the stage); JS shows it with display:flex. The window inside is scaled like the stage. */
 #modal > div { position: relative; transform: scale(var(--fit, 1)); flex: none; }   /* width / max-height are set by openModal() from MODAL in config.js */
 /* the small X at the top right of a big window (clicking outside the window also closes it) */
-.mclose { position: absolute; right: 14px; top: 14px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+.mclose { position: absolute; right: calc(var(--modal-pad, 34px) + var(--sb-edge, 6px) + var(--sb-w, 24px) / 2 - 22px); top: 14px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
-#modal > div { display: flex; flex-direction: column; overflow: visible; padding: 26px 34px 30px; }   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
+#modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 30px; }   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
 #modal h2 { flex: none; margin: 0 60px 12px 0; }
 #modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
@@ -132,20 +132,23 @@ b, strong { font-weight: normal; }
 #evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
 #chatPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
-#evPanel { display: flex; flex-direction: column; justify-content: flex-end; padding: 14px 22px 16px; }
-#evText { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; line-height: 1.15; }
-#evText .evl { margin-top: 6px; font-size: 22px; opacity: .45; } #evText .evl.new { font-size: 34px; opacity: 1; }
-#evText b { font-weight: normal; color: #6b5a10; }
+#evPanel { display: flex; flex-direction: column; justify-content: center; padding: 14px 22px 16px; }
+#evText { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-height: 0; overflow: hidden; line-height: 1.15; }
+/* the log lines in the Current Event panel: same look as the Board log (dark text, orange turn headings, dashed lines between), but small and muted; the newest line is big */
+#evText .evl { font-size: 18px; color: #7d9926; padding: 4px 0 5px; border-bottom: 2px dashed #c4d889; opacity: 1; } #evText .evl b { color: #d28a5a; }
+#evText .evl.new { font-size: 28px; color: #2f2504; border-bottom: 0; padding: 8px 0 2px; } #evText .evl.new b { color: #b3410a; }
+#evText b { font-weight: normal; }
 /* while the game waits for YOU (move your piece, pick a target...) the Current Event panel shows that message and the helper button under one small line of the log */
 #evMsg { display: none; flex-direction: column; align-items: stretch; }
 #evPanel.prompting #evMsg { display: flex; } #game.scened #evMsg { display: none; }
-#evPanel.prompting #evText .evl { display: none; } #evPanel.prompting #evText .evl.new { display: block; font-size: 20px; color: #7d9926; opacity: 1; margin: 0 0 4px; }
+#evPanel.prompting #evText .evl { display: none; } #evPanel.prompting #evText .evl.new { display: block; font-size: 20px; color: #7d9926; border-bottom: 0; padding: 0 0 4px; } #evPanel.prompting #evText .evl.new b { color: #d28a5a; }   /* while a message is shown: just the last log line, small */
 #evPtxt { font-size: 26px; line-height: 1.15; }
 #evAct { display: flex; justify-content: center; margin-top: 12px; }
 /* Information */
 #about { position: absolute; left: 0; right: 0; bottom: 0; top: 54px; padding: 4px 24px 16px 22px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
 #about p { margin: 0 0 10px; }
-.xbtn { position: absolute; right: 16px; top: 14px; width: 40px; height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button (top right of the small panels) */
+.xbtn { --xb-w: 34px; position: absolute; top: 12px; right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2); width: var(--xb-w); height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button: centred over the scroll bar below it (same centre line) */
+.ptitle { position: absolute; left: 22px; top: 10px; height: 38px; display: flex; align-items: center; font-family: LM, MC, monospace; font-size: 38px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button */
 .xbtn svg { display: block; margin: 0 auto; } .xbtn:active { transform: translateY(2px); border-bottom-width: 2px; }
 /* Chat: message area with its own scrollbar, then the input and the chevron send button */
 #chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
@@ -589,7 +592,7 @@ body:not(.on-title) #tReconn { display: none !important; }
 .pbtn.long { --w: 225.43px; --h: 80.4px; --fh: 70.59px; } .pbtn.short { --w: 129.13px; --h: 114.63px; --fh: 100.64px; }   /* sizes of the art; --fh = height of the lit face (the rest is the dark-red base) */
 .pbtn::before { content: ""; position: absolute; left: calc(-4px * var(--k, 1)); top: calc(-4px * var(--k, 1)); right: calc(-4px * var(--k, 1)); bottom: calc(-9px * var(--k, 1)); border-radius: calc(14px * var(--k, 1)); background: #2f2504; }   /* the brown outline, thicker at the bottom (offset shadow) */
 .pbtn > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.pbtn .pbl { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--fh) * var(--k, 1)); display: flex; align-items: center; justify-content: center; gap: .25em; color: #fff; text-transform: uppercase; padding-top: .05em; line-height: 1; }
+.pbtn .pbl { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--fh) * var(--k, 1)); display: flex; align-items: center; justify-content: center; gap: .25em; color: #fff; text-transform: uppercase; line-height: 1; }
 .pbtn .tb-shine { inset: 0 0 calc((var(--h) - var(--fh)) * var(--k, 1)) 0; border-radius: calc(10px * var(--k, 1)); }
 .pbtn:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }   /* the same shine sweep as the title buttons */
 .pbtn:active:not(.off) { transform: translateY(3px); }
@@ -612,6 +615,7 @@ body:not(.on-title) #tReconn { display: none !important; }
 #sceneBtns.grid { display: grid; grid-template-columns: repeat(3, 129.13px); gap: 22px 18px; justify-content: center; margin-top: 24px; }
 #sceneBtns .pbtn { margin-bottom: 9px; }
 #sceneBtns #moveBtn { margin: 0 auto 9px; }
+#sceneRoll.gone { visibility: hidden; }
 #sceneRoll { display: none; position: absolute; left: calc(var(--scene-x, 860px) - 450px); width: 900px; top: 230px; text-align: center; color: #fff; font-family: Blustrue, MC, monospace; text-transform: uppercase; -webkit-text-stroke: 9px #2f2504; paint-order: stroke fill; }
 #scene.rollmode #sceneRoll { display: block; } #sceneRoll .st { font-size: 68px; line-height: 1; } #sceneRoll .ss { font-size: 32px; margin-top: 8px; -webkit-text-stroke-width: 6px; }
 #game.peek #scene { visibility: hidden; }

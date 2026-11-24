@@ -22,6 +22,7 @@ function setPrompt(t) {
   $("prompt").classList.remove("choice", "roll"); $("prompt").classList.toggle("has", !!t);   // (#prompt is only used for the game-over box now; plain messages show in the Current Event panel)
   $("evPanel").classList.toggle("prompting", !!t);                                          // the Current Event panel shows the message (and the helper button) instead of the log lines
   if (!t) closeSceneSoon();                                                                 // an empty message ends any prompt scene (see prompts.js)
+  updateEvent();                                                                            // (the Current Event panel changes size when a message is shown, so it re-fits its lines)
 }
 // makeBtn(label, alt): a button drawn with the counter art (see .cbtn in css/style.css). alt = true gives the blue (debuff) version.
 function makeBtn(label, alt) {
@@ -167,7 +168,7 @@ window.addEventListener("pointerdown", e => {
     voiceIfFree("cat");
   }
   const die = t.closest && t.closest(".die");
-  if (die && DICE.waiting && !DICE.flying && DICE.canInteract) { e.preventDefault(); dieDown(+die.dataset.i, e); return; }   // 3. grab a die (only on your turn)
+  if (die && DICE.waiting && !DICE.flying && DICE.canInteract) { e.preventDefault(); hideRollText(); dieDown(+die.dataset.i, e); return; }   // 3. grab a die (only on your turn); the "throw the die" heading goes away at once
   const g = t.closest && t.closest(".grab");
   if (!g || !PEND) return;
   const piece = PEND.pieces.find(p => p.el === g);
@@ -571,7 +572,7 @@ function launch(vx, vy, forceVals, startDice) {
   DICE.list.forEach(d => { d.el.style.pointerEvents = "none"; d.el.style.cursor = "default"; });
   $("rollBtn").classList.remove("ready");
   if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
-  trayShow(); setPrompt("");                                   // the dice tumble over a CLEAR board: the dark layer and the roll prompt go away
+  hideRollText(); trayShow(); setPrompt("");                  // the dice tumble over a CLEAR board: the heading, the dark layer and the roll prompt go away
 
   if (Array.isArray(startDice)) {
     DICE.list.forEach((d, idx) => {

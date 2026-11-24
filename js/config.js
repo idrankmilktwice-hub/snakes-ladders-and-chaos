@@ -125,7 +125,7 @@ const COUNTER_ORANGE = "#ff7529", COUNTER_BLUE = "#1b84b8", COUNTER_BROWN = "#2f
 // ---- The strip of round tab buttons in the bottom-right CORNER OF THE WINDOW (not of the 1920x1080 stage: it is fixed to the real window corner, see #dockfix in css/style.css).
 //      pad = space round the buttons, pitch = distance between two buttons ----
 const DOCK = { pad: 14, padY: 10, pitch: 80 };   // pad = space left of the first button, padY = space above the buttons (the strip is 80 tall, see #dockfix in css), pitch = distance between buttons
-// ---- Scroll bars (made by attachScrollbar in main.js; used by the chat, the small Rulebook / Combat log / Information panels and the big pop-up windows). Sizes are in stage pixels. ----
+// ---- Scroll bars (made by attachScrollbar in main.js; used by the chat, the small Rulebook / Board log / Information panels and the big pop-up windows). Sizes are in stage pixels. ----
 const SCROLLBAR = {
   width: 24,        // total width of the bar (the olive rounded strip)
   padding: 4,       // space between the strip's edge and the arrow buttons / the track
@@ -137,7 +137,7 @@ const SCROLLBAR = {
   edge: 6,          // distance between the bar and the right edge of the area it scrolls
   textPad: 40       // extra space kept free on the right of the text, so words never run under the bar
 };
-// ---- Big pop-up windows (Rulebook, Combat log, Information) ----
+// ---- Big pop-up windows (Rulebook, Board log, Information) ----
 const MODAL = { width: 1200, maxHeight: 960, screenMargin: 60 };   // widest the window gets, tallest it gets, and the space kept free round it (all in stage pixels)
 
 // =====================================================================================
@@ -261,7 +261,7 @@ const ROLL_FALLBACK_MS = 60;            // extra time after a roll before the sa
 const FULL_TURN = 360;                  // degrees in a full turn
 // ---- Right-hand panels and screen (main.js) ----
 const VOLUME_MAX = 10;                  // volume steps: 0 (silent) to this (full)
-const EVENT_LINES = 3;                  // how many of the latest log lines the Current Event panel shows
+const EVENT_LINES = 8;                  // the Current Event panel considers this many of the latest log lines (it then drops the oldest ones until the rest fit in the panel)
 const PANEL_OFFSCREEN_MARGIN = 760;     // right-hand panels wait this many pixels beyond the right edge of the window (more than their width)
 const NAME_SYNC_MS = 240;               // typing a name in the lobby is sent to the other players after this pause (so every key press is not sent)
 const SWITCH_TICK_MS = 500;             // the Switch Device code countdown refreshes this often

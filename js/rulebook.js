@@ -65,7 +65,7 @@ const CHARACTER_RULES = {
       " is knocked down 10 squares (to square 1 if on 10 or below), then takes any snake or ladder there. Each player actually knocked down gives the owner " +
       k("+3") +
       " on her next roll (a Struggler who dodges doesn't count). If that roll overshoots 100, the bonus is lost.",
-    "Click the cat any time to change its picture. It also changes whenever the cat moves.",
+    "Click the cat any time to change its picture (you hear it meow, nobody else does). It also changes whenever the cat moves.",
   ],
   struggler: [
     "Plain roll; a 6 gives another turn.",
@@ -136,15 +136,27 @@ const RULES_HTML = () => `<div class="rb">
     k("6") +
     " gives another turn, except where a character says otherwise.",
   "Turn order: the Snake Charmer first, the cat owner last, everyone else in the order they were added.",
-  k("BUFF") +
-    " and " +
-    k("DEBUFF") +
-    " counters under each panel show a bonus (+) or penalty (-) added to the player's NEXT roll and then cleared. They add together, and a move is never less than 0 squares.",
+  k("The number square") +
+    " at the right end of each player's panel shows the bonus (" +
+    k("orange") +
+    ") or penalty (" +
+    k("blue") +
+    ") that is added to that player's NEXT roll and then cleared. Bonuses and penalties add together, so it shows the total (it is brown with a 0 when there is none). A move is never less than 0 squares.",
+  "On the right, the player whose turn it is has the big panel on top. The other panels sit below it in a ring and glide round, one place at a time, as the turns pass.",
   "Anyone the game moves (pushed, pulled, nudged, knocked down, slid down a snake, climbed a ladder) takes snakes and ladders on the square they land on, just like a normal move - unless a character says otherwise.",
 ])}
 <h2>Bonus roll on a 6</h2>
 <table>${BONUS_ROLL.map((r) => `<tr><td>${r[0]}</td><td class="${r[1] ? "yes" : "no"}">${r[1] ? "Yes" : "No"}</td><td>${r[2]}</td></tr>`).join("")}</table>
 <h2>The characters</h2>${CHARACTERS.map((c) => `<h3>${c.name}</h3>${ul(CHARACTER_RULES[c.id] || [c.text])}`).join("")}
+<h2>Prompts</h2>${ul([
+  "When you have to decide something, the board goes dark " + k("on your screen only") + " and your character steps in from the left. A panel next to them asks the question; press a button to answer.",
+  k("Bully:") + " PUSH or PULL, before he rolls (only if somebody is within 6 squares ahead).",
+  k("Oracle:") + " predict a number from 1 to 6 before she rolls.",
+  k("Struggler:") + " pick two numbers to FAIL the climb when he lands on the bottom of a ladder.",
+  "Before you roll (and when you hold items) the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; pressing one clears the board for its animation.",
+  "The small " + k("eye button") + " at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring the prompt back.",
+  "Everybody else just reads the " + k("Current Event") + " panel. While the game waits for YOUR move (or a target), that panel shows the message and a " + k("MOVE ME") + " button.",
+])}
 <h2>Items</h2>${ul([
   `The game starts with ${ITEM_START} random items on empty squares, and a new one appears every ${ITEM_EVERY} turns. Items never appear on square 1 or 100, under a pawn, the cat or another item, or on a snake head or the bottom of a ladder.`,
   `Step on an item to pick it up. You can hold ${ITEM_MAX}; with full hands you may swap one of yours for the one on the ground, or leave it.`,
@@ -154,9 +166,10 @@ const RULES_HTML = () => `<div class="rb">
 ])}${ITEM_RULES.map((i) => `<h3>${i[0]}</h3><p>${i[1]}</p>`).join("")}
 <h2>Helpful controls</h2>${ul([
   k("Space bar") +
-    ': roll the dice, or press the helper button on the rolling board ("Move me", "Just roll", "Roll", "Cancel").',
-  k("Settings tab") +
-    ": sound-effects volume (10 steps; click step 1 again to mute).",
-  k("Board log") + ": everything that happens, with a bit of flavour text.",
+    ': roll the dice, or press the helper button ("Move me", "Just roll", "Roll", "Cancel").',
+  k("Buttons at the bottom right") +
+    ": " + k("Settings") + " (Mute, SFX and Music volume from 0 to 10 with the arrows, song controls, and Switch Device in online games), " + k("Rulebook") + ", " + k("Board log") + " (everything that happens, with a bit of flavour text), " + k("Chat") + " (online games) and " + k("Information") + ". Press an open button again to go back to the Current Event panel.",
+  "Rulebook, Board log and Information open in a small panel; its " + k("expand button") + " opens the same text in a big window. Close the big window with the X or by clicking outside it.",
+  k("Current Event") + " panel: the latest events of the game, newest in big letters, plus the message when it is your turn to act.",
 ])}
 </div>`;

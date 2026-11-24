@@ -57,6 +57,7 @@ function openScene(actor, mode) {
   SCENE.open = true; SCENE.actor = actor;
   $("scene").classList.add("on"); $("scene").classList.toggle("rollmode", mode === "roll");
   $("game").classList.add("scened"); $("eyeBtn").classList.add("on");
+  $("evPanel").classList.remove("prompting"); updateEvent();      // the scene shows the question, so the Current Event panel goes back to showing the log lines
   placeHelper();
 }
 // closeSceneSoon(): called by setPrompt(""). The scene fades out quickly, after a very short grace time (see PROMPT_SCENE.closeGraceMs) in case another scene follows at once.
@@ -75,6 +76,8 @@ function toggleEye() {
   $("game").classList.toggle("peek", SCENE.peek);
   $("eyeBtn").classList.toggle("closed", SCENE.peek);
 }
+// hideRollText(): the heading above the dice goes away the moment the player grabs a die, presses ROLL or hits Space (called from input.js).
+function hideRollText() { $("sceneRoll").classList.add("gone"); }
 // placeHelper(): the helper button ("Move me", "Roll", "Cancel") sits in the prompt panel while a scene is open, otherwise in the Current Event panel.
 function placeHelper() {
   const mb = $("moveBtn"), dest = SCENE.open ? $("sceneBtns") : $("evAct");
@@ -122,5 +125,6 @@ function showItemsScene(actor, text) {
 // showRollScene(actor): the character stands next to the dice and ROLL button; a heading above them.
 function showRollScene(actor) {
   openScene(actor, "roll");
+  $("sceneRoll").classList.remove("gone");
   $("sceneRoll").innerHTML = sceneLine("st", PROMPT_TEXT.turn(actor.name)) + sceneLine("ss", PROMPT_TEXT.roll);
 }
