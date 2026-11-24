@@ -27,7 +27,7 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
 .pp .port { width: auto; transform: translate(-50%, -50%); }          /* position + height are set inline from PANEL in config.js (centre of the round portrait window) */
 .pp .fld { position: absolute; display: flex; align-items: center; justify-content: flex-start; white-space: nowrap; overflow: hidden; padding: 3px 0 0 16px; box-sizing: border-box; color: #fff; }   /* the player's name, white on the dark box */
 /* the 4th square: buff / debuff number. Colour is set from JS (orange = positive, blue = negative, brown = zero). Minecraft font, white with a brown outline, no sign. */
-.pp .cnt { position: absolute; border-radius: 5px; background: #2f2504; display: flex; align-items: center; justify-content: center; padding-top: 4px; box-sizing: border-box; font-size: 44px; line-height: 1; color: #fff; -webkit-text-stroke: 7px #2f2504; paint-order: stroke fill; }
+.pp .cnt { position: absolute; border-radius: 5px; background: #2f2504; display: flex; align-items: center; justify-content: center; padding-top: 1.5px; box-sizing: border-box; font-size: 44px; line-height: 1; color: #fff; -webkit-text-stroke: 7px #2f2504; paint-order: stroke fill; }
 .pp .cnt.two { font-size: 34px; }
 /* item slots: the three dark rectangles; the item picture is centred in each */
 .pp .slot { position: absolute; display: flex; align-items: center; justify-content: center; }
@@ -107,7 +107,7 @@ b, strong { font-weight: normal; }
 #modal { display: none; position: fixed; inset: 0; background: rgba(20, 14, 2, .72); align-items: center; justify-content: center; z-index: 60; font-family: MC, monospace; color: #2f2504; }   /* covers the WHOLE browser window (it lives outside the stage); JS shows it with display:flex. The window inside is scaled like the stage. */
 #modal > div { position: relative; transform: scale(var(--fit, 1)); flex: none; }   /* width / max-height are set by openModal() from MODAL in config.js */
 /* the small X at the top right of a big window (clicking outside the window also closes it) */
-.mclose { position: absolute; right: calc(var(--modal-pad, 34px) + var(--sb-edge, 6px) + var(--sb-w, 24px) / 2 - 22px); top: 14px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+.mclose { position: absolute; right: calc(var(--modal-pad, 34px) + var(--sb-edge-modal, 0px) + var(--sb-w, 24px) / 2 - 22px); top: 14px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
 #modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 30px; }   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
 #modal h2 { flex: none; margin: 0 60px 12px 0; }
@@ -126,7 +126,7 @@ b, strong { font-weight: normal; }
 /* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
 .lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
 #rulePanel, #logPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log panels: same size and place as the chat */
-#ruleView, #log { position: absolute; left: 0; right: 0; bottom: 0; top: 54px; padding: 4px 24px 14px 20px; overflow-y: auto; font-size: 20px; line-height: 1.3; }
+#ruleView, #log { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 14px 20px; overflow-y: auto; font-size: 20px; line-height: 1.3; }
 #log div { padding: 6px 0 7px; border-bottom: 2px dashed #b8cc6a; } #log div:last-child { border-bottom: 0; } #log b { font-weight: normal; color: #b3410a; }
 #ruleView .rb h2 { color: #2f2504; border-bottom: 2px solid #2f2504; } #ruleView .rb h3 { color: #b3410a; } #ruleView .rb .k { color: #6b5a10; } #ruleView .rb li::marker { color: #b3410a; } #ruleView .rb td { border-bottom-color: #b8cc6a; } #ruleView .rb td:first-child { color: #2f2504; } #ruleView .rb .yes { color: #4b7a10; } #ruleView .rb .no { color: #b3410a; }
 #evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
@@ -145,10 +145,10 @@ b, strong { font-weight: normal; }
 #evPtxt { font-size: 26px; line-height: 1.15; }
 #evAct { display: flex; justify-content: center; margin-top: 12px; }
 /* Information */
-#about { position: absolute; left: 0; right: 0; bottom: 0; top: 54px; padding: 4px 24px 16px 22px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
+#about { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 16px 20px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
 #about p { margin: 0 0 10px; }
-.xbtn { --xb-w: 34px; position: absolute; top: 12px; right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2); width: var(--xb-w); height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button: centred over the scroll bar below it (same centre line) */
-.ptitle { position: absolute; left: 22px; top: 10px; height: 38px; display: flex; align-items: center; font-family: LM, MC, monospace; font-size: 38px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button */
+.xbtn { --xb-w: 34px; position: absolute; top: 14px; right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2); width: var(--xb-w); height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button: centred over the scroll bar below it (same centre line) */
+.ptitle { position: absolute; left: 20px; top: 16px; height: 30px; display: flex; align-items: center; font-family: MC, monospace; font-size: 26px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button: pixel font, aligned with the text below */
 .xbtn svg { display: block; margin: 0 auto; } .xbtn:active { transform: translateY(2px); border-bottom-width: 2px; }
 /* Chat: message area with its own scrollbar, then the input and the chevron send button */
 #chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
@@ -170,6 +170,8 @@ b, strong { font-weight: normal; }
 #opMusic { left: 1566px; top: 809px; width: 323px; height: 182px; flex-direction: column; justify-content: space-between; align-items: stretch; padding: 10px 14px 12px; }
 .oph { font-family: LM, MC, monospace; text-transform: uppercase; font-size: 36px; line-height: 1; color: #fff; }   /* headings: the condensed hand-drawn font in white capitals */
 #opSw .oph { text-align: center; }
+#opSw.live { padding: 10px 14px 10px; justify-content: space-between; } #opSw.live .oph { font-size: 27px; }   /* with a code showing the heading is smaller, and the heading / code row / timer are spread evenly with equal edge spacing */
+#opSw.live .swrow, #opSw.live .swcodebox { margin-top: 0; } #opSw.live .swleft { margin-top: 0; }
 .mrow { display: flex; align-items: center; justify-content: space-between; }
 .stp { display: flex; align-items: center; gap: 4px; }
 .stp .arr { width: 18px; height: 30px; padding: 0; border: 0; background: none; color: #2f2504; cursor: pointer; } .stp .arr svg { width: 100%; height: 100%; } .stp .arr:active { transform: scale(.88); }
@@ -212,11 +214,8 @@ b, strong { font-weight: normal; }
 .df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
 .df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
 #moveBtn { display: none; }   /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */
-#rollBtn { --k: 1.9; display: none; position: absolute; left: calc(var(--scene-x, 860px) - 112px * var(--k) / 2); top: 600px; width: calc(112px * var(--k)); height: calc(56px * var(--k)); padding: 0; border: 0; background: none; cursor: pointer; z-index: 8; }   /* the big ROLL button under the dice (centre of the board); hidden except while the active player waits to throw */
-#rollBtn img { position: absolute; left: 0; top: 0; }
-#rollBtn .rsh { width: calc(113.4px * var(--k)); left: calc(-2px * var(--k)); } #rollBtn .rface { width: calc(108.7px * var(--k)); }
+#rollBtn { --k: 1.5; display: none; position: absolute; left: calc(var(--scene-x, 860px) - var(--w) * var(--k) / 2); top: 600px; z-index: 8; }   /* the ROLL button under the dice: the orange prompt button (.pbtn.long) at 1.5 x size; hidden except while the active player waits to throw */
 #rollBtn.ready { display: block; animation: rdy .7s ease-in-out infinite alternate; }
-#rollBtn.ready:active .rface { transform: translateY(3px); }
 @keyframes rdy { to { transform: scale(1.08); } }
 
 /* ---- pawns (heads on the board) ---- */
@@ -598,7 +597,7 @@ body:not(.on-title) #tReconn { display: none !important; }
 .pbtn:active:not(.off) { transform: translateY(3px); }
 .pbtn.off { opacity: .5; cursor: default; filter: saturate(.5); }
 .pbtn.mv .pbl { font-family: MC, monospace; font-size: calc(34px * var(--k, 1)); }   /* "MOVE ME >" uses the pixel font */
-.pbtn.mv .pbl svg { height: .8em; width: auto; color: #c3f73a; }
+.pbtn.mv .pbl svg { height: .8em; width: auto; color: #c3f73a; transform: translateY(-.08em); }   /* the pixel font sits a little high: the chevron is lifted to line up with the text */
 
 /* =============================== PROMPT SCENE (js/prompts.js) =============================== */
 /* The scene covers the whole stage (so positions are stage pixels). The character and the panel slide in / out VERY quickly, the panel a hair after the character on the way in and
@@ -622,3 +621,9 @@ body:not(.on-title) #tReconn { display: none !important; }
 /* the eye button: peek at the board while a prompt is up */
 #eyeBtn { display: none; position: absolute; left: 1216px; top: 24px; width: 54px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; box-shadow: 0 5px 0 #2f2504; cursor: pointer; align-items: center; justify-content: center; z-index: 9; }
 #eyeBtn.on { display: flex; } #eyeBtn svg { width: 30px; height: auto; } #eyeBtn .ec { display: none; } #eyeBtn.closed .eo { display: none; } #eyeBtn.closed .ec { display: block; } #eyeBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f2504; }
+
+/* prompt panel extras */
+.pbtn > svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }   /* a button drawn wider than the art (PLAY AGAIN) */
+#sceneBtns #moveBtn .pbl svg { display: none; }                                   /* the Roll / Use item button in a prompt panel has no green chevron */
+#sceneBtns.stack { display: flex; flex-direction: column; align-items: center; gap: 26px; margin-top: 28px; }
+#sceneBtns.stack .reactrow { display: flex; justify-content: center; gap: 30px; }  /* BOO and CHEER side by side under PLAY AGAIN */

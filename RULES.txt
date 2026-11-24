@@ -103,6 +103,9 @@ PROMPTS (WHEN YOU HAVE TO DECIDE)
   Any other question (swap an item, pick a victim, Snake Charmer choices...) uses the same panel with the plain question.
 * Before you roll, the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; using one clears
   the board for its animation. The "throw the die" heading disappears as soon as you grab the die, press ROLL or hit Space.
+* When somebody wins, everybody sees the winner's character with "WINNER!" and their name, and a PLAY AGAIN button. Players who did not win
+  (online) also get BOO and CHEER buttons: they play a sad or happy sound of their own character (only that player hears it) and can be pressed
+  as often as you like.
 * The small EYE button at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring
   the prompt back.
 * Everyone else reads the CURRENT EVENT panel (bottom right). While the game waits for YOUR move or a target, that panel shows the message and a

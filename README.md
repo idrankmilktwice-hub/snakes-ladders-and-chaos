@@ -43,7 +43,7 @@ serve.py            tiny local web server
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-`index.html` loads every script and the stylesheet with a version number (`?v=26`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
+`index.html` loads every script and the stylesheet with a version number (`?v=27`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
@@ -120,7 +120,7 @@ Everything is drawn on the fixed 1920x1080 stage (scaled to the window). The tab
 
 ## Prompt scenes
 
-When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number) and Struggler (pick two failure numbers) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
+When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number) and Struggler (pick two failure numbers) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. The end of the game uses the same scene (`showWinnerScene`): the winner's character, "WINNER! <name>", a PLAY AGAIN button sized to its label, and for players who did not win (online) BOO / CHEER buttons that play a sad / happy sound of their own character on their own device only (no cooldown). Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
 
 ## Character pick
 
@@ -133,6 +133,7 @@ Two players can never hold the same character. On the pick screens (and the old 
 - Every snake gets its own head design (8 heads + the cobra = 9 snakes). If you raise `CONFIG.SNAKES`, add heads to `assets/manifest.json` first.
 - The background is `assets/pattern.svg` (a square tile, 1 viewBox unit = 1 pixel) repeated over a flat colour. Replace that file with your design; no code change needed.
 - Fonts: Minecraft (text), Little Monster (headings, `LM`), Blustrue (square numbers and the prompt panels). The tab buttons are one green SVG each (`button_<name>.svg`); the orange pressed look is made in code (`initTabArt` in `js/art.js`).
+- `#setup` (the old start screen) is hidden in `index.html` itself, so nothing of it can flash while the scripts are still loading.
 - Every adjustable number has a name: see the TUNING NUMBERS part of `js/config.js`. Numbers in the style sheet (positions, sizes) stay in `css/style.css`.
 - Online play uses PeerJS, loaded from unpkg in `index.html`.
 - `python tools/build_standalone.py` packs everything into one self-contained `dist/snakes-ladders-and-chaos.html` for quick sharing or previewing. The songs are large: if that script embeds everything in `assets/`, leave `assets/music/` out of it.

@@ -2230,16 +2230,10 @@ function appendChatMessage(sender, text, color, isLocal) {
 
 function showLocalGameOverPrompt() {
   if (!G || !G.winner) return;
-  if (typeof TAB !== "undefined" && TAB === "chat" && typeof showTab === "function") {
-    showTab("boardlog");
-  }
   clearSession();            // the game is over: nothing to come back to
   stopHeartbeat();
-  setPrompt(`${G.winner.name} wins!`);
-  const b = makeBtn("Play again", false);
-  b.onclick = () => location.reload();
-  $("btns").appendChild(b);
-  $("prompt").classList.add("choice");
+  setPrompt("");             // (no plain message: the winner scene below says it all)
+  showWinnerScene();         // the winner's character + "WINNER! name" + Play again (and BOO / CHEER for everybody who did not win); see prompts.js
 }
 
 function applyRemoteGameStart(msg) {

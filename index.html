@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -14,7 +14,7 @@
       <div id="boxes"></div>                     <!-- the red container behind the board (main.js draws it from BOXES) -->
       <div id="board"></div>                     <!-- left: the board SVG (render.js buildBoard) -->
       <div id="tray"><div id="dice"></div></div> <!-- the dice layer: covers the board while dice are on the table (input.js) -->
-      <button id="rollBtn" onclick="rollPressed()"><img class="rsh" src="assets/button_roll_shadow.svg" alt=""><img class="rface" src="assets/button_roll.svg" alt=""></button>   <!-- big ROLL button in the middle of the board -->
+      <button id="rollBtn" class="pbtn long" onclick="rollPressed()"><img src="assets/button_prompt_long.svg" alt=""><span class="pbl" style="font-size:calc(54px * var(--k))">Roll</span><i class="tb-shine"></i></button>   <!-- the ROLL button under the dice: the same orange prompt button as the panels -->
       <div id="prompt"><div id="ptxt"></div><div id="btns"></div></div>   <!-- the game-over box only (centred dialog over the darkened board); plain messages live in the Current Event panel -->
       <div id="scene">                           <!-- PROMPT SCENE (js/prompts.js): the player's full-body character + a light panel, over the darkened board -->
         <img id="sceneChar" alt="">
@@ -50,7 +50,7 @@
       </div>
     </div>
     <div id="fly"></div>                         <!-- layer for thrown / sliding items -->
-    <div id="setup"></div>                       <!-- start screen (setup) -->
+    <div id="setup" style="display:none"></div>                       <!-- start screen (setup) -->
     <div id="title"></div>                       <!-- title screen: logo, Play / Options / About (js/title.js) -->
     <div id="tLoad"><div class="ld-bar"><i></i></div><span class="ld-ok"><svg viewBox="0 0 12 10" width="12" height="10"><path d="M1 5.5L4.5 9 11 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>Assets loaded</span></div>
     <div id="tCopy">Copyright &copy; 2026 Hafiz Shaikh. All Rights Reserved.<span class="tc-sub">Copying, modifying, distributing or reusing this game's code, artwork or audio without written permission is prohibited.</span></div>   <!-- copyright notice, bottom middle of the title screens (see LICENSE.md) -->
@@ -60,19 +60,19 @@
   <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=26"></script>
-  <script src="js/board.js?v=26"></script>
-  <script src="js/art.js?v=26"></script>
-  <script src="js/audio.js?v=26"></script>
-  <script src="js/preload.js?v=26"></script>
-  <script src="js/render.js?v=26"></script>
-  <script src="js/network.js?v=26"></script>
-  <script src="js/input.js?v=26"></script>
-  <script src="js/prompts.js?v=26"></script>
-  <script src="js/rules.js?v=26"></script>
-  <script src="js/rulebook.js?v=26"></script>
-  <script src="js/main.js?v=26"></script>
-  <script src="js/title.js?v=26"></script>
-  <script src="js/local.js?v=26"></script>
+  <script src="js/config.js?v=27"></script>
+  <script src="js/board.js?v=27"></script>
+  <script src="js/art.js?v=27"></script>
+  <script src="js/audio.js?v=27"></script>
+  <script src="js/preload.js?v=27"></script>
+  <script src="js/render.js?v=27"></script>
+  <script src="js/network.js?v=27"></script>
+  <script src="js/input.js?v=27"></script>
+  <script src="js/prompts.js?v=27"></script>
+  <script src="js/rules.js?v=27"></script>
+  <script src="js/rulebook.js?v=27"></script>
+  <script src="js/main.js?v=27"></script>
+  <script src="js/title.js?v=27"></script>
+  <script src="js/local.js?v=27"></script>
 </body>
 </html>

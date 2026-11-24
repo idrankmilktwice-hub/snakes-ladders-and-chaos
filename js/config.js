@@ -134,8 +134,9 @@ const SCROLLBAR = {
   thumbWidth: 8,    // width of the lime handle
   thumbMin: 36,     // the handle is never shorter than this, however long the text is
   step: 56,         // how far an arrow click scrolls
-  edge: 6,          // distance between the bar and the right edge of the area it scrolls
-  textPad: 40       // extra space kept free on the right of the text, so words never run under the bar
+  edge: 20,         // distance between the bar and the right edge of a small panel: the same as the space left of the text, so both sides look equal
+  modalEdge: 0,     // the same for the big pop-up windows (their text starts 34px from the window edge, and so does the bar)
+  textGap: 16       // space kept free between the text and the bar, so words never run under it
 };
 // ---- Big pop-up windows (Rulebook, Board log, Information) ----
 const MODAL = { width: 1200, maxHeight: 960, screenMargin: 60 };   // widest the window gets, tallest it gets, and the space kept free round it (all in stage pixels)
@@ -352,7 +353,8 @@ const PROMPT_SCENE = {
   closeGraceMs: 40                      // a closing scene waits this long, so a prompt that follows straight after reuses it without flicker
 };
 const ROLL_SCENE_X = PROMPT_SCENE.rollCenterX;   // (short name used by the dice code)
-const PROMPT_BTN = {                    // the orange prompt buttons (assets/button_prompt_long.svg / _short.svg): size, and how tall the lit "face" is (the rest is the dark-red base)
+const PROMPT_BTN = {
+  widePad: 46,                          // a button made wider to fit its label (e.g. PLAY AGAIN) gets this much space left and right of the label                    // the orange prompt buttons (assets/button_prompt_long.svg / _short.svg): size, and how tall the lit "face" is (the rest is the dark-red base)
   long: { file: "button_prompt_long.svg", w: 225.43, h: 80.4, faceH: 70.59 },
   short: { file: "button_prompt_short.svg", w: 129.13, h: 114.63, faceH: 100.64 },
   sceneScale: 1,                        // size of the helper button when it sits in a prompt panel...

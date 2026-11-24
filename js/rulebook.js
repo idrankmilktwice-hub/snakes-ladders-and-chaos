@@ -154,6 +154,7 @@ const RULES_HTML = () => `<div class="rb">
   k("Oracle:") + " predict a number from 1 to 6 before she rolls.",
   k("Struggler:") + " pick two numbers to FAIL the climb when he lands on the bottom of a ladder.",
   "Before you roll (and when you hold items) the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; pressing one clears the board for its animation.",
+  k("When somebody wins,") + " everybody sees the winner's character with " + k("WINNER!") + " and their name, and a PLAY AGAIN button. Players who did not win also get " + k("BOO") + " and " + k("CHEER") + ": they play a sad or happy sound of their own character (only they hear it) and can press them as often as they like.",
   "The small " + k("eye button") + " at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring the prompt back.",
   "Everybody else just reads the " + k("Current Event") + " panel. While the game waits for YOUR move (or a target), that panel shows the message and a " + k("MOVE ME") + " button.",
 ])}

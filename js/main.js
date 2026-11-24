@@ -304,7 +304,7 @@ function openModal(title, html) {
   const m = $("modal");
   m.innerHTML = `<div style="width:min(${MODAL.width}px, calc(100vw / var(--fit, 1) - ${MODAL.screenMargin * 2}px)); max-height:min(${MODAL.maxHeight}px, calc(100vh / var(--fit, 1) - ${MODAL.screenMargin}px))"><button class="mclose" onclick="$('modal').style.display='none'" title="Close" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button><h2>${title}</h2><div class="mbody">${html}</div></div>`;
   m.style.display = "flex";
-  attachScrollbar(m.querySelector(".mbody"));
+  attachScrollbar(m.querySelector(".mbody"), SCROLLBAR.modalEdge);
 }
 // openRulebook() / openLog(): the big windows (opened by the Expand buttons of the small Rulebook / Board log panels). (The log window keeps filling live: log() in config.js also writes to #biglog.)
 function openRulebook() { openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`); }
@@ -312,8 +312,9 @@ function openLog() { openModal("Board log", `<div class="big biglog" id="biglog"
 // ---- attachScrollbar(el): a custom scroll bar for a scrolling area, drawn like the mockup (olive strip, dark arrow buttons, lime handle). ----
 // It appears ONLY when there is something to scroll to, and follows the text as it grows. The element's parent must be positioned (position:absolute / relative).
 // The browser's own scroll bar is hidden (class "scr" in css/style.css). All sizes come from SCROLLBAR in config.js.
-function attachScrollbar(el) {
+function attachScrollbar(el, edge) {
   if (el._sbUpdate) return el._sbUpdate;
+  edge = edge ?? SCROLLBAR.edge;                           // distance between the bar and the right edge of the area (small panels and pop-up windows use different values)
   const S = SCROLLBAR, parent = el.parentElement, fit = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fit")) || 1;
   const chev = (d) => `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const bar = document.createElement("div");
@@ -322,16 +323,16 @@ function attachScrollbar(el) {
   bar.innerHTML = `<button class="sbb up" tabindex="-1" aria-label="Scroll up" style="width:${S.button}px;height:${S.button}px">${chev("M2 9.5L7 4.5L12 9.5")}</button><div class="sbt"><i class="sbh" style="width:${S.thumbWidth}px;margin-left:${-S.thumbWidth / 2}px"></i></div><button class="sbb dn" tabindex="-1" aria-label="Scroll down" style="width:${S.button}px;height:${S.button}px">${chev("M2 4.5L7 9.5L12 4.5")}</button>`;
   parent.appendChild(bar);
   el.classList.add("scr");
-  el.style.paddingRight = Math.max(parseFloat(getComputedStyle(el).paddingRight) || 0, S.textPad) + "px";   // keep text clear of the bar (but never less padding than the area already had)
+  el.style.paddingRight = Math.max(parseFloat(getComputedStyle(el).paddingRight) || 0, S.width + edge + S.textGap) + "px";   // keep text clear of the bar (but never less padding than the area already had)
   const track = bar.querySelector(".sbt"), thumb = bar.querySelector(".sbh");
   // update(): show / hide the bar, place it at the right edge of the area, and size + move the handle to match the text position.
   function update() {
     const can = el.scrollHeight > el.clientHeight + 1;
     bar.style.display = can ? "flex" : "none";
     if (!can) return;
-    bar.style.left = (el.offsetLeft + el.offsetWidth - S.width - S.edge) + "px";
-    bar.style.top = (el.offsetTop + S.edge) + "px";
-    bar.style.height = (el.clientHeight - S.edge * 2) + "px";
+    bar.style.left = (el.offsetLeft + el.offsetWidth - S.width - edge) + "px";
+    bar.style.top = (el.offsetTop + SCROLLBAR.gap) + "px";
+    bar.style.height = (el.clientHeight - SCROLLBAR.gap * 2) + "px";
     const room = track.clientHeight, max = el.scrollHeight - el.clientHeight;
     const h = Math.min(room, Math.max(S.thumbMin, room * el.clientHeight / el.scrollHeight));
     thumb.style.height = h + "px";
@@ -383,6 +384,7 @@ function drawSettings() {
   $("opMusic").innerHTML = `<div class="mrow"><span class="oph">Music</span>${stepper("musNum", "stepMusic(-1)", "stepMusic(1)", MUSIC_VOL)}</div>${t.querySelector(".mu-now").outerHTML}${t.querySelector(".mu-ctl").outerHTML}`;
   const online = NET.active && NET.gameStarted && !NET.retired;      // the Switch Device panel only exists during an online game
   $("opSw").style.display = online ? "" : "none";
+  $("opSw").classList.toggle("live", !!(XFER_UI.code && performance.now() < XFER_UI.until));   // with a code showing, the panel uses smaller lettering so everything fits evenly
   if (online) $("opSw").innerHTML = swDeviceHtml();
   refreshMusicUi();                                                  // fills in the song name, play / loop / shuffle states
 }
@@ -500,7 +502,7 @@ $("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" s
 function applyLayoutVars() {
   const r = document.documentElement.style, P = PROMPT_SCENE;
   r.setProperty("--scene-x", P.rollCenterX + "px");                 // centre of the dice + ROLL button while rolling
-  r.setProperty("--sb-w", SCROLLBAR.width + "px"); r.setProperty("--sb-edge", SCROLLBAR.edge + "px");   // scroll bar size + distance from the edge: the Expand and X buttons line up with it
+  r.setProperty("--sb-w", SCROLLBAR.width + "px"); r.setProperty("--sb-edge", SCROLLBAR.edge + "px"); r.setProperty("--sb-edge-modal", SCROLLBAR.modalEdge + "px");   // scroll bar size + distance from the edge: the Expand and X buttons line up with it
   r.setProperty("--panel-x", P.panelCenterX + "px"); r.setProperty("--panel-y", P.panelCenterY + "px"); r.setProperty("--panel-w", P.panelWidth + "px");
 }
 applyLayoutVars();

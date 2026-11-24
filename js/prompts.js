@@ -9,7 +9,7 @@
 // =====================================================================================
 
 // SCENE = what is on screen right now.
-const SCENE = { open: false, actor: null, hideTimer: null, peek: false };
+const SCENE = { open: false, actor: null, hideTimer: null, peek: false, locked: false };   // locked = the winner scene: nothing closes it (only "Play again" reloads the page)
 
 // The words on the prompts (capitals, like the mockups).
 const PROMPT_TEXT = {
@@ -19,7 +19,8 @@ const PROMPT_TEXT = {
   strugglerHead: "STRUGGLE TO CLIMB!",
   strugglerSmall: (left) => (left >= 2 ? "PICK 2 NUMBERS TO FAIL THE CLIMB" : "PICK 1 MORE NUMBER TO FAIL THE CLIMB"),
   items: "USE AN ITEM, OR ROLL",
-  roll: "THROW THE DIE OR PRESS SPACE"
+  roll: "THROW THE DIE OR PRESS SPACE",
+  winner: "WINNER!", playAgain: "PLAY AGAIN", boo: "BOO", cheer: "CHEER"
 };
 
 // promptKindOf(msg, opts): which special prompt a question is. The game asks plain questions (text + options); the kind is recognised from them, so the same code works for
@@ -33,12 +34,23 @@ function promptKindOf(msg, opts) {
 }
 
 // sceneButton(label, size, onClick, off): an orange prompt button made from the art (size = "long" or "short") with a white Blustrue label, an offset brown outline and a shine on hover.
-function sceneButton(label, size, onClick, off) {
+let _measureCtx = null;   // a hidden canvas, only used to measure how wide a label is
+function sceneButton(label, size, onClick, off, wide) {
   const art = PROMPT_BTN[size], b = document.createElement("button");
   const base = size === "long" ? PROMPT_BTN.fontLong : PROMPT_BTN.fontShort;
-  const fs = Math.min(base, (art.w * .86) / (Math.max(1, String(label).length) * PROMPT_BTN.labelWidth));   // long labels shrink to fit the button
+  const text = String(label).toUpperCase();
+  let fs = Math.min(base, (art.w * .86) / (Math.max(1, text.length) * PROMPT_BTN.labelWidth)), picture;   // long labels shrink to fit the button...
+  if (wide) {
+    // ...unless the button is made WIDER to fit the label (e.g. PLAY AGAIN): two rounded rectangles drawn exactly like the art (dark-red base under the orange face), as wide as needed
+    fs = base;
+    _measureCtx = _measureCtx || document.createElement("canvas").getContext("2d");
+    _measureCtx.font = `${fs}px Blustrue`;
+    const w = Math.max(art.w, _measureCtx.measureText(text).width + PROMPT_BTN.widePad * 2);
+    b.style.setProperty("--w", w.toFixed(1) + "px");
+    picture = `<svg viewBox="0 0 ${w.toFixed(1)} ${art.h}" preserveAspectRatio="none" aria-hidden="true"><rect y="${art.h - art.faceH}" width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#930934"/><rect width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#ff7529"/></svg>`;
+  } else picture = `<img src="${A(art.file)}" alt="">`;
   b.className = `pbtn ${size}` + (off ? " off" : "");
-  b.innerHTML = `<img src="${A(art.file)}" alt=""><span class="pbl" style="font-size:${fs.toFixed(1)}px">${esc(String(label))}</span><i class="tb-shine"></i>`;
+  b.innerHTML = `${picture}<span class="pbl" style="font-size:${fs.toFixed(1)}px">${esc(String(label))}</span><i class="tb-shine"></i>`;
   if (!off) b.onclick = onClick;
   return b;
 }
@@ -62,7 +74,7 @@ function openScene(actor, mode) {
 }
 // closeSceneSoon(): called by setPrompt(""). The scene fades out quickly, after a very short grace time (see PROMPT_SCENE.closeGraceMs) in case another scene follows at once.
 function closeSceneSoon() {
-  if (!SCENE.open || SCENE.hideTimer) return;
+  if (!SCENE.open || SCENE.hideTimer || SCENE.locked) return;
   SCENE.hideTimer = setTimeout(() => {
     SCENE.hideTimer = null; SCENE.open = false; SCENE.actor = null;
     $("scene").classList.remove("on"); $("game").classList.remove("scened", "peek"); $("eyeBtn").classList.remove("on");
@@ -127,4 +139,27 @@ function showRollScene(actor) {
   openScene(actor, "roll");
   $("sceneRoll").classList.remove("gone");
   $("sceneRoll").innerHTML = sceneLine("st", PROMPT_TEXT.turn(actor.name)) + sceneLine("ss", PROMPT_TEXT.roll);
+}
+
+// showWinnerScene(): the end of the game. The winner's full-body character with the panel "WINNER! <name>" and a PLAY AGAIN button (a wider button, made to fit its label).
+// Players who did NOT win (online) also get BOO and CHEER under it: they play a sad / happy sound of THEIR OWN character, on their own device only, and can be pressed as often as you like.
+function showWinnerScene() {
+  const w = G && G.winner;
+  if (!w) return;
+  const me = NET.active ? G.players[NET.myPlayerIndex] : null, iLost = !!me && me !== w;
+  openScene(w, "panel");
+  SCENE.locked = true;
+  const nameFs = Math.min(48, 600 / (Math.max(1, w.name.length) * PROMPT_BTN.labelWidth));   // a long name is made smaller so it fits the panel
+  $("sceneText").innerHTML = sceneLine("st", PROMPT_TEXT.winner) + `<div class="sh" style="font-size:${nameFs.toFixed(1)}px">${esc(w.name.toUpperCase())}</div>`;
+  const box = $("sceneBtns"), mb = $("moveBtn");
+  [...box.children].forEach((e) => { if (e !== mb) e.remove(); });
+  box.className = "stack";
+  box.insertBefore(sceneButton(PROMPT_TEXT.playAgain, "long", () => location.reload(), false, true), mb);
+  if (iLost) {
+    const row = document.createElement("div");
+    row.className = "reactrow";
+    row.appendChild(sceneButton(PROMPT_TEXT.boo, "long", () => sfxPick("bad_" + me.character)));
+    row.appendChild(sceneButton(PROMPT_TEXT.cheer, "long", () => sfxPick("happy_" + me.character)));
+    box.insertBefore(row, mb);
+  }
 }
