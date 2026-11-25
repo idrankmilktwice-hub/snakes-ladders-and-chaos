@@ -53,7 +53,7 @@ function syncGameState() {
     broadcast({
       type: "STATE_SYNC",
       stateSeq: ++NET.stateSeq,
-      players: G.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd || 0, disc: !!p.disconnected })),
+      players: G.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd || 0, disc: !!p.disconnected, ab: !!p.abandoned })),
       turnNo: G.turnNo || 0,
       S: G.S,
       L: G.L,
@@ -225,7 +225,7 @@ const LOGIC = {
     if (a === 1 && b === 1) { log("Snake eyes! Double 1s: the Gambler stays put."); return false; }
     if (a === 1 || b === 1) { const x = a === 1 ? b : a; log(`A 1! The gamble backfires: back ${x}.`); await selfMove(p, Math.max(1, p.pos - x)); await slide(p); return false; }
     let t = p.pos + Math.max(0, a + b + net);
-    if (t > FINISH_SQUARE) { t = 2 * FINISH_SQUARE - t; log(`Overshoot! The Gambler bounces back to ${t}.`); }
+    if (t > FINISH_SQUARE) { log("Overshoot! The Gambler stays put."); return again; }   // past 100 = no move at all (like everybody else)
     await selfMove(p, t);
     if (t === FINISH_SQUARE) win(p); else await slide(p);
     return again;
@@ -348,7 +348,8 @@ const itemAt = sq => G.items.find(i => i.sq === sq);
 // the board; items that appear later have a tiny bias for squares near the player furthest from 100 (the one who is furthest behind).
 function spawnWeight(sq, initial) {
   if (initial) return rowOf(sq) < ITEM_START_ROWS ? ITEM_START_WEIGHT : 1;
-  const last = G.players.reduce((a, q) => q.pos < a.pos ? q : a, G.players[0]);        // the player furthest from 100
+  const alive = G.players.filter(q => !q.abandoned);                                   // (a player who quit is off the board)
+  const last = alive.reduce((a, q) => q.pos < a.pos ? q : a, alive[0]);        // the player furthest from 100
   return 1 + ITEM_NEAR_BOOST * Math.max(0, 1 - Math.abs(sq - last.pos) / ITEM_NEAR_SQUARES);
 }
 // spawnItem(quiet): put a random item on a random empty square (never 1 or 100, never under a pawn, the cat or another item, never on a snake head or the bottom of a ladder).
@@ -398,7 +399,7 @@ async function useItem(p, i) {
     gameSfx("drink");   // glug!
     p.cb = (p.cb || 0) + ENERGY_DRINK_BONUS; p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
   } else if (type === "stone") {                                    // -1 for another player (never the cat)
-    const others = G.players.filter(q => q !== p);
+    const others = G.players.filter(q => q !== p && !q.abandoned);
     if (!others.length) { log("There is nobody to throw the stone at."); return; }
     const sq = await awaitTarget({ targets: [...new Set(others.map(q => q.pos))], text: `${p.name}: click the player to hit with the stone.` });
     if (sq === null) return;
@@ -510,6 +511,5 @@ async function play(opts) {
     showLocalGameOverPrompt();
     return;
   }
-  await choose(`${G.winner.name} wins!`, [{ label: "Play again", value: 1 }]);
-  location.reload();
+  showWinnerScene();                                    // single-screen game: the winner's character, "WINNER! name" and a PLAY AGAIN button (prompts.js)
 }

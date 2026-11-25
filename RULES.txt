@@ -10,8 +10,7 @@ THE BASICS
 * Landing on the BOTTOM of a ladder takes you up to its top. Landing on a snake's HEAD takes you down to its tail.
 * A turn is: (1) use items if you want, (2) roll, (3) drag your pawn to the glowing target square. (Press "Move me" or Space instead
   of dragging if you prefer.) The roll can be thrown by grabbing the die, or with the ROLL button / Space bar.
-* You win by landing on square 100 EXACTLY. If your roll would take you past 100 you stay where you are
-  (the Gambler is the one exception, see below).
+* You win by landing on square 100 EXACTLY. If your roll would take you past 100 you stay where you are.
 * Rolling a 6 gives you another turn - EXCEPT where a character says otherwise (see the table below).
 * Turn order: the Snake Charmer always goes first, the owner of the Cat always goes last, everyone else goes in the order they were
   added on the start screen.
@@ -51,12 +50,11 @@ GAMBLER
 * If either die shows a 1, the gamble backfires: he goes BACK by the other die (never below square 1) and his turn ends.
   Double 1s ("snake eyes"): he stays where he is.
 * NO bonus roll for a normal 6. He only gets another turn on double 6s.
-* If the total would take him past 100 he BOUNCES BACK instead of staying put: he ends on (200 - target). For example from square 95 a
-  total of 12 would be 107, so he lands on 93.
+* If the total would take him past 100 he STAYS PUT, like everybody else (there is no bouncing back).
 * THE FINISH: from square 97, 98 or 99 (3 or fewer squares from 100) the total no longer counts. He needs EITHER die to show the exact
   number he needs (e.g. on 98 he needs a 2 on either die; on 99 he needs a 1, so a 1 on either die WINS there). If he rolls it, he wins.
   If not, he stays where he is - except that a 1 still sends him back by the other die (double 1s: he stays). Double 6s still give another turn.
-  (From 96 and below the normal total-and-bounce rule applies, so he can finish with an exact total of 100.)
+  (From 96 and below the normal total rule applies: an exact total of 100 wins, anything past 100 means he stays.)
 
 THE ONE WITH THE CAT (CAT OWNER)
 * Her own turn is a plain roll: a 6 gives another turn. She goes LAST in the turn order.
@@ -104,8 +102,11 @@ PROMPTS (WHEN YOU HAVE TO DECIDE)
 * Before you roll, the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; using one clears
   the board for its animation. The "throw the die" heading disappears as soon as you grab the die, press ROLL or hit Space.
 * When somebody wins, everybody sees the winner's character with "WINNER!" and their name, and a PLAY AGAIN button. Players who did not win
-  (online) also get BOO and CHEER buttons: they play a sad or happy sound of their own character (only that player hears it) and can be pressed
-  as often as you like.
+  (online) also get BOO and CHEER buttons: they play a sad or happy sound of their own character that EVERYBODY hears (sounds overlap, spam away).
+  Online, PLAY AGAIN takes the host to the Host screen with a NEW lobby (new code, made automatically) and moves every connected player into it
+  with their names and characters. The music keeps playing.
+* The red QUIT button (bottom right, next to the other buttons) asks YES or NO. Online, quitting removes your panel and pawn, the others see
+  "<name> abandoned the game" in the log, and you go back to the title screen.
 * The small EYE button at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring
   the prompt back.
 * Everyone else reads the CURRENT EVENT panel (bottom right). While the game waits for YOUR move or a target, that panel shows the message and a

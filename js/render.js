@@ -355,7 +355,8 @@ function setHL(list) { for (let n = 1; n <= SQUARES; n++) $("hl" + n).classList.
 // placePawns(): put every pawn (and the cat) on its square. Pawns on the same square share it: the more there are, the smaller each gets.
 // A pawn whose player drank an energy drink this turn (p.big) is drawn a little bigger.
 function placePawns() {
-  const tokens = G.players.map((p, i) => ({ el: $("pw" + i), sq: p.pos, big: p.big }));
+  G.players.forEach((p, i) => { const e = $("pw" + i); if (e) e.style.display = p.abandoned ? "none" : ""; });   // a player who quit has no pawn
+  const tokens = G.players.map((p, i) => ({ el: $("pw" + i), sq: p.pos, big: p.big })).filter((t, i) => !G.players[i].abandoned);
   if (G.cat) tokens.push({ el: $("pwc"), sq: G.cat.pos });
   const by = {};   // by[square] = list of tokens standing there
   tokens.forEach(t => (by[t.sq] = by[t.sq] || []).push(t));
@@ -378,7 +379,7 @@ function placePawns() {
 // fitPx(text, width, max): font size that makes the text fit inside a field.
 const fitPx = (t, w, mx) => Math.max(FIT_MIN_FONT, Math.min(mx, w / (Math.max(1, t.length) * FIT_CHAR_WIDTH)));
 // turnOrder(): the players in TURN order (Snake Charmer first, cat owner last, everyone else as set up). Same rule as play() in rules.js.
-function turnOrder() { const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0; return [...G.players].sort((a, b) => rk(a) - rk(b)); }
+function turnOrder() { const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0; return G.players.filter(p => !p.abandoned).sort((a, b) => rk(a) - rk(b)); }   // (a player who quit has no turn and no panel)
 // ringSlots(m): where the m small panels sit, in the order the turns come, starting right after the big panel and going CLOCKWISE round the ring
 // (so each panel moves up into the next place counter-clockwise). Each entry is [column, row]: "R" right column, "L" left column, "M" centred; row 1 is the top row.
 // An ODD number of small panels makes a circle like the mockup (right side down, centre bottom, left side up). An EVEN number makes a triangle with the big panel (pairs of panels).
@@ -420,6 +421,8 @@ function placePanels() {
   G.players.forEach((p, i) => {
     const el = $("pp" + i);
     if (!el) return;
+    el.style.display = p.abandoned ? "none" : "";      // a player who quit: the panel is gone
+    if (p.abandoned) return;
     const rank = (order.indexOf(p) - cur + n) % n, sl = panelSlot(rank, n);
     el.style.transform = `translate(${f1(sl.x)}px,${f1(sl.y)}px) scale(${sl.s})`;
     el.style.zIndex = sl.z;

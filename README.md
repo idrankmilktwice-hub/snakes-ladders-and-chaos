@@ -25,6 +25,7 @@ js/                 game code, loaded in this order by index.html
   render.js         drawing: snakes, ladders, tiles, pawns, player panels
   network.js        online play (PeerJS): lobby, the host runs the game and sends the state and sounds to the guests
   input.js          the message / helper button, drag and drop, the dice, Space bar, clicking the cat
+  endgame.js        leaving a game: the Quit button, Play again (back to the lobby screen without reloading, so the music keeps playing), moving everybody into a new lobby, BOO / CHEER
   prompts.js        the prompt scenes: full-body character + panel (Bully, Oracle, Struggler, plain questions), the roll scene, the eye button
   rules.js          character rules, ITEMS, flavour text, the turn loop, character reactions   <- edit character and item behaviour here
   rulebook.js       the Rulebook text (RULES_HTML), built from config.js numbers; shown in the small panel and the big window
@@ -43,7 +44,7 @@ serve.py            tiny local web server
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-`index.html` loads every script and the stylesheet with a version number (`?v=27`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
+`index.html` loads every script and the stylesheet with a version number (`?v=28`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
@@ -120,7 +121,7 @@ Everything is drawn on the fixed 1920x1080 stage (scaled to the window). The tab
 
 ## Prompt scenes
 
-When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number) and Struggler (pick two failure numbers) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. The end of the game uses the same scene (`showWinnerScene`): the winner's character, "WINNER! <name>", a PLAY AGAIN button sized to its label, and for players who did not win (online) BOO / CHEER buttons that play a sad / happy sound of their own character on their own device only (no cooldown). Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
+When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number) and Struggler (pick two failure numbers) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. The end of the game uses the same scene (`showWinnerScene`): the winner's character, "WINNER! <name>", a PLAY AGAIN button sized to its label, and for players who did not win (online) BOO / CHEER buttons that play a sad / happy sound of their own character that everybody hears (the `REACT` network message; the sounds overlap, no cooldown). PLAY AGAIN returns to the lobby screen without reloading (so the music keeps playing); in an online game the host gets a new lobby with a new code and every connected player is moved into it (`NEW_LOBBY` message). The red Quit button asks YES / NO; online, quitting removes the player's panel and pawn (`LEAVE` message, `abandonSeat` in `js/network.js`). Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
 
 ## Character pick
 

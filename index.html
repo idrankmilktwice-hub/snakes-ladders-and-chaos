@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/dice_no_6.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=27">
+  <link rel="stylesheet" href="css/style.css?v=28">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -21,6 +21,7 @@
         <div id="sceneRoll"></div>               <!-- heading above the dice while rolling -->
         <div id="scenePanelWrap"><div id="scenePanel" class="lp"><div id="sceneText"></div><div id="sceneBtns"></div></div></div>
       </div>
+      <div id="quitBox"></div>                   <!-- the "Quit? YES / NO" panel (js/endgame.js askQuit) -->
       <button id="eyeBtn" title="Show / hide the prompt to see the board" aria-label="Show or hide the prompt" onclick="toggleEye()"><svg class="eo" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="11" r="4.200" fill="currentColor"/></svg><svg class="ec" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M4 20L28 2" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/></svg></button>   <!-- the eye: peek at the board while a prompt is up -->
       <div id="shade"></div>                     <!-- dark layer over the board while the active player must act (shown by "#prompt.choice ~ #shade" in css) -->
       <div id="panels"></div>                    <!-- right, top: the player panels (render.js buildPanels / placePanels) -->
@@ -57,22 +58,25 @@
   </div>
   <!-- The tab buttons live OUTSIDE the stage so they stick to the bottom-right corner of the real window (css #dockfix; shown by main.js while a game is on screen). -->
   <div id="modal" onclick="if(event.target===this)this.style.display='none'"></div>   <!-- big pop-up windows (rulebook, combat log, information): OUTSIDE the stage so the dark layer covers the whole browser window -->
-  <div id="dockfix"><div id="dock"></div><div id="topbtns"></div></div>
+  <div id="dockfix"><div id="dock"></div><div id="topbtns"></div>
+    <button id="quitBtn" onclick="askQuit()" title="Quit the game"><svg viewBox="0 0 150 66" preserveAspectRatio="none" aria-hidden="true"><rect y="10" width="150" height="56" rx="13" fill="#5a0a1f"/><rect width="150" height="56" rx="13" fill="#930934"/></svg><span>Quit</span></button>   <!-- the red QUIT button, left of the tab buttons -->
+  </div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=27"></script>
-  <script src="js/board.js?v=27"></script>
-  <script src="js/art.js?v=27"></script>
-  <script src="js/audio.js?v=27"></script>
-  <script src="js/preload.js?v=27"></script>
-  <script src="js/render.js?v=27"></script>
-  <script src="js/network.js?v=27"></script>
-  <script src="js/input.js?v=27"></script>
-  <script src="js/prompts.js?v=27"></script>
-  <script src="js/rules.js?v=27"></script>
-  <script src="js/rulebook.js?v=27"></script>
-  <script src="js/main.js?v=27"></script>
-  <script src="js/title.js?v=27"></script>
-  <script src="js/local.js?v=27"></script>
+  <script src="js/config.js?v=28"></script>
+  <script src="js/board.js?v=28"></script>
+  <script src="js/art.js?v=28"></script>
+  <script src="js/audio.js?v=28"></script>
+  <script src="js/preload.js?v=28"></script>
+  <script src="js/render.js?v=28"></script>
+  <script src="js/network.js?v=28"></script>
+  <script src="js/input.js?v=28"></script>
+  <script src="js/prompts.js?v=28"></script>
+  <script src="js/endgame.js?v=28"></script>
+  <script src="js/rules.js?v=28"></script>
+  <script src="js/rulebook.js?v=28"></script>
+  <script src="js/main.js?v=28"></script>
+  <script src="js/title.js?v=28"></script>
+  <script src="js/local.js?v=28"></script>
 </body>
 </html>

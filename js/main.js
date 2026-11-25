@@ -304,7 +304,7 @@ function openModal(title, html) {
   const m = $("modal");
   m.innerHTML = `<div style="width:min(${MODAL.width}px, calc(100vw / var(--fit, 1) - ${MODAL.screenMargin * 2}px)); max-height:min(${MODAL.maxHeight}px, calc(100vh / var(--fit, 1) - ${MODAL.screenMargin}px))"><button class="mclose" onclick="$('modal').style.display='none'" title="Close" aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4L16 16M16 4L4 16" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg></button><h2>${title}</h2><div class="mbody">${html}</div></div>`;
   m.style.display = "flex";
-  attachScrollbar(m.querySelector(".mbody"), SCROLLBAR.modalEdge);
+  attachScrollbar(m.querySelector(".mbody"), SCROLLBAR.modalEdge, 0);
 }
 // openRulebook() / openLog(): the big windows (opened by the Expand buttons of the small Rulebook / Board log panels). (The log window keeps filling live: log() in config.js also writes to #biglog.)
 function openRulebook() { openModal("Rulebook", `<div class="big">${RULES_HTML()}</div>`); }
@@ -312,8 +312,9 @@ function openLog() { openModal("Board log", `<div class="big biglog" id="biglog"
 // ---- attachScrollbar(el): a custom scroll bar for a scrolling area, drawn like the mockup (olive strip, dark arrow buttons, lime handle). ----
 // It appears ONLY when there is something to scroll to, and follows the text as it grows. The element's parent must be positioned (position:absolute / relative).
 // The browser's own scroll bar is hidden (class "scr" in css/style.css). All sizes come from SCROLLBAR in config.js.
-function attachScrollbar(el, edge) {
+function attachScrollbar(el, edge, bottom) {
   if (el._sbUpdate) return el._sbUpdate;
+  bottom = bottom ?? SCROLLBAR.bottomGap;                   // gap between the bar and the panel edge below it (the same as the gap above the Expand button)
   edge = edge ?? SCROLLBAR.edge;                           // distance between the bar and the right edge of the area (small panels and pop-up windows use different values)
   const S = SCROLLBAR, parent = el.parentElement, fit = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fit")) || 1;
   const chev = (d) => `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -332,7 +333,7 @@ function attachScrollbar(el, edge) {
     if (!can) return;
     bar.style.left = (el.offsetLeft + el.offsetWidth - S.width - edge) + "px";
     bar.style.top = (el.offsetTop + SCROLLBAR.gap) + "px";
-    bar.style.height = (el.clientHeight - SCROLLBAR.gap * 2) + "px";
+    bar.style.height = (el.clientHeight - SCROLLBAR.gap - bottom) + "px";
     const room = track.clientHeight, max = el.scrollHeight - el.clientHeight;
     const h = Math.min(room, Math.max(S.thumbMin, room * el.clientHeight / el.scrollHeight));
     thumb.style.height = h + "px";

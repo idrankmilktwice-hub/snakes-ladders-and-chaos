@@ -1112,6 +1112,22 @@ function onSeatLost(idx, why) {
   if (typeof syncGameState === "function") syncGameState();
 }
 
+// abandonSeat(idx): the player quit on purpose (Quit button). Unlike a dropped connection their panel and pawn are REMOVED, the game goes on without them and the log says so.
+function abandonSeat(idx) {
+  const p = G && G.players[idx];
+  if (!NET.isHost || !p || p.abandoned) return;
+  const hc = NET.connections.find(c => c.playerIndex === idx);
+  if (hc) dropConnection(hc);
+  p.abandoned = true; p.disconnected = true; p.missed = true; p.pos = 0; p.items = [];
+  log(`<b>${esc(p.name)} abandoned the game.</b>`);
+  broadcast({ type: "PLAYER_LEFT", index: idx, name: p.name, abandoned: true });
+  hostAutoResolve(idx);           // if the game was waiting for them, let it carry on without them
+  render();
+  if (typeof syncGameState === "function") syncGameState();
+}
+// REACT_SOUND: the only sounds a REACT message may ask for (a character's sad / happy reactions), so nobody can make others play anything else.
+const REACT_SOUND = /^(bad|happy)_(bully|gambler|cat|struggler|oracle|charmer)(_\d+)?$/;
+
 // hostAutoResolve(idx): the game was waiting on a player who just vanished: finish what is pending with neutral defaults.
 function hostAutoResolve(idx) {
   if (NET.pendingActorIdx !== idx) return;
@@ -1473,7 +1489,7 @@ function applyJoinSnapshot(snap) {
     G._stateSeq = snap.stateSeq || 0;        // the host's numbering is the truth now (a new host may count from a different place)
     applyStateSync({
       stateSeq: snap.stateSeq || 0, turnNo: snap.turnNo,
-      players: snap.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd, disc: p.disconnected })),
+      players: snap.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd, disc: p.disconnected, ab: p.abandoned })),
       S: snap.S, L: snap.L, items: snap.items, cat: snap.cat, catSkin: snap.catSkin, catNow: snap.catNow,
       curIndex: snap.curIndex, winnerIndex: snap.winnerIndex
     });
@@ -1780,7 +1796,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "HOST_LEFT": {
-      if (!NET.isHost) onHostLost("left");
+      if (!NET.isHost && !NET.following) onHostLost("left");   // (not when the host is only moving everybody to a new lobby)
       break;
     }
     case "PING": {
@@ -2004,6 +2020,19 @@ function handleNetData(msg, fromConn) {
       }
       break;
     }
+    case "REACT": {                                                  // BOO / CHEER on the victory screen: everybody hears it, and the sounds may overlap
+      if (typeof msg.name === "string" && REACT_SOUND.test(msg.name)) sfx(msg.name);
+      if (NET.isHost) forwardToOtherGuests(msg, fromConn ? fromConn.playerIndex : -1);
+      break;
+    }
+    case "NEW_LOBBY": {                                              // the host opened a new lobby (new code): everybody follows
+      if (!NET.isHost && typeof msg.code === "string") { NET.following = true; NET.nextLobby = msg.code; followToNewLobby(msg.code); }
+      break;
+    }
+    case "LEAVE": {                                                  // a guest quit the game
+      if (NET.isHost && fromConn && fromConn.playerIndex != null) abandonSeat(fromConn.playerIndex);
+      break;
+    }
     case "CHAT": {
       appendChatMessage(msg.sender, msg.text, msg.color);
       if (NET.isHost) {
@@ -2014,6 +2043,7 @@ function handleNetData(msg, fromConn) {
     case "PLAYER_LEFT": {
       if (!NET.isHost && G && G.players[msg.index]) {
         G.players[msg.index].disconnected = true;
+        if (msg.abandoned) { G.players[msg.index].abandoned = true; G.players[msg.index].pos = 0; }   // the player quit: panel and pawn go
         render();
       }
       break;
@@ -2295,6 +2325,7 @@ function applyStateSync(msg) {
         gp.big = mp.big;
         if (mp.cd !== undefined) gp.cd = mp.cd;
         if (mp.disc !== undefined) gp.disconnected = !!mp.disc;
+        if (mp.ab !== undefined) { gp.abandoned = !!mp.ab; if (gp.abandoned) gp.pos = 0; }   // a player who quit
       }
     });
   }

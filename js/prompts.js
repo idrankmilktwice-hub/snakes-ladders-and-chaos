@@ -20,7 +20,8 @@ const PROMPT_TEXT = {
   strugglerSmall: (left) => (left >= 2 ? "PICK 2 NUMBERS TO FAIL THE CLIMB" : "PICK 1 MORE NUMBER TO FAIL THE CLIMB"),
   items: "USE AN ITEM, OR ROLL",
   roll: "THROW THE DIE OR PRESS SPACE",
-  winner: "WINNER!", playAgain: "PLAY AGAIN", boo: "BOO", cheer: "CHEER"
+  winner: "WINNER!", playAgain: "PLAY AGAIN", boo: "BOO", cheer: "CHEER",
+  quit: "QUIT THE GAME?", quitOnline: "YOUR PANEL AND PAWN WILL BE REMOVED", quitLocal: "THIS GAME WILL BE LOST", yes: "YES", no: "NO"
 };
 
 // promptKindOf(msg, opts): which special prompt a question is. The game asks plain questions (text + options); the kind is recognised from them, so the same code works for
@@ -39,16 +40,19 @@ function sceneButton(label, size, onClick, off, wide) {
   const art = PROMPT_BTN[size], b = document.createElement("button");
   const base = size === "long" ? PROMPT_BTN.fontLong : PROMPT_BTN.fontShort;
   const text = String(label).toUpperCase();
-  let fs = Math.min(base, (art.w * .86) / (Math.max(1, text.length) * PROMPT_BTN.labelWidth)), picture;   // long labels shrink to fit the button...
+  _measureCtx = _measureCtx || document.createElement("canvas").getContext("2d");
+  const widthAt = (px) => { _measureCtx.font = `${px}px Blustrue`; return _measureCtx.measureText(text).width; };
+  let fs = base, picture;
   if (wide) {
-    // ...unless the button is made WIDER to fit the label (e.g. PLAY AGAIN): two rounded rectangles drawn exactly like the art (dark-red base under the orange face), as wide as needed
-    fs = base;
-    _measureCtx = _measureCtx || document.createElement("canvas").getContext("2d");
-    _measureCtx.font = `${fs}px Blustrue`;
-    const w = Math.max(art.w, _measureCtx.measureText(text).width + PROMPT_BTN.widePad * 2);
+    // a button made WIDER to fit its label (e.g. PLAY AGAIN): two rounded rectangles drawn exactly like the art (dark-red base under the orange face), as wide as needed
+    const w = Math.max(art.w, widthAt(fs) + PROMPT_BTN.widePad * 2);
     b.style.setProperty("--w", w.toFixed(1) + "px");
     picture = `<svg viewBox="0 0 ${w.toFixed(1)} ${art.h}" preserveAspectRatio="none" aria-hidden="true"><rect y="${art.h - art.faceH}" width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#930934"/><rect width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#ff7529"/></svg>`;
-  } else picture = `<img src="${A(art.file)}" alt="">`;
+  } else {
+    // a normal button keeps its size: a long label is made SMALLER (measured with the real font) so it never spills out of the button
+    fs = Math.min(base, base * (art.w - PROMPT_BTN.labelPad * 2) / Math.max(1, widthAt(base)));
+    picture = `<img src="${A(art.file)}" alt="">`;
+  }
   b.className = `pbtn ${size}` + (off ? " off" : "");
   b.innerHTML = `${picture}<span class="pbl" style="font-size:${fs.toFixed(1)}px">${esc(String(label))}</span><i class="tb-shine"></i>`;
   if (!off) b.onclick = onClick;
@@ -142,7 +146,7 @@ function showRollScene(actor) {
 }
 
 // showWinnerScene(): the end of the game. The winner's full-body character with the panel "WINNER! <name>" and a PLAY AGAIN button (a wider button, made to fit its label).
-// Players who did NOT win (online) also get BOO and CHEER under it: they play a sad / happy sound of THEIR OWN character, on their own device only, and can be pressed as often as you like.
+// Players who did NOT win (online) also get BOO and CHEER under it: they play a sad / happy sound of THEIR OWN character, EVERYONE hears it (the sounds overlap), and they can be pressed as often as you like.
 function showWinnerScene() {
   const w = G && G.winner;
   if (!w) return;
@@ -154,12 +158,12 @@ function showWinnerScene() {
   const box = $("sceneBtns"), mb = $("moveBtn");
   [...box.children].forEach((e) => { if (e !== mb) e.remove(); });
   box.className = "stack";
-  box.insertBefore(sceneButton(PROMPT_TEXT.playAgain, "long", () => location.reload(), false, true), mb);
+  box.insertBefore(sceneButton(PROMPT_TEXT.playAgain, "long", () => playAgain(), false, true), mb);
   if (iLost) {
     const row = document.createElement("div");
     row.className = "reactrow";
-    row.appendChild(sceneButton(PROMPT_TEXT.boo, "long", () => sfxPick("bad_" + me.character)));
-    row.appendChild(sceneButton(PROMPT_TEXT.cheer, "long", () => sfxPick("happy_" + me.character)));
+    row.appendChild(sceneButton(PROMPT_TEXT.boo, "long", () => reactSound("bad_" + me.character)));
+    row.appendChild(sceneButton(PROMPT_TEXT.cheer, "long", () => reactSound("happy_" + me.character)));
     box.insertBefore(row, mb);
   }
 }

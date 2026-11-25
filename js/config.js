@@ -72,7 +72,7 @@ const LIME = "#c3f73a";   // the bright lime used by the art (taken from tile_da
 // ---- The six characters. "id" is used by the code, "name" is shown on screen, "text" is shown on the setup screen and in the Rulebook ----
 const CHARACTERS = [
   { id: "bully",     name: "Bully",         text: "Land exactly on a player with your own roll: roll a die and push or pull them that many squares (choose before rolling). Pass over a player: nudge them 1 square forward or back. A 6 gives another turn." },
-  { id: "gambler",   name: "Gambler",       text: "Rolls 2 dice and moves the total. A 1 on either die sends him back by the other die (double 1s: stay put). Only double 6s give another turn. Past 100 he bounces back; from 97-99 either die must show the exact number needed." },
+  { id: "gambler",   name: "Gambler",       text: "Rolls 2 dice and moves the total. A 1 on either die sends him back by the other die (double 1s: stay put). Only double 6s give another turn. Past 100 he stays put; from 97-99 either die must show the exact number needed." },
   { id: "cat",       name: "The One with the Cat", text: "Goes last, then rolls for the cat, which wraps around the board and ignores snakes, ladders and items. Players the cat jumps over: -1 on their next roll. Players it lands on are knocked down 10 squares and give her +3 on her next roll each (an overshoot loses it)." },
   { id: "struggler", name: "Struggler",     text: "Every forced effect (snakes, pushes, the cat) gets a die roll: even dodges, odd hits. At a ladder, pick two failure numbers first: roll one of them and he does not climb. A 6 gives another turn." },
   { id: "oracle",    name: "Oracle",        text: "Calls a number from 1-6 before rolling. A right call adds a 3-sided bonus die to the move, and snakes cannot bite on that move. A wrong call costs nothing. A 6 gives another turn." },
@@ -85,7 +85,7 @@ const PORT = { bully: "head_bully", gambler: "head_gambler", cat: "head_catlady"
 // Short info shown on the character pick panels (most important first). <b>..</b> highlights the key words. Full rules: CHARACTER_RULES in rulebook.js.
 const CHARACTER_BRIEF = {
   bully: { tag: "Push, pull, nudge", pts: ["<b>Land on a player:</b> roll a die and push or pull them that many squares (choose before rolling).", "<b>Pass over a player:</b> nudge them 1 square forward or back.", "Works on your own roll, before snakes and ladders.", "A 6 gives another turn."] },
-  gambler: { tag: "Two dice, big risks", pts: ["Rolls <b>2 dice</b> and moves the total.", "A <b>1</b> on either die sends you back by the other die. Double 1s: stay put.", "Extra turn only on <b>double 6s</b>.", "Past 100 you <b>bounce back</b>. From 97-99 either die must show the exact number."] },
+  gambler: { tag: "Two dice, big risks", pts: ["Rolls <b>2 dice</b> and moves the total.", "A <b>1</b> on either die sends you back by the other die. Double 1s: stay put.", "Extra turn only on <b>double 6s</b>.", "Past 100 you <b>stay put</b>. From 97-99 either die must show the exact number."] },
   cat: { tag: "A cat on the loose", pts: ["Goes <b>last</b>, then rolls for the <b>cat</b>, which wraps around the board.", "Players the cat jumps over: <b>-1</b> on their next roll.", "A player it lands on is knocked down <b>10 squares</b>; you get <b>+3</b> on your next roll for each.", "The cat ignores snakes, ladders and items."] },
   struggler: { tag: "Dodges, mostly", pts: ["Anything forced (snakes, pushes, the cat): roll a die. <b>Even dodges</b>, odd hits.", "Ladders: pick <b>2 failure numbers</b>, then roll. Hit one and you do not climb.", "Items work normally.", "A 6 gives another turn."] },
   oracle: { tag: "Calls the roll", pts: ["<b>Call a number</b> (1-6) before rolling.", "Right call: add a <b>d3 bonus</b>, and snakes cannot bite on that move.", "A wrong call costs nothing.", "A 6 gives another turn."] },
@@ -136,7 +136,8 @@ const SCROLLBAR = {
   step: 56,         // how far an arrow click scrolls
   edge: 20,         // distance between the bar and the right edge of a small panel: the same as the space left of the text, so both sides look equal
   modalEdge: 0,     // the same for the big pop-up windows (their text starts 34px from the window edge, and so does the bar)
-  textGap: 16       // space kept free between the text and the bar, so words never run under it
+  textGap: 16,      // space kept free between the text and the bar, so words never run under it
+  bottomGap: 14     // space between the bottom of the bar and the panel's edge: the same as the gap above the Expand button (top: 14px in css .xbtn)
 };
 // ---- Big pop-up windows (Rulebook, Board log, Information) ----
 const MODAL = { width: 1200, maxHeight: 960, screenMargin: 60 };   // widest the window gets, tallest it gets, and the space kept free round it (all in stage pixels)
@@ -295,6 +296,9 @@ const CRASH_LIMIT = 3;                  // after this many errors in a row the g
 const CRASH_PAUSE_MS = 800;             // short pause after an error before the next try
 // ---- Title screen, lobby and character-pick screens (title.js, local.js): sizes and animation times ----
 const BUTTON_ART_H = 165;               // height of the big green title buttons in their own art units; smaller buttons are scaled from this
+const NEW_LOBBY_FLUSH_MS = 400;           // the host waits this long after announcing the new lobby, so the message reaches everybody before the old room closes
+const NEW_LOBBY_TRIES = 14, NEW_LOBBY_RETRY_MS = 1200;   // a guest following the host to the new lobby tries this many times, this far apart, until the new room is up
+const QUIT_RELOAD_MS = 250;             // after telling the others, a quitting player waits this long before the page reloads to the title screen
 const GB_TEXT_SIZE = 70.9, GB_ICON_GAP = 14, GB_SIDE_ROOM = 60;   // button text size, gap after an icon, and room left and right of the text (art units)
 const GB_MIN_SHRINK = .4;               // button text is never squeezed below this share of its size
 const GB_MIN_WIDTH = 174;               // a button is never narrower than this (art units): its two corners need the room
@@ -354,6 +358,7 @@ const PROMPT_SCENE = {
 };
 const ROLL_SCENE_X = PROMPT_SCENE.rollCenterX;   // (short name used by the dice code)
 const PROMPT_BTN = {
+  labelPad: 22,                         // space kept free left and right of a label inside a button (long labels shrink to stay inside)
   widePad: 46,                          // a button made wider to fit its label (e.g. PLAY AGAIN) gets this much space left and right of the label                    // the orange prompt buttons (assets/button_prompt_long.svg / _short.svg): size, and how tall the lit "face" is (the rest is the dark-red base)
   long: { file: "button_prompt_long.svg", w: 225.43, h: 80.4, faceH: 70.59 },
   short: { file: "button_prompt_short.svg", w: 129.13, h: 114.63, faceH: 100.64 },
