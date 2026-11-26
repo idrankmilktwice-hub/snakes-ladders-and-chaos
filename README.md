@@ -44,7 +44,7 @@ serve.py            tiny local web server
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-`index.html` loads every script and the stylesheet with a version number (`?v=30`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
+`index.html` loads every script and the stylesheet with a version number (`?v=31`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
@@ -129,7 +129,7 @@ When the player whose turn it is has to decide something, the board darkens (on 
 
 ## Dice
 
-The dice are 3D cubes (`spawnDiceElements` / `diceFaceHtml` in `js/input.js`). Every character throws dice in their own design: one SVG per die in `assets/` holding all six faces side by side as equal rounded squares, in order 1 to 6 (`dice_bully`, `dice_struggler`, `dice_oracle`, `dice_charmer`, `dice_catlady` - shared by the cat lady and her cat - and `dice_gambler_1` / `dice_gambler_2`, one for each of the Gambler's two dice). `DICE_ART` in `js/config.js` lists them. Each face is a box that shows one sixth of its file (the picture is made six times as wide and slid sideways). The design is chosen by who throws, not by whose turn it is, and every player's screen shows the same one. Keep everything inside each face's square (a shadow that spills out would show on the neighbouring face), and keep the opposite faces 1-6, 2-5, 3-4.
+The dice are 3D cubes (`spawnDiceElements` / `diceFaceHtml` in `js/input.js`). Every character throws dice in their own design: one SVG per die in `assets/` holding all six faces side by side as equal rounded squares, in order 1 to 6 (`dice_bully`, `dice_struggler`, `dice_oracle`, `dice_charmer`, `dice_catlady` - shared by the cat lady and her cat - and `dice_gambler_1` / `dice_gambler_2`, one for each of the Gambler's two dice). `DICE_ART` in `js/config.js` lists them. Each face is a box that shows one sixth of its file (the picture is made six times as wide and slid sideways). The design is chosen by who throws, not by whose turn it is, and every player's screen shows the same one. Keep everything inside each face's square (a shadow that spills out would show on the neighbouring face), and keep the opposite faces 1-6, 2-5, 3-4. When a die stops and shows its number, a bright shine sweeps over it (`.die-shine` in `css/style.css`, started by `finishRollPlayback` in `js/input.js`; speed `DICE_SHINE_MS`, the Gambler's second die starts `DICE_SHINE_STAGGER_MS` later, corner roundness `DICE_FACE_RADIUS_RATIO`, all in `js/config.js`).
 
 ## Debugging online play
 

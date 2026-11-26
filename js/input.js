@@ -391,7 +391,10 @@ function spawnDiceElements(n, canGrab, character) {
     el.style.cursor = canGrab ? "grab" : "default";
     // waiting dice are centred above the ROLL button: one die exactly in the middle, two dice (Gambler) side by side, DICE_GAP apart
     const idlePos = [ROLL_SCENE_X - TRAY.x + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
-    el.innerHTML = `<div class="cube">${diceFaceHtml(character, i)}</div>`;
+    el.innerHTML = `<div class="cube">${diceFaceHtml(character, i)}</div><div class="die-shine"></div>`;
+    el.style.setProperty("--die-radius", (DICE_SIZE * DICE_FACE_RADIUS_RATIO).toFixed(1) + "px");   // (the shine's corners match the face's)
+    el.style.setProperty("--die-shine-ms", DICE_SHINE_MS + "ms");
+    el.style.setProperty("--die-shine-delay", (i * DICE_SHINE_STAGGER_MS) + "ms");
     $("dice").appendChild(el);
     const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, DICE_START_ANGLE_MAX), ry: rnd(0, DICE_START_ANGLE_MAX), mode: "idle", val: 1 };
     dieDraw(d); DICE.list.push(d);
@@ -477,6 +480,8 @@ function finishRollPlayback(P) {
     if (last && last[i]) { d.x = last[i].x; d.y = last[i].y; d.rx = last[i].rx; d.ry = last[i].ry; }
     d.mode = "rest";
     dieDraw(d);
+    const shine = d.el.querySelector(".die-shine");                 // the die has stopped and shows its number: let the shine sweep over it
+    if (shine) { shine.classList.remove("go"); void shine.offsetWidth; shine.classList.add("go"); }   // (the forced reflow restarts the animation if it ran before)
   });
   if (DICE.slideTimer) clearTimeout(DICE.slideTimer);
   DICE.slideTimer = setTimeout(() => {

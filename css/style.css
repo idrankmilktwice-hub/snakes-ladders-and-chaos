@@ -211,6 +211,10 @@ b, strong { font-weight: normal; }
 .die { position: absolute; left: 0; top: 0; width: 90px; height: 90px; cursor: grab; touch-action: none; perspective: 630px; }
 .cube { position: relative; width: 90px; height: 90px; transform-style: preserve-3d; pointer-events: none; }
 .cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; background-repeat: no-repeat; }   /* (each face shows its own sixth of the die's picture: set in js/input.js diceFaceHtml) */
+/* the shine: a bright diagonal band that sweeps over the face turned towards the player when the die stops (js/input.js finishRollPlayback). It sits on top of the cube, pushed out 45px like the front face so it is the same size, clipped to the face's rounded shape. */
+.die-shine { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; border-radius: var(--die-radius, 5px); pointer-events: none; transform: translateZ(45px); }
+.die-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: -45%; width: 38%; opacity: 0; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.85) 50%, transparent); }
+.die-shine.go::before { animation: tb-shine var(--die-shine-ms, 550ms) ease-out var(--die-shine-delay, 0ms) forwards; }   /* (tb-shine = the same sweep the buttons use) */
 .df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
 .df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
 #moveBtn { display: none; }   /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */

@@ -287,6 +287,9 @@ const DICE_ART = {
   oracle: ["dice_oracle.svg"],
   charmer: ["dice_charmer.svg"]
 };
+const DICE_FACE_RADIUS_RATIO = 10 / 187.1;   // a face's corner roundness as a share of its side (10 on a 187.1 wide square in the dice art): the shine is clipped to the same rounded shape
+const DICE_SHINE_MS = 550;              // the shine that sweeps over a die when it stops and shows its number (the same speed as the button shine)
+const DICE_SHINE_STAGGER_MS = 120;      // with two dice (Gambler) the second one's shine starts this much later
 const DICE_ART_DEFAULT = "bully";       // a die thrown for nobody in particular (should not happen) uses this character's design
 const PERCENT_FULL = 100;               // (for sizes and positions given in percent)
 const DIE_FACES = 6;                    // sides of a normal die...
