@@ -15,6 +15,12 @@ function reactSound(group) {
   else if (NET.hostConn && NET.hostConn.open) NET.hostConn.send(msg);
 }
 
+// setRoomInUrl(code): put the room code we are REALLY in into the page address (code = null removes it). Why: a page that reloads (for example after "Host disconnected") re-reads its address, and an
+// old invite link would throw the player back into the OLD room instead of the new one.
+function setRoomInUrl(code) {
+  try { history.replaceState(null, "", location.pathname + (code ? ROOM_URL_PREFIX + code : "")); } catch (err) { /* (a page that may not change its address just keeps it) */ }
+}
+
 // leaveGameScreen(): take the (finished) game screen away and bring the title screen back - exactly as it was when the game started (the Local / Host / Join lobby screen is still on it).
 // The page is NOT reloaded, so the music goes on.
 function leaveGameScreen() {
@@ -83,6 +89,7 @@ async function followToNewLobbyOnce(code) {
       S.mode = "online"; S.rows = []; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate;
       await initGuest(code, "Player", {});
       S.netState = "lobby"; NET.following = false; NET.nextLobby = null;
+      setRoomInUrl(code);                                    // a reload from here on comes back to THIS lobby, not the old one
       $("jCode").value = code; $("jCode").disabled = true; gbLabel($("jBtn"), "Joined"); $("jBtn").disabled = true;
       onlineLobbyUpdate();
       sendLobbyUpdate(name, character);
@@ -91,6 +98,7 @@ async function followToNewLobbyOnce(code) {
   }
   NET.following = false; NET.nextLobby = null;
   if (NET.active) leaveOnlineLobby();
+  setRoomInUrl(null);
   toast($("jBtn"), "Can't find the new lobby!", false, "right");
 }
 
@@ -112,5 +120,6 @@ function doQuit() {
     else if (NET.hostConn && NET.hostConn.open) NET.hostConn.send({ type: "LEAVE" });
   }
   clearSession();
+  setRoomInUrl(null);                                       // quitting must not bring the player straight back into the room through an old invite link
   setTimeout(() => location.reload(), QUIT_RELOAD_MS);
 }

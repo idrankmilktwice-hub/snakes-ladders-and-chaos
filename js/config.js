@@ -277,6 +277,18 @@ const HEAD_SIZE = 82, COBRA_HEAD_SIZE = 100;   // drawn size of an ordinary snak
 const SHORT_SNAKE_POOL = 3;             // the "short" head design is given to the closest-to-start of this many shortest snakes
 // ---- Game rules numbers (rules.js). Change these to change how the game plays (the rulebook text in rulebook.js is written separately: update it too). ----
 const FINISH_SQUARE = SQUARES;          // the square that wins the game when landed on exactly
+// Dice designs: every character throws their OWN dice. Each file in assets/ holds ALL the faces of ONE die: DIE_FACES equal squares side by side, in order 1 to 6 (left to right).
+// One entry per die: the Gambler throws two dice, each with its own design (the first file is his first die, the second file his second die). The cat lady and her cat share one design.
+const DICE_ART = {
+  bully: ["dice_bully.svg"],
+  gambler: ["dice_gambler_1.svg", "dice_gambler_2.svg"],
+  cat: ["dice_catlady.svg"],
+  struggler: ["dice_struggler.svg"],
+  oracle: ["dice_oracle.svg"],
+  charmer: ["dice_charmer.svg"]
+};
+const DICE_ART_DEFAULT = "bully";       // a die thrown for nobody in particular (should not happen) uses this character's design
+const PERCENT_FULL = 100;               // (for sizes and positions given in percent)
 const DIE_FACES = 6;                    // sides of a normal die...
 const DIE_FACE_LIST = [1, 2, 3, 4, 5, 6];   // ...and its faces (used for the Oracle's call and the Struggler's failure numbers)
 const BONUS_FACE = 6;                   // rolling this gives another turn (for the characters who get a bonus roll)
@@ -300,6 +312,7 @@ const CRASH_LIMIT = 3;                  // after this many errors in a row the g
 const CRASH_PAUSE_MS = 800;             // short pause after an error before the next try
 // ---- Title screen, lobby and character-pick screens (title.js, local.js): sizes and animation times ----
 const BUTTON_ART_H = 165;               // height of the big green title buttons in their own art units; smaller buttons are scaled from this
+const ROOM_URL_PREFIX = "?room=";           // how an invite link carries the room code in the page address (also used to keep that address in step with the room we are really in)
 const NEW_LOBBY_REPEATS = 3;              // the host announces the new lobby this many times (a message can get lost on a slow connection; a repeat is ignored by anybody who already follows)
 const NEW_LOBBY_FLUSH_MS = 400;           // the host waits this long after announcing the new lobby, so the message reaches everybody before the old room closes
 const NEW_LOBBY_TRIES = 14, NEW_LOBBY_RETRY_MS = 1200;   // a guest following the host to the new lobby tries this many times, this far apart, until the new room is up

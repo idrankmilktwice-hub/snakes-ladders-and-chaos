@@ -1175,6 +1175,7 @@ function handlePlayerLeave(playerIdx) {
 function onHostLost(why) {
   if (NET.hostLost || NET.retired || !NET.active || NET.isHost) return;
   if (G && G.winner) return;
+  console.info(`[net] host lost, reason: ${why} (room ${NET.roomCode}, in game: ${!!G})`);   // reason: "timeout" (nothing heard), "left" (host said goodbye), "rtc", "offline", "unknown seat" - handy when it looks unexplained
   if (!G || !NET.gameStarted) {      // lobby: nothing to save, back to the start screen
     showNetworkBanner("Host disconnected. Returning to lobby...");
     setTimeout(() => location.reload(), RELOAD_DELAY_MS);

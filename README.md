@@ -24,15 +24,15 @@ js/                 game code, loaded in this order by index.html
   preload.js        starts loading art / fonts / sounds at page open and drives the loading bar (its own numbers are named at the top)
   render.js         drawing: snakes, ladders, tiles, pawns, player panels
   network.js        online play (PeerJS): lobby, the host runs the game and sends the state and sounds to the guests
-  input.js          the message / helper button, drag and drop, the dice, Space bar, clicking the cat
+  input.js          the message / helper button, drag and drop, the dice (each character's own design), Space bar, clicking the cat
   endgame.js        leaving a game: the Quit button, Play again (back to the lobby screen without reloading, so the music keeps playing), moving everybody into a new lobby, BOO / CHEER
-  prompts.js        the prompt scenes: full-body character + panel (Bully, Oracle, Struggler, plain questions), the roll scene, the eye button
+  prompts.js        the prompt scenes: full-body character + panel (Bully, Oracle, Struggler, Snake Charmer, plain questions), the roll scene, the eye button, the helper button's width
   rules.js          character rules, ITEMS, flavour text, the turn loop, character reactions   <- edit character and item behaviour here
   rulebook.js       the Rulebook text (RULES_HTML), built from config.js numbers; shown in the small panel and the big window
   main.js           start screen, the right-hand panels (Current Event, Settings, Chat, Information, Rulebook, Board log), the bottom-right buttons, custom scroll bars, pop-up windows, window scaling
   title.js          the title screen (logo, Play / Options / About, light/dark switch, mute switch); loads after main.js
   local.js          the Local, Host and Join screens (player lines) and the character pick panels; loads after title.js
-assets/             all SVG art, the font and manifest.json, plus:
+assets/             all SVG art (including game_icon.svg, the browser tab icon, and one dice_<character>.svg per dice design), the font and manifest.json, plus:
   sounds/           mp3 sound effects (buttons, dice, game events, character reactions)
   music/            the songs (song_<Name_With_Underscores>.mp3)
 docs/mockup.jpg     the first design mockup
@@ -44,7 +44,7 @@ serve.py            tiny local web server
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-`index.html` loads every script and the stylesheet with a version number (`?v=28`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
+`index.html` loads every script and the stylesheet with a version number (`?v=30`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
@@ -64,6 +64,9 @@ Every function and variable in the JS files has a comment saying what it does an
 | change the delay before a stone victim reacts | `STONE_BAD_DELAY` in `js/config.js`    |
 | change any number (a timing, size, distance, rule value) | the named constants in the "TUNING NUMBERS" part of `js/config.js` (network timings: top of `js/network.js`; loading bar: top of `js/preload.js`) |
 | change where the prompt character / panel / dice sit | `PROMPT_SCENE`, `FULL_ART`, `PROMPT_BTN` in `js/config.js` |
+| change a character's dice design     | put the new SVG in `assets/` (all 6 faces side by side, equal squares, in order 1-6) and edit `DICE_ART` in `js/config.js`; list the file in `PRELOAD_SVGS` in `js/preload.js` |
+| change the browser tab icon          | replace `assets/game_icon.svg` (the `<link rel="icon">` in `index.html` points to it; browsers cache tab icons, so hard-refresh) |
+| change the BOO sound                 | the `boo` entry in `SOUNDS` in `js/config.js` (`BOO_SOUND` names it) |
 | change the scroll bar or the pop-up window size | `SCROLLBAR`, `MODAL` in `js/config.js` |
 | change the words on the prompts      | `PROMPT_TEXT` in `js/prompts.js`                 |
 | add or rename a song                 | put the mp3 in `assets/music/` and edit `MUSIC` at the top of `js/audio.js` |
@@ -85,11 +88,12 @@ Every function and variable in the JS files has a comment saying what it does an
 | A stick pokes a snake, or the Snake Charmer drops a head | `snake` (2 variations) |
 | A thrown stone hits a pawn | `stone` (3 variations), then the victim's `bad_<character>` 450 ms later |
 | The cat knocks a player down | `cat` |
-| Something bad happens to a character: bitten by a snake, hit by a stone, steps on a toy brick, pushed or pulled by the Bully | `bad_<character>` (the character's own reaction) |
+| Something bad happens to a character: bitten by a snake, hit by a stone, steps on a toy brick, pushed or pulled by the Bully, or (Struggler) fails a ladder climb | `bad_<character>` (the character's own reaction) |
 | The Bully nudges someone | `bully_nudge` (2 variations) |
 | A character climbs a ladder, picks up or swaps an item, or rolls a 6 | `happy_<character>` |
 | The Struggler survives a forced effect (dodges a snake, push, nudge or the cat's charm) | `happy_struggler` |
 | Someone wins | `win` (plays once) |
+| The BOO button on the victory screen | `boo` (`assets/sounds/sound_boo.mp3`, the same for every character; the CHEER button plays the character's own `happy_<character>`) |
 | Clicking the cat | `cat`, no cooldown, heard only by the player who clicked (it is not sent to anybody else), only when no other game sound is playing; no extra click sound |
 
 Rules for the reactions: a character cheers at most once per turn; a 6 cheers only after the move finishes and only if no snake bit that character (then the sad sound plays instead); the Gambler counts double 6s as his 6. `<character>` is `bully`, `gambler`, `cat`, `struggler`, `oracle` or `charmer`.
@@ -121,7 +125,15 @@ Everything is drawn on the fixed 1920x1080 stage (scaled to the window). The tab
 
 ## Prompt scenes
 
-When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number) and Struggler (pick two failure numbers) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. The end of the game uses the same scene (`showWinnerScene`): the winner's character, "WINNER! <name>", a PLAY AGAIN button sized to its label, and for players who did not win (online) BOO / CHEER buttons that play a sad / happy sound of their own character that everybody hears (the `REACT` network message; the sounds overlap, no cooldown). PLAY AGAIN returns to the lobby screen without reloading (so the music keeps playing); in an online game the host gets a new lobby with a new code and every connected player is moved into it (`NEW_LOBBY` message). The red Quit button asks YES / NO; online, quitting removes the player's panel and pawn (`LEAVE` message, `abandonSeat` in `js/network.js`). Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
+When the player whose turn it is has to decide something, the board darkens (on their screen only) and their full-body character (`full_<character>.svg`) steps in from the left. Bully (push / pull), Oracle (predict a number), Struggler (pick two failure numbers) and Snake Charmer (move a snake head / use an item - only if she holds one - / just roll, all in one prompt; "Back" returns to it from the head-drag or the item pick) get their own panel; every other question gets the same panel with the plain question. While rolling, the character stands next to the dice and the ROLL button. The small eye button at the top right of the board hides the prompt so the board can be seen. The end of the game uses the same scene (`showWinnerScene`): the winner's character, "WINNER! <name>", a PLAY AGAIN button sized to its label, and for players who did not win (online) BOO / CHEER buttons that play the BOO sound / a happy sound of their own character that everybody hears (the `REACT` network message; the sounds overlap, no cooldown). PLAY AGAIN returns to the lobby screen without reloading (so the music keeps playing); in an online game the host gets a new lobby with a new code and every connected player is moved into it (`NEW_LOBBY` message, announced three times so one lost message cannot leave a player behind; a guest follows only once, "host left" messages carry their room code so a late one from the old room is ignored, and the page address is updated to the new room so a reload does not return to the old one; a guest who is early sees a dimmed, widened "Waiting for the host..." button). The red Quit button asks YES / NO; online, quitting removes the player's panel and pawn (`LEAVE` message, `abandonSeat` in `js/network.js`). Orange prompt buttons use `button_prompt_long.svg` / `button_prompt_short.svg`. All of this is in `js/prompts.js`; the scene is recognised from the question text (`promptKindOf`), so online guests get the same scenes.
+
+## Dice
+
+The dice are 3D cubes (`spawnDiceElements` / `diceFaceHtml` in `js/input.js`). Every character throws dice in their own design: one SVG per die in `assets/` holding all six faces side by side as equal rounded squares, in order 1 to 6 (`dice_bully`, `dice_struggler`, `dice_oracle`, `dice_charmer`, `dice_catlady` - shared by the cat lady and her cat - and `dice_gambler_1` / `dice_gambler_2`, one for each of the Gambler's two dice). `DICE_ART` in `js/config.js` lists them. Each face is a box that shows one sixth of its file (the picture is made six times as wide and slid sideways). The design is chosen by who throws, not by whose turn it is, and every player's screen shows the same one. Keep everything inside each face's square (a shadow that spills out would show on the neighbouring face), and keep the opposite faces 1-6, 2-5, 3-4.
+
+## Debugging online play
+
+When a player is marked disconnected, or a guest loses its host, the browser console prints a `[net]` line with the reason (`timeout`, `bye`, `left`, `rtc`, `offline`, `unknown seat`). Open the console (F12) on the affected player before testing.
 
 ## Character pick
 

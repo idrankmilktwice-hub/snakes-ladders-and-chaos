@@ -344,7 +344,7 @@ function flyItem(type, from, to, mode, isRemote) {
 }
 
 // ------------------------------------------------------------------ 3. THE DICE
-// The dice are real 3D cubes (six faces from dice_no_1..6.svg). Waiting dice spin slowly so you can see their different sides.
+// The dice are real 3D cubes. The six faces come from ONE picture per die (DICE_ART in config.js: the faces side by side), each face showing its own sixth of it. Waiting dice spin slowly so you can see their different sides.
 // A throw is PRE-CALCULATED: the game first simulates the whole roll (movement, wall bounces, dice bumping each other, tumbling) and decides
 // the result, then adjusts the tumbling so the cube arrives exactly on the result as it stops - no snapping at the end.
 // The roll is then played back over ROLL_MS milliseconds (config.js), matching the dice sound.
@@ -370,16 +370,28 @@ function dieDraw(d) {
   d.cube.style.transform = `rotateX(${f1(d.rx)}deg) rotateY(${f1(d.ry)}deg)`;
 }
 
-function spawnDiceElements(n, canGrab) {
+// diceFaceHtml(character, i): the six faces of die number i (0 = first) for this character. The picture holds all faces in a row, so every face is a box that shows one sixth of it:
+// the picture is made DIE_FACES times as wide as the box, and slid sideways so the right sixth is in view (0% = the first face ... 100% = the last face).
+function diceFaceHtml(character, i) {
+  const files = DICE_ART[character] || DICE_ART[DICE_ART_DEFAULT];
+  const picture = A(files[i % files.length]);                        // (a character with one design uses it for every die)
+  return DIE_FACE_LIST.map(v => {
+    const shift = (v - 1) / (DIE_FACES - 1) * PERCENT_FULL;
+    return `<div class="df df${v}" style="background-image:url('${picture}');background-size:${DIE_FACES * PERCENT_FULL}% 100%;background-position:${shift}% 0"></div>`;
+  }).join("");
+}
+// spawnDiceElements(n, canGrab, character): put n dice on the table, in the design of the character who throws them.
+function spawnDiceElements(n, canGrab, character) {
   $("dice").innerHTML = "";
   DICE.list = [];
+  DICE.character = character;                                         // (remembered: a late-arriving roll message may have to rebuild the dice, see launch())
   for (let i = 0; i < n; i++) {
     const el = document.createElement("div"); el.className = "die"; el.dataset.i = i;
     el.style.pointerEvents = canGrab ? "auto" : "none";
     el.style.cursor = canGrab ? "grab" : "default";
     // waiting dice are centred above the ROLL button: one die exactly in the middle, two dice (Gambler) side by side, DICE_GAP apart
     const idlePos = [ROLL_SCENE_X - TRAY.x + (i - (n - 1) / 2) * DICE_GAP, DICE_IDLE_Y];
-    el.innerHTML = `<div class="cube">${[1, 2, 3, 4, 5, 6].map(v => `<img class="df df${v}" src="${A(`dice_no_${v}.svg`)}" alt="" draggable="false">`).join("")}</div>`;
+    el.innerHTML = `<div class="cube">${diceFaceHtml(character, i)}</div>`;
     $("dice").appendChild(el);
     const d = { el, cube: el.firstChild, x: idlePos[0], y: idlePos[1], vx: 0, vy: 0, rx: rnd(0, DICE_START_ANGLE_MAX), ry: rnd(0, DICE_START_ANGLE_MAX), mode: "idle", val: 1 };
     dieDraw(d); DICE.list.push(d);
@@ -413,7 +425,7 @@ function rollDice(n, who) {
     DICE.play = null;
     DD = null;
     if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
-    spawnDiceElements(n, isMyTurn);
+    spawnDiceElements(n, isMyTurn, roller && roller.character);   // (everybody sees the dice in the design of the player who throws, not of whoever's turn it is)
     trayShow();                                       // the dice appear on the board (everybody sees them)
     DICE.waiting = true; DICE.flying = false; DICE.canInteract = isMyTurn;
 
@@ -565,7 +577,7 @@ function dieUp(e) {
 function launch(vx, vy, forceVals, startDice) {
   // Ensure dice DOM matches the roll count even if WAIT_ROLL arrived late
   if (forceVals && DICE.list.length !== forceVals.length) {
-    spawnDiceElements(forceVals.length, false);
+    spawnDiceElements(forceVals.length, false, DICE.character || (G && G.cur && G.cur.character));
     if (!DICE.loop) { DICE.loop = true; requestAnimationFrame(diceTick); }
   }
   if (!DICE.list.length) return;

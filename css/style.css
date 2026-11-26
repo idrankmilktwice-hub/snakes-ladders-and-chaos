@@ -210,7 +210,7 @@ b, strong { font-weight: normal; }
 /* each die is a 3D cube: six faces placed around the middle (turned by multiples of 90 degrees and pushed out 45px) */
 .die { position: absolute; left: 0; top: 0; width: 90px; height: 90px; cursor: grab; touch-action: none; perspective: 630px; }
 .cube { position: relative; width: 90px; height: 90px; transform-style: preserve-3d; pointer-events: none; }
-.cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; }
+.cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; background-repeat: no-repeat; }   /* (each face shows its own sixth of the die's picture: set in js/input.js diceFaceHtml) */
 .df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
 .df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
 #moveBtn { display: none; }   /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */
