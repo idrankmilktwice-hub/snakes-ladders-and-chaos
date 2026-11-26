@@ -1005,7 +1005,7 @@ window.addEventListener("beforeunload", () => {
   try {
     markSessionClosed();
     if (NET.isHost) {
-      broadcast({ type: "HOST_LEFT" });
+      broadcast({ type: "HOST_LEFT", room: NET.roomCode });
     } else if (NET.hostConn) {
       const bye = { _mid: makeMsgId(), type: "BYE", playerIndex: NET.myPlayerIndex };
       if (NET.hostConn.isRtcOpen()) NET.hostConn.rtcConn.send(bye);
@@ -1103,6 +1103,7 @@ function onSeatLost(idx, why) {
   const hc = NET.connections.find(c => c.playerIndex === idx);
   if (hc) dropConnection(hc);
   if (p.disconnected) return;
+  console.info(`[net] ${p.name} marked disconnected, reason: ${why}`);   // reason: "timeout" (nothing heard from them), "bye" (their page closed / reloaded), ... - handy when a disconnect looks unexplained
   p.disconnected = true;
   p.missed = false;
   log(`<b>${esc(p.name)} disconnected.</b>`);
@@ -1127,6 +1128,7 @@ function abandonSeat(idx) {
 }
 // REACT_SOUND: the only sounds a REACT message may ask for (a character's sad / happy reactions), so nobody can make others play anything else.
 const REACT_SOUND = /^(bad|happy)_(bully|gambler|cat|struggler|oracle|charmer)(_\d+)?$/;
+const isReactSound = name => REACT_SOUND.test(name) || name === BOO_SOUND;   // ...plus the BOO button's own sound (BOO_SOUND in config.js)
 
 // hostAutoResolve(idx): the game was waiting on a player who just vanished: finish what is pending with neutral defaults.
 function hostAutoResolve(idx) {
@@ -1796,6 +1798,7 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "HOST_LEFT": {
+      if (typeof msg.room === "string" && msg.room !== NET.roomCode) break;   // a late message from an OLD room (e.g. before Play again moved everybody): not about this lobby, ignore it
       if (!NET.isHost && !NET.following) onHostLost("left");   // (not when the host is only moving everybody to a new lobby)
       break;
     }
@@ -2021,12 +2024,15 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "REACT": {                                                  // BOO / CHEER on the victory screen: everybody hears it, and the sounds may overlap
-      if (typeof msg.name === "string" && REACT_SOUND.test(msg.name)) sfx(msg.name);
+      if (typeof msg.name === "string" && isReactSound(msg.name)) sfx(msg.name);
       if (NET.isHost) forwardToOtherGuests(msg, fromConn ? fromConn.playerIndex : -1);
       break;
     }
     case "NEW_LOBBY": {                                              // the host opened a new lobby (new code): everybody follows
-      if (!NET.isHost && typeof msg.code === "string") { NET.following = true; NET.nextLobby = msg.code; followToNewLobby(msg.code); }
+      if (!NET.isHost && typeof msg.code === "string") {
+        if (msg.code === NET.roomCode || FOLLOWING_NOW) break;     // repeat of the announcement: already in that lobby, or already on the way (see endgame.js)
+        NET.following = true; NET.nextLobby = msg.code; followToNewLobby(msg.code);
+      }
       break;
     }
     case "LEAVE": {                                                  // a guest quit the game

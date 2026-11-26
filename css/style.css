@@ -130,7 +130,7 @@ b, strong { font-weight: normal; }
 #log div { padding: 6px 0 7px; border-bottom: 2px dashed #b8cc6a; } #log div:last-child { border-bottom: 0; } #log b { font-weight: normal; color: #b3410a; }
 #ruleView .rb h2 { color: #2f2504; border-bottom: 2px solid #2f2504; } #ruleView .rb h3 { color: #b3410a; } #ruleView .rb .k { color: #6b5a10; } #ruleView .rb li::marker { color: #b3410a; } #ruleView .rb td { border-bottom-color: #b8cc6a; } #ruleView .rb td:first-child { color: #2f2504; } #ruleView .rb .yes { color: #4b7a10; } #ruleView .rb .no { color: #b3410a; }
 #evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
-#chatPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* ends well above the tab buttons (they start at y=1000) */
+#chatPanel { --chat-w: 521px; left: 1330px; top: 650px; width: 559px; height: 322px; }   /* --chat-w = the width of the message area AND of the input row, so the scroll bar's right edge lines up with the send button's right edge */   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
 #evPanel { display: flex; flex-direction: column; justify-content: center; padding: 14px 22px 16px; }
 #evText { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-height: 0; overflow: hidden; line-height: 1.15; }
@@ -151,14 +151,14 @@ b, strong { font-weight: normal; }
 .ptitle { position: absolute; left: 20px; top: 16px; height: 30px; display: flex; align-items: center; font-family: MC, monospace; font-size: 26px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button: pixel font, aligned with the text below */
 .xbtn svg { display: block; margin: 0 auto; } .xbtn:active { transform: translateY(2px); border-bottom-width: 2px; }
 /* Chat: message area with its own scrollbar, then the input and the chevron send button */
-#chatView { position: absolute; left: 14px; top: 14px; width: 500px; height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
+#chatView { position: absolute; left: 14px; top: 14px; width: var(--chat-w); height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
 /* custom scroll bar (built by attachScrollbar in js/main.js): olive strip, dark arrow buttons, lime handle. The browser's own bar is hidden. Sizes are set from SCROLLBAR in js/config.js. */
 .scr { overflow-y: auto; scrollbar-width: none; } .scr::-webkit-scrollbar { display: none; }
 .sb { position: absolute; display: none; flex-direction: column; align-items: center; box-sizing: border-box; background: #7d9926; border-radius: 10px; z-index: 3; }
 .sbb { flex: none; padding: 0; border: 0; border-radius: 5px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; } .sbb svg { width: 70%; height: 70%; } .sbb:active { transform: translateY(1px); }
 .sbt { position: relative; flex: 1; width: 100%; min-height: 0; cursor: pointer; }
 .sbh { position: absolute; left: 50%; top: 0; border-radius: 6px; background: #c3f73a; cursor: grab; } .sbh:active { cursor: grabbing; }
-#chatInputBar { position: absolute; left: 14px; top: 246px; width: 521px; height: 46px; display: flex; gap: 10px; }
+#chatInputBar { position: absolute; left: 14px; top: 246px; width: var(--chat-w); height: 46px; display: flex; gap: 10px; }
 #chatInput { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; font-family: MC, monospace; font-size: 20px; background: #ebffad; border: 4px solid #2f2504; border-radius: 12px; padding: 0 12px; color: #2f2504; outline: none; }
 #chatSendBtn { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 10px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 #chatSendBtn svg { height: 55%; width: auto; } #chatSendBtn:hover { background: #3d3108; } #chatSendBtn:active { transform: translateY(2px); }
@@ -631,10 +631,10 @@ body:not(.on-title) #tReconn { display: none !important; }
 /* the eye (peek): the dice and the ROLL button go too, like the character art */
 #game.peek #tray, #game.peek #rollBtn { visibility: hidden; }
 /* QUIT button: dark red, white pixel text, brown outline offset to the bottom; sits left of the tab buttons, in the same row */
-#quitBtn { position: absolute; left: -190px; bottom: 12px; width: 150px; height: 66px; padding: 0; border: 0; background: none; cursor: pointer; }
+#quitBtn { --quit-text-drop: 5px; position: absolute; left: -190px; bottom: 12px; width: 150px; height: 66px; padding: 0; border: 0; background: none; cursor: pointer; }
 #quitBtn::before { content: ""; position: absolute; left: -4px; top: -4px; right: -4px; bottom: -9px; border-radius: 16px; background: #2f2504; }
 #quitBtn svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-#quitBtn span { position: absolute; left: 0; top: 0; width: 100%; height: 56px; display: flex; align-items: center; justify-content: center; font-family: MC, monospace; font-size: 38px; text-transform: uppercase; color: #fff; }
+#quitBtn span { position: absolute; left: 0; top: 0; width: 100%; height: 56px; display: flex; align-items: center; justify-content: center; font-family: MC, monospace; font-size: 38px; text-transform: uppercase; color: #fff; transform: translateY(var(--quit-text-drop)); }   /* the pixel font sits a little high in its line box: --quit-text-drop moves the word down so it is centred on the lit (upper) rounded rectangle */
 #quitBtn:hover svg rect:nth-child(2) { fill: #b40d44; } #quitBtn:active { transform: translateY(3px); }
 /* Quit? YES / NO: a light panel centred over the dark board */
 #quitBox { display: none; position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; align-items: center; justify-content: center; background: rgba(15, 10, 0, .7); border-radius: 24px; z-index: 12; }

@@ -158,12 +158,14 @@ async function joinRoom(code) {
 
 let nameSyncTimer = null;
 
-function leaveOnlineLobby() {
+// leaveOnlineLobby(opts): leave the current room. opts.silent = true: say nothing to the other players (no "host left" / "bye" message): used when the whole group is moving to a new lobby (Play again).
+function leaveOnlineLobby(opts) {
+  const silent = !!(opts && opts.silent);
   if (nameSyncTimer) { clearTimeout(nameSyncTimer); nameSyncTimer = null; }
-  if (NET.active) {
+  if (NET.active && !silent) {
     try {
       if (NET.isHost) {
-        broadcast({ type: "HOST_LEFT" });
+        broadcast({ type: "HOST_LEFT", room: NET.roomCode });   // (room: so a late copy of this message can never be mistaken for news about a different, newer room)
       } else if (NET.hostConn) {
         const bye = { _mid: makeMsgId(), type: "BYE", playerIndex: NET.myPlayerIndex };
         if (NET.hostConn.isRtcOpen()) NET.hostConn.rtcConn.send(bye);
@@ -367,7 +369,8 @@ const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "B
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
 $("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
 $("ruleView").innerHTML = RULES_HTML();                     // the small Rulebook panel (the big window calls RULES_HTML() again)
-["ruleView", "log", "about", "chatView"].forEach(id => attachScrollbar($(id)));   // custom scroll bars for every scrolling panel (they appear only when needed)
+["ruleView", "log", "about"].forEach(id => attachScrollbar($(id)));   // custom scroll bars for every scrolling panel (they appear only when needed)
+attachScrollbar($("chatView"), SCROLLBAR.chatEdge);                  // the Chat's bar sits flush with the right edge of the send button (the chat area is as wide as the input row)
 // ---- RIGHT-HAND PANELS (below the player panels) ----
 // The right column shows ONE "view" at a time: the Current Event panel (the default), Settings, Chat or Information. Every view is a set of panels (class "rp") that slide in from
 // beyond the right edge of the screen, overshoot a little and spring back (see ".rp.in" in css/style.css), and slide out again when another view replaces them.

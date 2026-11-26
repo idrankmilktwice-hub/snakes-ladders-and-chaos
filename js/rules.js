@@ -91,7 +91,11 @@ async function slide(p) {
       if (!p.disconnected) {   // (they may have dropped while choosing)
         const r = await rollCheck(p, `you bet against ${f1_} and ${f2_}: roll for the ladder`);   // the player throws the die
         log(`${p.name} bets against ${f1_} and ${f2_}, and rolls ${r}.`);
-        if (r === f1_ || r === f2_) { log("A failure number! The ladder wobbles and " + p.name + " stays put."); return; }
+        if (r === f1_ || r === f2_) {
+          log("A failure number! The ladder wobbles and " + p.name + " stays put.");
+          gameSfx("bad_" + p.character); BITTEN.add(p);   // sad reaction (like a snake bite); BITTEN also stops a 6 from cheering over it
+          return;
+        }
       }
     }
     log(FLAVOR.ladder(p.name, n, L)); cheer(p); await set(p, L);   // happy: the ladder
@@ -267,26 +271,43 @@ function ghostSvg(h, x, y) {
   const kd = ART.kinds[G.kind[G.S[h]] % ART.kinds.length], b = kd.head.box;
   return `<use href="#${kd.head.p}all" opacity=".9" transform="translate(${f1(x)} ${f1(y - 6)}) scale(${kd.sc * 1.1}) translate(${-(b.x + b.w / 2)} ${-(b.y + b.h / 2)})"/>`;
 }
-// CHARMER: before rolling, may drag one snake head in range to another square on its row (then waits a turn). Never gets extra turns.
+// charmerMovable(p): the snake heads the Charmer can move right now (empty when her ability is recharging, nothing is in range or the snakes in range have nowhere to go).
+// Each entry is { h, targets, ghost } as awaitMove() wants it.
+function charmerMovable(p) {
+  if (p.cd || p.disconnected) return [];
+  return charmerRange(p).map(h => ({ h, targets: headTargets(h), ghost: (x, y) => ghostSvg(h, x, y) })).filter(o => o.targets.length);
+}
+// CHARMER: at the start of her turn ONE prompt asks: move a snake head / use an item (only if she holds one) / just roll. The ability can be used once every other turn. She never gets extra turns.
 LOGIC.charmer = async p => {
-  if (p.cd) { p.cd = 0; log(FLAVOR.recharge(p.name)); }
+  if (p.cd) { p.cd = 0; log(FLAVOR.recharge(p.name)); }          // recharging: no ability this turn (her items were offered by the normal item phase)
   else if (!p.disconnected) {
-    const near = charmerRange(p);
-    if (!near.length) log("No snakes in range! Gotta move closer!");
-    else {
-      const movable = near.map(h => ({ h, targets: headTargets(h), ghost: (x, y) => ghostSvg(h, x, y) })).filter(o => o.targets.length);
-      if (!movable.length) log("The snakes in range have nowhere to slither to. Time to roll!");
-      else {
-        const res = await awaitMove({ pieces: makeHandles(movable), text: `${p.name}: drag a glowing snake head to a new square on its row, or just roll (Space).`, button: { label: "Just roll", value: 1 } });
-        $("gHandle").innerHTML = "";
-        if (res) {
-          const h = res.key, n = res.to, t = G.S[h];
-          delete G.S[h]; G.S[n] = t; p.cd = 1;   // the snake keeps its tail; its head (and body) move
-          gameSfx("snake");   // the Charmer drops the head on its new square
-          log(`${p.name} plays a tune and the snake from ${h} slithers its head over to ${n}. The body follows!`);
-          render(); syncGameState(); await sleep(CONFIG.STEP_MS);
-        }
+    if (!charmerRange(p).length) log("No snakes in range! Gotta move closer!");
+    else if (!charmerMovable(p).length) log("The snakes in range have nowhere to slither to. Time to roll!");
+    let asked = false;                                              // true once her prompt has been shown at least once this turn
+    while (!G.winner && !p.disconnected) {
+      const movable = charmerMovable(p);
+      if (!movable.length) { if (asked) await itemPhase(p); break; }   // nothing (more) to move: the plain "use an item or roll" step - but only if her prompt already came up (otherwise the turn's normal item step has just run)
+      asked = true;
+      const opts = [{ label: PROMPT_TEXT.charmerMove, value: CHARMER_CHOICE.move }];
+      if (p.items.length) opts.push({ label: PROMPT_TEXT.charmerItem, value: CHARMER_CHOICE.item });
+      opts.push({ label: PROMPT_TEXT.charmerRoll, value: CHARMER_CHOICE.roll });
+      const what = await choose(`${p.name}: move a snake head, use an item, or just roll?`, opts, p);
+      if (what === CHARMER_CHOICE.roll) break;
+      if (what === CHARMER_CHOICE.item) {                           // pick an item (or go back to the three choices)
+        const i = await awaitItemChoice(p, `${p.name}: click a glowing item to use it, or go back (Space).`, "Back");
+        if (i !== null) await useItem(p, i);
+        continue;
       }
+      const res = await awaitMove({ pieces: makeHandles(movable), text: `${p.name}: drag a glowing snake head to a new square on its row, or go back (Space).`, button: { label: "Back", value: 1 } });
+      $("gHandle").innerHTML = "";
+      if (!res) continue;                                           // "Back": the three choices again
+      const h = res.key, n = res.to, t = G.S[h];
+      delete G.S[h]; G.S[n] = t; p.cd = 1;                          // the snake keeps its tail; its head (and body) move
+      gameSfx("snake");                                             // the Charmer drops the head on its new square
+      log(`${p.name} plays a tune and the snake from ${h} slithers its head over to ${n}. The body follows!`);
+      render(); syncGameState(); await sleep(CONFIG.STEP_MS);
+      await itemPhase(p);                                           // the ability is used up now: any items she still holds, then the roll
+      break;
     }
   }
   const r = await roll(p), net = rollBonus(p);
@@ -382,6 +403,7 @@ async function landOn(p) {
 }
 // itemPhase(p): before p rolls, let them use any of their items. Their items glow; click one to use it, or press Roll / Space to carry on.
 async function itemPhase(p) {
+  if (p.character === "charmer" && charmerMovable(p).length) return;   // the Charmer's own prompt (LOGIC.charmer) offers her items together with "move a head" and "just roll"
   while (p.items.length && !G.winner && !p.disconnected) {
     const i = await awaitItemChoice(p, `${p.name}: click a glowing item to use it, or roll without (Space).`, "Roll");
     if (i === null) break;

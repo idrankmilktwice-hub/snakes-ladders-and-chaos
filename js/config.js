@@ -62,8 +62,11 @@ const SOUNDS = {
   happy_charmer_1: { file: "sounds/sound_charmer_happy_1.mp3", skip: 0.072, volume: 1.25 },
   happy_gambler_1: { file: "sounds/sound_gambler_happy_1.mp3", skip: 0.116, volume: 0.65 },
   happy_oracle_1: { file: "sounds/sound_oracle_happy_1.mp3", skip: 0.056, volume: 0.94 },
-  happy_struggler_1: { file: "sounds/sound_struggler_happy_1.mp3", skip: 0.062, volume: 0.82 }
+  happy_struggler_1: { file: "sounds/sound_struggler_happy_1.mp3", skip: 0.062, volume: 0.82 },
+  // the BOO button on the victory screen (the same sound for every character; it is a group of one, so it has no number). Lower "volume" if it is too loud next to the other sounds.
+  boo: { file: "sounds/sound_boo.mp3", skip: 0.02, volume: 0.7 }
 };
+const BOO_SOUND = "boo";   // the name of the BOO button's sound in SOUNDS above (endgame.js plays it, network.js lets it through to the other players)
 const STONE_BAD_DELAY = 450;   // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930;   // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
 
@@ -135,6 +138,7 @@ const SCROLLBAR = {
   thumbMin: 36,     // the handle is never shorter than this, however long the text is
   step: 56,         // how far an arrow click scrolls
   edge: 20,         // distance between the bar and the right edge of a small panel: the same as the space left of the text, so both sides look equal
+  chatEdge: 0,      // the same for the Chat: the bar's right edge lines up exactly with the right edge of the send button (the chat area is as wide as the input row, see --chat-w in css)
   modalEdge: 0,     // the same for the big pop-up windows (their text starts 34px from the window edge, and so does the bar)
   textGap: 16,      // space kept free between the text and the bar, so words never run under it
   bottomGap: 14     // space between the bottom of the bar and the panel's edge: the same as the gap above the Expand button (top: 14px in css .xbtn)
@@ -296,6 +300,7 @@ const CRASH_LIMIT = 3;                  // after this many errors in a row the g
 const CRASH_PAUSE_MS = 800;             // short pause after an error before the next try
 // ---- Title screen, lobby and character-pick screens (title.js, local.js): sizes and animation times ----
 const BUTTON_ART_H = 165;               // height of the big green title buttons in their own art units; smaller buttons are scaled from this
+const NEW_LOBBY_REPEATS = 3;              // the host announces the new lobby this many times (a message can get lost on a slow connection; a repeat is ignored by anybody who already follows)
 const NEW_LOBBY_FLUSH_MS = 400;           // the host waits this long after announcing the new lobby, so the message reaches everybody before the old room closes
 const NEW_LOBBY_TRIES = 14, NEW_LOBBY_RETRY_MS = 1200;   // a guest following the host to the new lobby tries this many times, this far apart, until the new room is up
 const QUIT_RELOAD_MS = 250;             // after telling the others, a quitting player waits this long before the page reloads to the title screen
@@ -354,8 +359,11 @@ const PROMPT_SCENE = {
   charCenterX: 348, charBottom: 956,    // the character stands with its centre at this x and its feet at this y (stage pixels)
   panelCenterX: 810, panelCenterY: 610, panelWidth: 660,   // the light panel: centre of its middle and its width
   rollCenterX: 860,                     // while rolling, the dice and the ROLL button are centred on this x (right of the character)
+  panelPadX: 30, panelBorder: 6,        // the light panel's side padding and border (must match "#scenePanel" in css/style.css): they decide how wide a button inside it may get
   closeGraceMs: 40                      // a closing scene waits this long, so a prompt that follows straight after reuses it without flicker
 };
+const CHARMER_CHOICE = { move: "move", item: "item", roll: "roll" };   // what the Snake Charmer's prompt hands back to the game for each of its three buttons
+const CHARMER_FULL_OPTIONS = 3;   // the Snake Charmer's prompt has this many buttons when she holds an item (move / use item / just roll); without an item it has one less
 const ROLL_SCENE_X = PROMPT_SCENE.rollCenterX;   // (short name used by the dice code)
 const PROMPT_BTN = {
   labelPad: 22,                         // space kept free left and right of a label inside a button (long labels shrink to stay inside)
@@ -365,6 +373,8 @@ const PROMPT_BTN = {
   sceneScale: 1,                        // size of the helper button when it sits in a prompt panel...
   eventScale: .72,                      // ...and when it sits in the Current Event panel
   fontLong: 54, fontShort: 80,          // biggest label size (Blustrue) on a long / short button
+  cornerR: 10, baseColor: "#930934", faceColor: "#ff7529",   // the drawing of a stretched button: corner roundness, dark-red base colour, orange face colour (copied from the art)
+  wideMax: PROMPT_SCENE.panelWidth - 2 * (PROMPT_SCENE.panelPadX + PROMPT_SCENE.panelBorder),   // a wide button (PLAY AGAIN, "Waiting for the host...") never gets wider than the room inside the panel: a longer label shrinks instead
   labelWidth: .52                       // average width of a label character as a share of the font size (used to shrink long labels)
 };
 // ---- Maths helpers ----

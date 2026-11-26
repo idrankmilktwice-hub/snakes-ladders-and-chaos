@@ -19,6 +19,10 @@ const PROMPT_TEXT = {
   strugglerHead: "STRUGGLE TO CLIMB!",
   strugglerSmall: (left) => (left >= 2 ? "PICK 2 NUMBERS TO FAIL THE CLIMB" : "PICK 1 MORE NUMBER TO FAIL THE CLIMB"),
   items: "USE AN ITEM, OR ROLL",
+  // the Snake Charmer's choice at the start of her turn: the three buttons (labels + the values the game gets back) and the question above them
+  charmerMove: "Move a head", charmerItem: "Use an item", charmerRoll: "Just roll",
+  charmerAsk: "MOVE A SNAKE HEAD OR JUST ROLL?", charmerAskItem: "MOVE A SNAKE HEAD, USE AN ITEM OR JUST ROLL?",
+  waitingHost: "Waiting for the host...",
   roll: "THROW THE DIE OR PRESS SPACE",
   winner: "WINNER!", playAgain: "PLAY AGAIN", boo: "BOO", cheer: "CHEER",
   quit: "QUIT THE GAME?", quitOnline: "YOUR PANEL AND PAWN WILL BE REMOVED", quitLocal: "THIS GAME WILL BE LOST", yes: "YES", no: "NO"
@@ -29,6 +33,7 @@ const PROMPT_TEXT = {
 function promptKindOf(msg, opts) {
   const labels = opts.map((o) => String(o.label ?? o));
   if (labels.length === 2 && labels[0] === "Push" && labels[1] === "Pull") return "bully";
+  if (labels.includes(PROMPT_TEXT.charmerMove) && labels.includes(PROMPT_TEXT.charmerRoll)) return "charmer";   // the Snake Charmer: move a head / use an item / just roll
   if (/call the number you will roll/.test(msg)) return "oracle";
   if (/failure number/.test(msg)) return "struggler";
   return "generic";
@@ -45,9 +50,10 @@ function sceneButton(label, size, onClick, off, wide) {
   let fs = base, picture;
   if (wide) {
     // a button made WIDER to fit its label (e.g. PLAY AGAIN): two rounded rectangles drawn exactly like the art (dark-red base under the orange face), as wide as needed
+    fs = Math.min(fs, fs * (PROMPT_BTN.wideMax - PROMPT_BTN.widePad * 2) / Math.max(1, widthAt(fs)));   // a very long label (e.g. "Waiting for the host...") is made smaller so the button still fits inside the panel
     const w = Math.max(art.w, widthAt(fs) + PROMPT_BTN.widePad * 2);
     b.style.setProperty("--w", w.toFixed(1) + "px");
-    picture = `<svg viewBox="0 0 ${w.toFixed(1)} ${art.h}" preserveAspectRatio="none" aria-hidden="true"><rect y="${art.h - art.faceH}" width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#930934"/><rect width="${w.toFixed(1)}" height="${art.faceH}" rx="10" fill="#ff7529"/></svg>`;
+    picture = `<svg viewBox="0 0 ${w.toFixed(1)} ${art.h}" preserveAspectRatio="none" aria-hidden="true"><rect y="${art.h - art.faceH}" width="${w.toFixed(1)}" height="${art.faceH}" rx="${PROMPT_BTN.cornerR}" fill="${PROMPT_BTN.baseColor}"/><rect width="${w.toFixed(1)}" height="${art.faceH}" rx="${PROMPT_BTN.cornerR}" fill="${PROMPT_BTN.faceColor}"/></svg>`;
   } else {
     // a normal button keeps its size: a long label is made SMALLER (measured with the real font) so it never spills out of the button
     fs = Math.min(base, base * (art.w - PROMPT_BTN.labelPad * 2) / Math.max(1, widthAt(base)));
@@ -99,8 +105,27 @@ function placeHelper() {
   const mb = $("moveBtn"), dest = SCENE.open ? $("sceneBtns") : $("evAct");
   if (mb.parentElement !== dest) dest.appendChild(mb);
   mb.style.setProperty("--k", SCENE.open ? PROMPT_BTN.sceneScale : PROMPT_BTN.eventScale);
+  fitHelperButton();                                                                    // (the size and place changed: re-fit the width to the label)
 }
 
+// fitHelperButton(): the helper button ("Move me", "Just roll", "Roll", "Cancel"...) is made as wide as its label needs, so the label never touches the sides and the space left and right
+// is always the same (PROMPT_BTN.widePad, like the ROLL button). A short label keeps the normal button art; a longer one gets the stretched two-rectangle drawing (the same one the PLAY AGAIN button uses).
+// It must run after the label is set and the button is on screen (a hidden button has no measurable width).
+function fitHelperButton() {
+  const mb = $("moveBtn"), art = PROMPT_BTN.long, k = parseFloat(mb.style.getPropertyValue("--k")) || 1, label = mb.querySelector(".pbl");
+  if (!mb.offsetParent) return;                                         // not visible right now: nothing to measure
+  mb.style.removeProperty("--w");
+  label.style.width = "max-content";                                    // let the label take the room it really needs...
+  const need = label.offsetWidth / k + PROMPT_BTN.widePad * 2;          // ...and add the side space (in art units, so it scales with the button)
+  label.style.width = "";
+  let wide = mb.querySelector(":scope > svg");
+  if (need <= art.w) { if (wide) wide.remove(); mb.querySelector(":scope > img").style.display = ""; return; }   // it fits the normal art
+  mb.style.setProperty("--w", need.toFixed(1) + "px");
+  if (!wide) { wide = document.createElementNS("http://www.w3.org/2000/svg", "svg"); wide.setAttribute("preserveAspectRatio", "none"); wide.setAttribute("aria-hidden", "true"); mb.insertBefore(wide, label); }
+  wide.setAttribute("viewBox", `0 0 ${need.toFixed(1)} ${art.h}`);
+  wide.innerHTML = `<rect y="${art.h - art.faceH}" width="${need.toFixed(1)}" height="${art.faceH}" rx="${PROMPT_BTN.cornerR}" fill="${PROMPT_BTN.baseColor}"/><rect width="${need.toFixed(1)}" height="${art.faceH}" rx="${PROMPT_BTN.cornerR}" fill="${PROMPT_BTN.faceColor}"/>`;
+  mb.querySelector(":scope > img").style.display = "none";
+}
 // panelHtml parts -----------------------------------------------------------------
 const sceneLine = (cls, text) => `<div class="${cls}">${text}</div>`;
 // fillPanel(actor, kind, msg, opts): write the panel's texts for this kind of prompt (the buttons are added by showChoiceScene).
@@ -110,9 +135,10 @@ function fillPanel(actor, kind, msg, opts) {
   else if (kind === "oracle") h += sceneLine("sh", PROMPT_TEXT.oracle);
   else if (kind === "struggler") h += sceneLine("sh", PROMPT_TEXT.strugglerHead) + sceneLine("ss", PROMPT_TEXT.strugglerSmall(opts.length));
   else if (kind === "items") h += sceneLine("sb2", PROMPT_TEXT.items);
+  else if (kind === "charmer") h += sceneLine("sb2", opts.length >= CHARMER_FULL_OPTIONS ? PROMPT_TEXT.charmerAskItem : PROMPT_TEXT.charmerAsk);
   else h += sceneLine("sb2", esc(msg.replace(new RegExp("^" + actor.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":\\s*"), "")).toUpperCase());   // (the "Name: " at the start is dropped: the title already says whose turn it is)
   $("sceneText").innerHTML = h;
-  $("sceneBtns").className = kind === "bully" || kind === "generic" || kind === "items" ? "row" : "grid";
+  $("sceneBtns").className = kind === "charmer" && opts.length >= CHARMER_FULL_OPTIONS ? "stack" : kind === "bully" || kind === "generic" || kind === "items" || kind === "charmer" ? "row" : "grid";   // (three Charmer buttons are stacked under each other, two sit side by side)
 }
 // showChoiceScene(actor, kind, msg, opts, pick): the panel with its option buttons; pick(value) is called when one is pressed.
 function showChoiceScene(actor, kind, msg, opts, pick) {
@@ -162,7 +188,7 @@ function showWinnerScene() {
   if (iLost) {
     const row = document.createElement("div");
     row.className = "reactrow";
-    row.appendChild(sceneButton(PROMPT_TEXT.boo, "long", () => reactSound("bad_" + me.character)));
+    row.appendChild(sceneButton(PROMPT_TEXT.boo, "long", () => reactSound(BOO_SOUND)));   // BOO: the same dedicated sound for every character
     row.appendChild(sceneButton(PROMPT_TEXT.cheer, "long", () => reactSound("happy_" + me.character)));
     box.insertBefore(row, mb);
   }

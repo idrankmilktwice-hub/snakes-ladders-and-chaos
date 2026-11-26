@@ -1,6 +1,6 @@
 // =====================================================================================
 //  endgame.js  -  everything about LEAVING a game: the Quit button, "Play again" (back to the lobby screen WITHOUT reloading the page, so the music keeps playing),
-//  moving all connected players into a new lobby, and the BOO / CHEER reactions on the victory screen.
+//  moving all connected players into a new lobby, and the BOO / CHEER reactions on the victory screen (BOO plays BOO_SOUND from config.js, CHEER the character's own happy sound).
 //  Numbers: NEW_LOBBY_*, QUIT_RELOAD_MS in config.js. The winner scene itself is in prompts.js; the network messages (REACT, NEW_LOBBY, LEAVE) are handled in network.js.
 // =====================================================================================
 
@@ -40,21 +40,23 @@ async function playAgain() {
   const me = G && G.players[NET.myPlayerIndex], name = me ? me.name : "Player", character = me ? me.character : null;
   if (NET.isHost) {
     const code = genRoomCode();
-    broadcast({ type: "NEW_LOBBY", code });            // 1. tell everybody the new code while the old room is still open
-    await sleep(NEW_LOBBY_FLUSH_MS);
+    for (let k = 0; k < NEW_LOBBY_REPEATS; k++) {      // 1. tell everybody the new code while the old room is still open (more than once: one lost message would leave a player behind)
+      broadcast({ type: "NEW_LOBBY", code });
+      await sleep(NEW_LOBBY_FLUSH_MS);
+    }
     leaveGameScreen(); clearSession();
     await makeHostLobby(code, name, character);        // 2. open the new room (this closes the old one) and show the Host screen with the new code
   } else if (NET.nextLobby) followToNewLobby(NET.nextLobby);
   else {
     const b = document.querySelector("#sceneBtns .pbtn");     // the host has not opened the new lobby yet: say so and wait (NEW_LOBBY will arrive)
-    if (b) { b.classList.add("off"); b.onclick = null; b.querySelector(".pbl").textContent = "Waiting for the host..."; }
+    if (b) b.replaceWith(sceneButton(PROMPT_TEXT.waitingHost, "long", null, true, true));   // a new, WIDER (dimmed) button made to fit the text, instead of squeezing the text into the old one
   }
 }
 // makeHostLobby(code, name, character): the Host screen with a freshly created room that has the given code (hostGenerate() in local.js does the same with a random code).
 async function makeHostLobby(code, name, character) {
   TT.net = true;
   try {
-    if (NET.active) leaveOnlineLobby();
+    if (NET.active) leaveOnlineLobby({ silent: true });   // silent: the guests were already told where to go; a "host left" message now would only confuse the ones already on their way
     S.mode = "online"; S.rows = []; initRows(); S.n = 1; NET.onLobbyUpdate = onlineLobbyUpdate;
     await initHost(code);
     S.netState = "lobby";
@@ -65,12 +67,19 @@ async function makeHostLobby(code, name, character) {
   TT.net = false;
 }
 // followToNewLobby(code): a guest joins the host's new room. Their name and character are sent again once they are in. The new room may take a moment to open, so it keeps trying.
+let FOLLOWING_NOW = false;   // true while a guest is on its way to the new lobby: a second request (the NEW_LOBBY message arriving twice, or the guest pressing PLAY AGAIN meanwhile) must not start a second, competing attempt
 async function followToNewLobby(code) {
+  if (FOLLOWING_NOW || (NET.active && NET.roomCode === code)) return;   // already on the way / already in that lobby
+  FOLLOWING_NOW = true; NET.following = true;
+  try { await followToNewLobbyOnce(code); } finally { FOLLOWING_NOW = false; }
+}
+async function followToNewLobbyOnce(code) {
   const me = G && G.players[NET.myPlayerIndex], name = me ? me.name : "Player", character = me ? me.character : null;
   leaveGameScreen(); clearSession();
   for (let k = 0; k < NEW_LOBBY_TRIES; k++) {
     try {
-      if (NET.active) leaveOnlineLobby();
+      if (NET.active) leaveOnlineLobby({ silent: true });   // (leaving the old room: no "bye" needed, it is closing anyway)
+      NET.following = true;                                  // (leaveOnlineLobby does not touch it, but be explicit: "host left" messages are ignored while we move)
       S.mode = "online"; S.rows = []; initRows(); S.n = 0; NET.onLobbyUpdate = onlineLobbyUpdate;
       await initGuest(code, "Player", {});
       S.netState = "lobby"; NET.following = false; NET.nextLobby = null;

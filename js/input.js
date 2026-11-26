@@ -121,6 +121,7 @@ async function awaitMove({ pieces, text, button }) {
   const pressed = new Promise(res => {
     if (!button) return;                                    // no helper button for this move: only a drop can finish it
     mb.querySelector(".lbl").textContent = button.label; mb.style.display = "block";
+    fitHelperButton();                                      // widen the button to fit its label (e.g. "Just roll") with the same side space as the ROLL button
     mb.onclick = () => {
       mb.onclick = null;
       mb.style.display = "none";
@@ -148,6 +149,7 @@ async function awaitMove({ pieces, text, button }) {
 window.addEventListener("keydown", e => {
   if (e.code !== "Space" || e.repeat) return;
   if (/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""))) return;   // typing a name: leave Space alone
+  if ($("quitBox").style.display === "flex") return;                   // the "Quit?" question is open: Space must not roll or press anything underneath it
   e.preventDefault();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (DICE.waiting && !DICE.flying && DICE.canInteract) { sfx("small"); rollPressed(); }
@@ -241,7 +243,7 @@ function showHelper(label, fn) {
   mb.querySelector(".lbl").textContent = label;
   mb.style.display = "block";
   mb.onclick = () => { mb.onclick = null; mb.style.display = "none"; fn(); };
-  placeHelper();                                        // it sits in the prompt panel (if a scene is open) or in the Current Event panel
+  placeHelper();                                        // it sits in the prompt panel (if a scene is open) or in the Current Event panel; it also fits the button's width to its label
 }
 function hideHelper() { const mb = $("moveBtn"); mb.style.display = "none"; mb.onclick = null; }
 // awaitItemChoice(p, text, label): make player p's items glow and wait. Resolves with the SLOT NUMBER of the item they click, or null if they press the helper button (label, e.g. "Roll").
