@@ -367,7 +367,7 @@ function attachScrollbar(el, edge, bottom) {
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
 const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "About"]];
 // The rulebook text itself lives in js/rulebook.js (RULES_HTML). The About panel text (edit here):
-$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz 'idrankmilktwice' Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
+$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>A classic game with some chaos thrown in the mix! Pick a character and use your abilities and items wisely to race to the top or sabotage others.</p><p>All art, assets, UI/UX are created and designed by me with my 2 hands and 1 brain<br>(A special thanks to GadbadGenda for his infinitesimal help with the multiplayer mode)</p><p>Coding assisted by Claude</p><p>AND A VERY GARGANTUAN THANK YOU TO YOU FOR PLAYING THIS!</p><p>I hope you have a blast playing with friends and family</p><p>Keep an eye out on this section to learn more about how the game was made and what updates will arrive in the future.</p><p>A game by idrankmilktwice</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
 $("ruleView").innerHTML = RULES_HTML();                     // the small Rulebook panel (the big window calls RULES_HTML() again)
 ["ruleView", "log", "about"].forEach(id => attachScrollbar($(id)));   // custom scroll bars for every scrolling panel (they appear only when needed)
 attachScrollbar($("chatView"), SCROLLBAR.chatEdge);                  // the Chat's bar sits flush with the right edge of the send button (the chat area is as wide as the input row)
@@ -522,18 +522,6 @@ $("boxes").innerHTML = BOXES.map(b => `<div class="box" id="${b.id}" style="left
 // ---- start-up ----
 loadSounds();                   // decode the sound effects in the background (see audio.js)
 drawSetup();                    // show the setup screen straight away
-// clearRoomParam(): removes "?room=..." from the address bar without reloading the page, once that invite link has been used.
-// An invite link only means "join this room" on the ONE page load it arrives on. If it stays in the address bar, a later refresh of the SAME tab
-// (for example, mid-match, long after the player joined a different lobby by typing its code) would wrongly look like a brand-new invite to the
-// OLD room every time, and both autoRejoin() below and title.js's own invite-link check would try to send the player back to that old room instead
-// of the room they are actually in now.
-function clearRoomParam() {
-  try {
-    const u = new URL(location.href);
-    u.searchParams.delete("room");
-    history.replaceState(null, "", u.pathname + u.search + u.hash);
-  } catch (e) {}
-}
 window.REJOIN_P = loadAssets().then(async () => {
   drawSetup();
   if (typeof autoRejoin === "function" && await autoRejoin()) return true;   // the page was reloaded or crashed in the middle of an online game: back to the seat (title.js waits for this, so the title animations never play)
@@ -543,7 +531,6 @@ window.REJOIN_P = loadAssets().then(async () => {
   if (roomParam && !window.TITLE_ACTIVE) {   // (with the new title screen, js/title.js opens the Join screen for invite links instead)
     setGameMode("online");
     joinRoom(roomParam);
-    clearRoomParam();
   }
   return false;
 });
