@@ -111,7 +111,8 @@ b, strong { font-weight: normal; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
 #modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 14px; }   /* (14px at the bottom = the gap above the X button, so the scroll bar has equal space above and below) */   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
 #modal h2 { flex: none; margin: 0 60px 12px 0; }
-#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
+#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c3f73a #1c1002; }
+#modal .mbody::-webkit-scrollbar { width: 8px; } #modal .mbody::-webkit-scrollbar-track { background: #1c1002; border-radius: 4px; } #modal .mbody::-webkit-scrollbar-thumb { background: #c3f73a; border-radius: 4px; }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
@@ -125,11 +126,11 @@ b, strong { font-weight: normal; }
 #sidebox.again .rp.in { --dur: .28s; }
 /* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
 .lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
-#rulePanel, #logPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log panels: same size and place as the chat */
+#rulePanel, #logPanel, #aboutPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log / About panels: same size and place as the chat */
 #ruleView, #log { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 14px 20px; overflow-y: auto; font-size: 20px; line-height: 1.3; }
 #log div { padding: 6px 0 7px; border-bottom: 2px dashed #b8cc6a; } #log div:last-child { border-bottom: 0; } #log b { font-weight: normal; color: #b3410a; }
 #ruleView .rb h2 { color: #2f2504; border-bottom: 2px solid #2f2504; } #ruleView .rb h3 { color: #b3410a; } #ruleView .rb .k { color: #6b5a10; } #ruleView .rb li::marker { color: #b3410a; } #ruleView .rb td { border-bottom-color: #b8cc6a; } #ruleView .rb td:first-child { color: #2f2504; } #ruleView .rb .yes { color: #4b7a10; } #ruleView .rb .no { color: #b3410a; }
-#evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
+#evPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
 #chatPanel { --chat-w: 521px; left: 1330px; top: 650px; width: 559px; height: 322px; }   /* --chat-w = the width of the message area AND of the input row, so the scroll bar's right edge lines up with the send button's right edge */   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
 #evPanel { display: flex; flex-direction: column; justify-content: center; padding: 14px 22px 16px; }
