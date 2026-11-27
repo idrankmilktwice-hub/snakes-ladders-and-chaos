@@ -28,6 +28,7 @@ function leaveGameScreen() {
   SCENE.locked = false; SCENE.open = false; SCENE.actor = null; SCENE.peek = false;
   $("scene").classList.remove("on", "rollmode"); $("game").classList.remove("scened", "peek"); $("eyeBtn").classList.remove("on", "closed");
   $("quitBox").style.display = "none";
+  clearChatBubbles();                                  // (chat bubbles over the pawns go with the game screen)
   if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
   trayHide(); $("rollBtn").classList.remove("ready"); $("moveBtn").style.display = "none";
   setPrompt(""); $("log").innerHTML = ""; $("modal").style.display = "none";

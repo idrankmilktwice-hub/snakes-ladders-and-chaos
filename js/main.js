@@ -365,9 +365,9 @@ function attachScrollbar(el, edge, bottom) {
   return update;
 }
 // TOP = [ file-name part, tab title ]. The order here is the order on screen.
-const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "Information"]];
-// The rulebook text itself lives in js/rulebook.js (RULES_HTML). The Information panel text (edit here):
-$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
+const TOP = [["settings", "Settings"], ["rulebook", "Rulebook"], ["boardlog", "Board log"], ["chat", "Chat"], ["about", "About"]];
+// The rulebook text itself lives in js/rulebook.js (RULES_HTML). The About panel text (edit here):
+$("about").innerHTML = "<p><b>Snakes, Ladders and Chaos!</b></p><p>Made by Hafiz 'idrankmilktwice' Shaikh.</p><p>No AI assets were used in the design, Claude wrote the code with a few changes here and there from me.</p><p>For business, bug reports or suggestions to the game: <a href=\"mailto:idrankmilktwice@gmail.com\">idrankmilktwice@gmail.com</a></p>";
 $("ruleView").innerHTML = RULES_HTML();                     // the small Rulebook panel (the big window calls RULES_HTML() again)
 ["ruleView", "log", "about"].forEach(id => attachScrollbar($(id)));   // custom scroll bars for every scrolling panel (they appear only when needed)
 attachScrollbar($("chatView"), SCROLLBAR.chatEdge);                  // the Chat's bar sits flush with the right edge of the send button (the chat area is as wide as the input row)
@@ -498,7 +498,7 @@ function chatSendPressed() {
 function expandPanel() {   // the Expand button of the small Information / Rulebook / Board log panels: the same content in a big pop-up window
   if (TAB === "rulebook") openRulebook();
   else if (TAB === "boardlog") openLog();
-  else openModal("Information", `<div class="big">${$("about").innerHTML}</div>`);
+  else openModal("About", `<div class="big">${$("about").innerHTML}</div>`);
 }
 $("topbtns").innerHTML = TOP.map((b, i) => `<button class="ib" id="tb_${b[0]}" style="left:${DOCK.pad + i * DOCK.pitch}px;top:${DOCK.padY}px" title="${b[1]}" onclick="showTab('${b[0]}')"><img class="face" src="${A(`button_${b[0]}.svg`)}" alt="${b[1]}"></button>`).join("");
 

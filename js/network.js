@@ -2041,7 +2041,8 @@ function handleNetData(msg, fromConn) {
       break;
     }
     case "CHAT": {
-      appendChatMessage(msg.sender, msg.text, msg.color);
+      if (NET.isHost && fromConn && fromConn.playerIndex != null) msg.playerIndex = fromConn.playerIndex;   // the host knows who really sent it (a guest cannot chat "as" somebody else)
+      appendChatMessage(msg.sender, msg.text, msg.color, false, msg.playerIndex);
       if (NET.isHost) {
         forwardToOtherGuests(msg, fromConn ? fromConn.playerIndex : -1);
       }
@@ -2238,8 +2239,8 @@ function sendChatMessage(text) {
   const pIdx = NET.myPlayerIndex;
   const sender = (G && G.players[pIdx] && G.players[pIdx].name) || (S.rows[pIdx] && S.rows[pIdx].name) || `Player ${pIdx + 1}`;
   const color = COLORS[pIdx % COLORS.length];
-  const msg = { type: "CHAT", sender, text: text.trim(), color };
-  appendChatMessage(sender, text.trim(), color, true);
+  const msg = { type: "CHAT", sender, text: text.trim(), color, playerIndex: pIdx };   // (playerIndex: whose pawn the speech bubble goes over)
+  appendChatMessage(sender, text.trim(), color, true, pIdx);
   if (NET.isHost) {
     broadcast(msg);
   } else if (NET.hostConn && NET.hostConn.open) {
@@ -2247,8 +2248,10 @@ function sendChatMessage(text) {
   }
 }
 
-function appendChatMessage(sender, text, color, isLocal) {
+// appendChatMessage(sender, text, color, isLocal, playerIndex): add a line to the chat. With a playerIndex (a live message, not a replay of old history) a speech bubble pops up over that player's pawn too.
+function appendChatMessage(sender, text, color, isLocal, playerIndex) {
   NET.chatHistory.push({ sender, text, color, time: new Date() });
+  if (Number.isInteger(playerIndex)) showChatBubble(playerIndex, text);
   const chatView = $("chatView");
   if (chatView) {
     const d = document.createElement("div");

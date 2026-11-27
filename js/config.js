@@ -315,6 +315,29 @@ const CRASH_LIMIT = 3;                  // after this many errors in a row the g
 const CRASH_PAUSE_MS = 800;             // short pause after an error before the next try
 // ---- Title screen, lobby and character-pick screens (title.js, local.js): sizes and animation times ----
 const BUTTON_ART_H = 165;               // height of the big green title buttons in their own art units; smaller buttons are scaled from this
+// ---- Chat speech bubbles on the pawns (js/bubbles.js). Sizes are in stage pixels, times in milliseconds.
+const CHAT_BUBBLE = {
+  showMs: 1500,            // how long the newest message of a player stays on screen
+  endFadeMs: 250,          // ...it fades out during the last bit of that time
+  pushedFadeMs: 500,       // when the same player chats again, the older bubble is pushed away and vanishes in this time (even if its own time was not up)
+  fontPx: 32,              // text size of a normal (one line) bubble
+  lineEm: 1.1,             // line height as a multiple of the text size
+  pad: 14,                 // space between the text and the border, the same on all sides (a one-line pill gets a little more at the left / right, see padPillMul)
+  padPillMul: 1.6,         // a one-line pill: the left / right space is this many times "pad"
+  border: 5,               // thickness of the brown outline
+  shadow: 5,               // how far the brown outline is offset downwards (like the light panels)
+  stretchMaxW: 620,        // a message up to this wide stays on ONE line and the bubble just stretches...
+  rectFontScale: .8,       // ...a longer one gets a smaller text (this share of the normal size)...
+  rectMaxW: 440,           // ...wrapped into lines no wider than this, in a rectangle with small rounded corners
+  rectRadius: 16,          // the rectangle's corner roundness
+  tailLen: 22, tailW: 30,  // the little pointer towards the pawn: its length and the width of its base
+  tailGap: 4,              // empty space between the pointer's tip and the pawn
+  stackGap: 12,            // space between a bubble and the older one pushed above (or below) it
+  edgeMargin: 8,           // a bubble never comes closer than this to the edge of the board
+  easeMs: 90,              // how quickly an older bubble glides to its new place (smaller = quicker)
+  popMs: 140,              // the little pop when a bubble appears
+  fill: "#ebffad", ink: "#2f2504"   // light lime fill; brown outline and text
+};
 const ROOM_URL_PREFIX = "?room=";           // how an invite link carries the room code in the page address (also used to keep that address in step with the room we are really in)
 const NEW_LOBBY_REPEATS = 3;              // the host announces the new lobby this many times (a message can get lost on a slow connection; a repeat is ignored by anybody who already follows)
 const NEW_LOBBY_FLUSH_MS = 400;           // the host waits this long after announcing the new lobby, so the message reaches everybody before the old room closes

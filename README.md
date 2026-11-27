@@ -26,10 +26,11 @@ js/                 game code, loaded in this order by index.html
   network.js        online play (PeerJS): lobby, the host runs the game and sends the state and sounds to the guests
   input.js          the message / helper button, drag and drop, the dice (each character's own design), Space bar, clicking the cat
   endgame.js        leaving a game: the Quit button, Play again (back to the lobby screen without reloading, so the music keeps playing), moving everybody into a new lobby, BOO / CHEER
+  bubbles.js        the chat speech bubbles over the pawns (stacking, fading, edge handling); loads after endgame.js
   prompts.js        the prompt scenes: full-body character + panel (Bully, Oracle, Struggler, Snake Charmer, plain questions), the roll scene, the eye button, the helper button's width
   rules.js          character rules, ITEMS, flavour text, the turn loop, character reactions   <- edit character and item behaviour here
   rulebook.js       the Rulebook text (RULES_HTML), built from config.js numbers; shown in the small panel and the big window
-  main.js           start screen, the right-hand panels (Current Event, Settings, Chat, Information, Rulebook, Board log), the bottom-right buttons, custom scroll bars, pop-up windows, window scaling
+  main.js           start screen, the right-hand panels (Current Event, Settings, Chat, About, Rulebook, Board log), the bottom-right buttons, custom scroll bars, pop-up windows, window scaling
   title.js          the title screen (logo, Play / Options / About, light/dark switch, mute switch); loads after main.js
   local.js          the Local, Host and Join screens (player lines) and the character pick panels; loads after title.js
 assets/             all SVG art (including game_icon.svg, the browser tab icon, and one dice_<character>.svg per dice design), the font and manifest.json, plus:
@@ -44,7 +45,7 @@ serve.py            tiny local web server
 
 Every function and variable in the JS files has a comment saying what it does and where it is used.
 
-`index.html` loads every script and the stylesheet with a version number (`?v=31`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
+`index.html` loads every script and the stylesheet with a version number (`?v=32`). When you change a file, raise the number on every line so browsers do not keep using an old cached copy.
 
 ## Common changes
 
@@ -120,7 +121,7 @@ Everything is drawn on the fixed 1920x1080 stage (scaled to the window). The tab
 - **Below the panels:** one view at a time, switched by the five buttons at the bottom right (press the open one again to go back to Current Event):
   - **Current Event** (default): the latest log lines (newest big), and the message + MOVE ME button while the game waits for you.
   - **Settings:** four orange panels (Switch Device in online games, Mute, SFX, Music).
-  - **Chat**, **Information**, **Rulebook**, **Board log:** light-lime panels; Rulebook, Board log and Information have an Expand button that opens a big pop-up window. Panels slide in from the window edge and spring back.
+  - **Chat**, **About**, **Rulebook**, **Board log:** light-lime panels; Rulebook, Board log and About have an Expand button that opens a big pop-up window. Panels slide in from the window edge and spring back.
 - **Scroll bars** are custom (`attachScrollbar` in `js/main.js`) and only appear when there is something to scroll to.
 
 ## Prompt scenes
@@ -130,6 +131,10 @@ When the player whose turn it is has to decide something, the board darkens (on 
 ## Dice
 
 The dice are 3D cubes (`spawnDiceElements` / `diceFaceHtml` in `js/input.js`). Every character throws dice in their own design: one SVG per die in `assets/` holding all six faces side by side as equal rounded squares, in order 1 to 6 (`dice_bully`, `dice_struggler`, `dice_oracle`, `dice_charmer`, `dice_catlady` - shared by the cat lady and her cat - and `dice_gambler_1` / `dice_gambler_2`, one for each of the Gambler's two dice). `DICE_ART` in `js/config.js` lists them. Each face is a box that shows one sixth of its file (the picture is made six times as wide and slid sideways). The design is chosen by who throws, not by whose turn it is, and every player's screen shows the same one. Keep everything inside each face's square (a shadow that spills out would show on the neighbouring face), and keep the opposite faces 1-6, 2-5, 3-4. When a die stops and shows its number, a bright shine sweeps over it (`.die-shine` in `css/style.css`, started by `finishRollPlayback` in `js/input.js`; speed `DICE_SHINE_MS`, the Gambler's second die starts `DICE_SHINE_STAGGER_MS` later, corner roundness `DICE_FACE_RADIUS_RATIO`, all in `js/config.js`).
+
+## Chat speech bubbles
+
+When a player chats (online games), a speech bubble pops up over their pawn on every player's screen (`js/bubbles.js`, drawn in `#chatLayer`, which covers only the board). The newest message stays `CHAT_BUBBLE.showMs` (1.5 s). If the same player chats again, the older bubble is pushed away from the pawn and vanishes in `pushedFadeMs` (0.5 s) even if its own time was not up; only the newest bubble gets the full time. A bubble sits above the pawn (pointer pointing down); a pawn near the top edge gets its bubble below it, and a pawn near the left or right edge gets it slid inward so it stays on the board (the pointer keeps pointing at the pawn). A short message is a rounded pill, a longer one stretches it, and a very long one gets a smaller text wrapped into a rectangle with small rounded corners and the same space on all sides. The bubble is light lime with a brown outline (offset a little downwards, like the light panels) and brown Blustrue text. All numbers are in `CHAT_BUBBLE` in `js/config.js`. The `CHAT` network message carries the sender's seat number (`playerIndex`); the host fills it in itself so a guest cannot chat as somebody else. Old chat lines replayed to a rejoining player do not make bubbles.
 
 ## Debugging online play
 

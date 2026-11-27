@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/game_icon.svg" type="image/svg+xml">   <!-- the game icon: the browser tab icon (put game_icon.svg in assets/) -->
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -24,6 +24,7 @@
       <div id="quitBox"></div>                   <!-- the "Quit? YES / NO" panel (js/endgame.js askQuit) -->
       <button id="eyeBtn" title="Show / hide the prompt to see the board" aria-label="Show or hide the prompt" onclick="toggleEye()"><svg class="eo" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="11" r="4.200" fill="currentColor"/></svg><svg class="ec" viewBox="0 0 32 22" aria-hidden="true"><path d="M2 11C6 4.5 11 2 16 2s10 2.500 14 9c-4 6.500-9 9-14 9S6 17.500 2 11Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M4 20L28 2" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/></svg></button>   <!-- the eye: peek at the board while a prompt is up -->
       <div id="shade"></div>                     <!-- dark layer over the board while the active player must act (shown by "#prompt.choice ~ #shade" in css) -->
+      <div id="chatLayer"></div>                 <!-- chat speech bubbles over the pawns (js/bubbles.js): same place as the board, above the dark layer -->
       <div id="panels"></div>                    <!-- right, top: the player panels (render.js buildPanels / placePanels) -->
       <!-- right column below the player panels: ONE view at a time (main.js showTab); each panel (class "rp") slides in from the right edge -->
       <div id="sidebox">
@@ -31,8 +32,8 @@
           <div id="evText"></div>
           <div id="evMsg"><div id="evPtxt"></div><div id="evAct"><button id="moveBtn" class="pbtn long mv"><img src="assets/button_prompt_long.svg" alt=""><span class="pbl"><span class="lbl">Move me</span><svg viewBox="0 0 14 20" aria-hidden="true"><path d="M3 2.5L11 10L3 17.5" fill="none" stroke="currentColor" stroke-width="3.600" stroke-linecap="round" stroke-linejoin="round"/></svg></span><i class="tb-shine"></i></button></div></div>   <!-- current prompt text + the helper button ("Move me", "Cancel"...) -->
         </div>            <!-- Current Event: the latest log / flavour lines in a big font (default view) -->
-        <div id="aboutPanel" class="rp lp">                                       <!-- Information (can expand) -->
-          <div class="ptitle">Information</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+        <div id="aboutPanel" class="rp lp">                                       <!-- About (can expand) -->
+          <div class="ptitle">About</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button>
           <div id="about"></div>
         </div>
         <div id="rulePanel" class="rp lp"><div class="ptitle">Rulebook</div><button class="xbtn" title="Expand" onclick="expandPanel()"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 4h6M4 4v6M4 4l6 6M20 20h-6M20 20v-6M20 20l-6-6M20 4h-6M20 4v6M20 4l-6 6M4 20h6M4 20v-6M4 20l6-6" fill="none" stroke="#2f2504" stroke-width="2.4" stroke-linecap="round"/></svg></button><div id="ruleView"></div></div>      <!-- Rulebook (small version; Expand opens the big window) -->
@@ -54,7 +55,7 @@
     <div id="setup" style="display:none"></div>                       <!-- start screen (setup) -->
     <div id="title"></div>                       <!-- title screen: logo, Play / Options / About (js/title.js) -->
     <div id="tLoad"><div class="ld-bar"><i></i></div><span class="ld-ok"><svg viewBox="0 0 12 10" width="12" height="10"><path d="M1 5.5L4.5 9 11 1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"/></svg>Assets loaded</span></div>
-    <div id="tCopy">Copyright &copy; 2026 Hafiz Shaikh. All Rights Reserved.<span class="tc-sub">Copying, modifying, distributing or reusing this game's code, artwork or audio without written permission is prohibited.</span></div>   <!-- copyright notice, bottom middle of the title screens (see LICENSE.md) -->
+    <div id="tCopy">Copyright &copy; 2026 idrankmilktwice Games. All Rights Reserved.<span class="tc-sub">Copying, modifying, distributing or reusing this game's code, artwork or audio without written permission is prohibited.</span></div>   <!-- copyright notice, bottom middle of the title screens (see LICENSE.md) -->
   </div>
   <!-- The tab buttons live OUTSIDE the stage so they stick to the bottom-right corner of the real window (css #dockfix; shown by main.js while a game is on screen). -->
   <div id="modal" onclick="if(event.target===this)this.style.display='none'"></div>   <!-- big pop-up windows (rulebook, combat log, information): OUTSIDE the stage so the dark layer covers the whole browser window -->
@@ -63,20 +64,21 @@
   </div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=31"></script>
-  <script src="js/board.js?v=31"></script>
-  <script src="js/art.js?v=31"></script>
-  <script src="js/audio.js?v=31"></script>
-  <script src="js/preload.js?v=31"></script>
-  <script src="js/render.js?v=31"></script>
-  <script src="js/network.js?v=31"></script>
-  <script src="js/input.js?v=31"></script>
-  <script src="js/prompts.js?v=31"></script>
-  <script src="js/endgame.js?v=31"></script>
-  <script src="js/rules.js?v=31"></script>
-  <script src="js/rulebook.js?v=31"></script>
-  <script src="js/main.js?v=31"></script>
-  <script src="js/title.js?v=31"></script>
-  <script src="js/local.js?v=31"></script>
+  <script src="js/config.js?v=32"></script>
+  <script src="js/board.js?v=32"></script>
+  <script src="js/art.js?v=32"></script>
+  <script src="js/audio.js?v=32"></script>
+  <script src="js/preload.js?v=32"></script>
+  <script src="js/render.js?v=32"></script>
+  <script src="js/network.js?v=32"></script>
+  <script src="js/input.js?v=32"></script>
+  <script src="js/prompts.js?v=32"></script>
+  <script src="js/endgame.js?v=32"></script>
+  <script src="js/bubbles.js?v=32"></script>
+  <script src="js/rules.js?v=32"></script>
+  <script src="js/rulebook.js?v=32"></script>
+  <script src="js/main.js?v=32"></script>
+  <script src="js/title.js?v=32"></script>
+  <script src="js/local.js?v=32"></script>
 </body>
 </html>
