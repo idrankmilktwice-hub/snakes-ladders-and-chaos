@@ -111,8 +111,7 @@ b, strong { font-weight: normal; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
 #modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 14px; }   /* (14px at the bottom = the gap above the X button, so the scroll bar has equal space above and below) */   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
 #modal h2 { flex: none; margin: 0 60px 12px 0; }
-#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c3f73a #1c1002; }
-#modal .mbody::-webkit-scrollbar { width: 8px; } #modal .mbody::-webkit-scrollbar-track { background: #1c1002; border-radius: 4px; } #modal .mbody::-webkit-scrollbar-thumb { background: #c3f73a; border-radius: 4px; }
+#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
@@ -126,11 +125,11 @@ b, strong { font-weight: normal; }
 #sidebox.again .rp.in { --dur: .28s; }
 /* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
 .lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
-#rulePanel, #logPanel, #aboutPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log / About panels: same size and place as the chat */
+#rulePanel, #logPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log panels: same size and place as the chat */
 #ruleView, #log { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 14px 20px; overflow-y: auto; font-size: 20px; line-height: 1.3; }
 #log div { padding: 6px 0 7px; border-bottom: 2px dashed #b8cc6a; } #log div:last-child { border-bottom: 0; } #log b { font-weight: normal; color: #b3410a; }
 #ruleView .rb h2 { color: #2f2504; border-bottom: 2px solid #2f2504; } #ruleView .rb h3 { color: #b3410a; } #ruleView .rb .k { color: #6b5a10; } #ruleView .rb li::marker { color: #b3410a; } #ruleView .rb td { border-bottom-color: #b8cc6a; } #ruleView .rb td:first-child { color: #2f2504; } #ruleView .rb .yes { color: #4b7a10; } #ruleView .rb .no { color: #b3410a; }
-#evPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
+#evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
 #chatPanel { --chat-w: 521px; left: 1330px; top: 650px; width: 559px; height: 322px; }   /* --chat-w = the width of the message area AND of the input row, so the scroll bar's right edge lines up with the send button's right edge */   /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
 #evPanel { display: flex; flex-direction: column; justify-content: center; padding: 14px 22px 16px; }
@@ -387,15 +386,7 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 
 /* the page that opens under the title */
 #tPage { display: none; position: absolute; left: 260px; top: 270px; width: 1400px; height: 740px; }
-.tp-card { width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; }
-.tp-scroll { position: absolute; left: 0; top: 0; right: 12px; bottom: 0; box-sizing: border-box; padding: 44px 52px 44px 64px; overflow-y: auto; scrollbar-width: auto; scrollbar-color: #7fa21a var(--tt-seg); }
-.tp-scroll::-webkit-scrollbar { width: 18px; }
-.tp-scroll::-webkit-scrollbar-track { background: var(--tt-seg); border-radius: 9px; }
-.tp-scroll::-webkit-scrollbar-thumb { background: #7fa21a; border: 3px solid var(--tt-seg); border-radius: 9px; background-clip: padding-box; }
-.tp-scroll::-webkit-scrollbar-thumb:hover { background: #6d8a16; }
-.tp-scroll::-webkit-scrollbar-button:vertical:start:decrement { display: block; height: 18px; background: #7fa21a; border-radius: 9px 9px 0 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M5 0L10 6H0Z' fill='%232f2504'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 9px 6px; }
-.tp-scroll::-webkit-scrollbar-button:vertical:end:increment { display: block; height: 18px; background: #7fa21a; border-radius: 0 0 9px 9px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0H10L5 6Z' fill='%232f2504'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 9px 6px; }
-.tp-scroll::-webkit-scrollbar-button:vertical:start:increment, .tp-scroll::-webkit-scrollbar-button:vertical:end:decrement { display: none; }
+.tp-card { width: 100%; height: 100%; box-sizing: border-box; padding: 44px 64px; overflow: auto; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; }
 .tp-card h2 { margin: 0 0 18px; font-family: LM, MC, monospace; font-weight: normal; font-size: 64px; text-transform: uppercase; } .tp-card p { margin: 0 0 16px; }
 .tt-vol { display: flex; gap: 6px; margin: 8px 0 20px; } .tt-seg { flex: 1; height: 54px; box-sizing: border-box; border: 4px solid var(--tt-ink); border-radius: 8px; background: var(--tt-seg); cursor: pointer; } .tt-seg.on { background: #ff7529; } .tt-seg:hover { filter: brightness(1.15); }
 
@@ -449,7 +440,7 @@ html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
 .pk-name { position: absolute; left: 12px; top: 239px; width: 240px; height: 121px;   /* centred between the head circle (ends y=239) and the description box (starts y=360) */ display: flex; align-items: center; justify-content: center; text-align: center; font-family: LM, MC, monospace; font-size: 44px; line-height: .95; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.25); } .pk-name.long { font-size: 31px; }
 .pk-tag { position: absolute; left: 12px; top: 322px; width: 240px; text-align: center; font-family: MC, monospace; font-size: 14px; color: #fff3cf; }
 .pk-desc { position: absolute; left: 19.45px; top: 360.27px; width: 213.27px; height: 298.06px; box-sizing: border-box; padding: 0; overflow: hidden; color: #f6f1d8; font-family: MC, monospace; font-size: 15px; line-height: 1.28; }
-.pk-scroll { position: absolute; left: 0; top: 0; right: 0; bottom: 44px; box-sizing: border-box; padding: 12px 6px 6px 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ff7529 #1c1002; }   /* long text scrolls inside the brown box */
+.pk-scroll { position: absolute; left: 0; top: 6px; right: 6px; bottom: 44px; box-sizing: border-box; padding: 6px 4px 6px 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ff7529 #1c1002; }   /* long text scrolls inside the brown box; "top: 6px" and "right: 6px" (instead of 0) keep the scrollbar off the box artwork's own rounded edge */
 .pk-scroll::-webkit-scrollbar { width: 6px; } .pk-scroll::-webkit-scrollbar-track { background: #1c1002; border-radius: 3px; } .pk-scroll::-webkit-scrollbar-thumb { background: #ff7529; border-radius: 3px; }
 .pk-desc ul { margin: 0; padding: 0; } .pk-desc li { position: relative; list-style: none; padding-left: 13px; margin-bottom: 7px; } .pk-desc li::before { content: ""; position: absolute; left: 0; top: 5px; width: 6px; height: 6px; background: #ff7529; } .pk-desc b { font-weight: normal; color: #ffa42c; }
 .pk-pick { position: absolute; left: 49.6px; top: 678px; width: 156.7px; height: 97.3px; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer; overflow: hidden; }
