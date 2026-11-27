@@ -63,8 +63,10 @@ function tryBoard() {
     if (s > 1 && Math.abs(rc(s)[1] - rc(e)[1]) <= TOP_LADDER_MAX_COLS && add(MIN_GAP_STRICT, s)) L[s] = e;
   }
   if (!L[s]) return null;
-  const wr = []; // weighted list of head rows: higher rows appear more often
-  for (let r = 1; r <= SNAKE_HEAD_ROWS; r++) for (let k = 0; k < r * r; k++) wr.push(r);
+  const wr = []; // weighted list of head rows: higher rows appear more often (SNAKE_ROW_BIAS_POWER controls how strongly)
+  for (let r = 1; r <= SNAKE_HEAD_ROWS; r++) for (let k = 0; k < Math.round(Math.pow(r, SNAKE_ROW_BIAS_POWER)); k++) wr.push(r);
+  const rowCount = {}; // how many snake heads are already on each row, so later ones don't all pile onto the same row (see MAX_SNAKES_PER_ROW)
+  [h1, h2].forEach((h) => { const r = rc(h)[0]; rowCount[r] = (rowCount[r] || 0) + 1; });
   for (let i = 2; i < CONFIG.SNAKES; i++) {
     // the remaining snakes
     let done = false;
@@ -73,10 +75,12 @@ function tryBoard() {
         tr = Math.max(0, hr - rnd(...SNAKE_DROP_ROWS)),
         hc = rnd(0, LAST_COL),
         tc = cl(hc + rnd(-SNAKE_TAIL_SHIFT, SNAKE_TAIL_SHIFT), 0, LAST_COL);
+      if ((rowCount[hr] || 0) >= MAX_SNAKES_PER_ROW + (k < RELAX_AFTER ? 0 : 1)) continue;   // that row already has enough heads (briefly allow one more if we're struggling to finish the board)
       const h = toN(hr, hc),
         t = toN(tr, tc);
       if (h - t >= SNAKE_MIN_DROP && add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, h, t)) {
         Sn[h] = t;
+        rowCount[hr] = (rowCount[hr] || 0) + 1;
         done = true;
       }
     }

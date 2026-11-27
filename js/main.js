@@ -466,8 +466,6 @@ function showTab(k) {
     NET.unreadChat = 0;
     const btn = $("tb_chat");
     if (btn) btn.classList.remove("unread");
-    // put the cursor in the typing field. The panel is still hidden for a moment while it slides in (a hidden field cannot take the cursor), so wait CHAT_FOCUS_DELAY_MS first.
-    setTimeout(() => { const inp = $("chatInput"); if (TAB === "chat" && inp) inp.focus({ preventScroll: true }); }, CHAT_FOCUS_DELAY_MS);
   }
 }
 // ---- Current Event panel: shows the latest lines of the log (the flavour text) in a big font. A watcher on the hidden #log fills it, so lines from every source appear (host, guests, game rules). ----
@@ -524,6 +522,18 @@ $("boxes").innerHTML = BOXES.map(b => `<div class="box" id="${b.id}" style="left
 // ---- start-up ----
 loadSounds();                   // decode the sound effects in the background (see audio.js)
 drawSetup();                    // show the setup screen straight away
+// clearRoomParam(): removes "?room=..." from the address bar without reloading the page, once that invite link has been used.
+// An invite link only means "join this room" on the ONE page load it arrives on. If it stays in the address bar, a later refresh of the SAME tab
+// (for example, mid-match, long after the player joined a different lobby by typing its code) would wrongly look like a brand-new invite to the
+// OLD room every time, and both autoRejoin() below and title.js's own invite-link check would try to send the player back to that old room instead
+// of the room they are actually in now.
+function clearRoomParam() {
+  try {
+    const u = new URL(location.href);
+    u.searchParams.delete("room");
+    history.replaceState(null, "", u.pathname + u.search + u.hash);
+  } catch (e) {}
+}
 window.REJOIN_P = loadAssets().then(async () => {
   drawSetup();
   if (typeof autoRejoin === "function" && await autoRejoin()) return true;   // the page was reloaded or crashed in the middle of an online game: back to the seat (title.js waits for this, so the title animations never play)
@@ -533,6 +543,7 @@ window.REJOIN_P = loadAssets().then(async () => {
   if (roomParam && !window.TITLE_ACTIVE) {   // (with the new title screen, js/title.js opens the Join screen for invite links instead)
     setGameMode("online");
     joinRoom(roomParam);
+    clearRoomParam();
   }
   return false;
 });

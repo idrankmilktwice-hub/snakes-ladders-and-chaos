@@ -222,7 +222,9 @@ const TOP_LADDER_TRIES = 60;            // attempts to place that ladder
 const MIN_GAP_STRICT = 2, MIN_GAP_RELAXED = 1;   // snake / ladder squares must be at least this many squares apart (strict first, relaxed after RELAX_AFTER tries)
 const RELAX_AFTER = 40;                 // after this many failed tries the gap rule is relaxed
 const PLACE_TRIES = 80;                 // attempts to place each other snake / ladder before giving up on the whole board
-const SNAKE_HEAD_ROWS = 8;              // other snake heads may be on rows 1 to this (higher rows are more likely: weight = row x row)
+const SNAKE_HEAD_ROWS = 8;              // other snake heads may be on rows 1 to this (higher rows are more likely; how much more is SNAKE_ROW_BIAS_POWER below)
+const SNAKE_ROW_BIAS_POWER = 1.6;       // how strongly higher rows are favoured for a snake head (was a fixed x*x, i.e. 2; a smaller number spreads heads over more rows)
+const MAX_SNAKES_PER_ROW = 2;           // at most this many snake heads on the same row at first (prevents several snakes bunching on one row); relaxed by 1 after RELAX_AFTER tries, same as the gap rule below, so the board generator doesn't give up
 const SNAKE_DROP_ROWS = [1, 4];         // other snakes drop this many rows (min, max)
 const SNAKE_TAIL_SHIFT = 4;             // ...and their tail is up to this many columns to the left or right
 const SNAKE_MIN_DROP = 6;               // every snake must slide down at least this many squares
@@ -302,8 +304,6 @@ const CAT_KNOCKDOWN = 10;               // the cat knocks a player down this man
 const CAT_BONUS_PER_HIT = 3;            // the cat owner gains this much on her next roll for every player knocked down
 const ENERGY_DRINK_BONUS = 3;           // an energy drink adds this to the next roll
 const BRICK_PENALTY = 3;                // stepping on a toy brick takes this off the next roll
-const STONE_PENALTY = 1;                // a stone hit takes this off the victim's next roll
-const CAT_CHARM_PENALTY = 1;            // a player the cat charms loses this much on their next roll
 const CHARMER_ROW_REACH = 1;            // the Snake Charmer can move snake heads on her own row and this many rows above / below
 const ITEM_START_ROWS = 5;              // new items are a little more likely on rows below this (near the start)...
 const ITEM_START_WEIGHT = 1.25;         // ...by this factor (1 = no difference)
@@ -437,21 +437,6 @@ const ITEMS = {
   drink: { name: "Energy drink", file: "item_energy_drink.svg", w: 66.48, h: 81.67 },
   stone: { name: "Stone",       file: "item_stone.svg",        w: 77.28, h: 50.04 }
 };
-// ---- Hover bubbles (the small speech bubbles that show when the mouse rests on an item or on the Buff / Debuff square; see "HOVER BUBBLES" in render.js) ----
-// ITEM_TIPS: the one short line shown for each item type (the numbers come from the constants above, so the text always matches the rules).
-const ITEM_TIPS = {
-  stick: "Stick: nudge a snake head",
-  brick: `Toy Brick: -${BRICK_PENALTY} if stepped on`,
-  drink: `Energy Can: +${ENERGY_DRINK_BONUS} to self`,
-  stone: `Stone: -${STONE_PENALTY} to next roll`
-};
-// FX_LABELS: the Buff / Debuff square lists one line per source that is currently affecting the player, written "+3 from <label>" (rules.js addBuff / addDebuff).
-const FX_LABELS = { drink: "Energy Can", cat: "Cat knock-downs", stone: "Stones", brick: "Toy Bricks", charm: "Cat charm" };
-const TIP_NO_EFFECTS = "No buffs or debuffs";   // shown when nothing is affecting the player
-const TIP_GAP_PX = 10;                       // space between the hovered thing and its bubble (stage pixels)
-const TIP_EDGE_PX = 8;                       // the bubble never gets closer than this to the edge of the screen
-const TIP_TAIL_MARGIN_PX = 16;               // the bubble's little pointer stays at least this far from the bubble's corners
-const CHAT_FOCUS_DELAY_MS = 150;             // after the Chat tab is clicked, wait this long (the panel is still sliding in and cannot take the cursor yet) before putting the cursor in the typing field
 const ITEM_START = 6;        // how many items are lying on the board when a game starts
 const ITEM_EVERY = 3;        // a new item appears every this-many turns
 const ITEM_MAX = 3;          // most items a player can hold

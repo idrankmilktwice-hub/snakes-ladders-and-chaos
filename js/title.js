@@ -545,6 +545,7 @@ async function initTitle() {
       TT.instant = false;
       root.style.visibility = "";
       autoJoin(room);
+      clearRoomParam();   // the invite link has done its job; forget it before this player ever joins (or finishes) another game in this tab
     }
   } catch (e) {
     TT.instant = false;
@@ -555,6 +556,7 @@ async function initTitle() {
       window.TITLE_ACTIVE = false;
       setGameMode("online");
       joinRoom(room);
+      clearRoomParam();
     }
   }
 }

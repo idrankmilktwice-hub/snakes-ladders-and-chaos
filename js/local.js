@@ -120,8 +120,9 @@ async function showLocal(mode) {
   L.style.display = "block"; layoutRows(); syncRows();
   const grp = { local: $("tCnt"), host: $("tHost"), join: $("tJoin") }[mode];
   const items = [...L.querySelectorAll(".lrow")].slice(0, S.n).map(r => r.firstChild).concat([grp, $("tStart")]);
-  if (TT.instant) return;   // invite link: the lines are simply there
+  if (TT.instant) { if (mode === "join") $("jCode").focus(); return; }   // invite link: the lines are simply there (put the cursor in the code box right away)
   await Promise.race([Promise.all(items.map((el, k) => slideIn(el, LOBBY_SLIDE_DX, k * LOBBY_STAGGER.in).finished)), sleep(LOBBY_SLIDE_TIMEOUT_MS.in)]);
+  if (mode === "join") $("jCode").focus();   // the lines have finished sliding in: put the cursor in the code box so the player can start typing straight away
 }
 // hideLocal(): back - the lines slide out the way they came, last first. Leaving an online lobby disconnects.
 async function hideLocal() {
