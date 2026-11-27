@@ -429,7 +429,7 @@ function rollDice(n, who) {
     DD = null;
     if (DICE.hideTimer) { clearTimeout(DICE.hideTimer); DICE.hideTimer = null; }
     spawnDiceElements(n, isMyTurn, roller && roller.character);   // (everybody sees the dice in the design of the player who throws, not of whoever's turn it is)
-    trayShow();                                       // the dice appear on the board (everybody sees them)
+    if (isMyTurn) trayShow(); else trayHide();        // only the player who throws sees the waiting dice; everybody else sees them once the roll is thrown (launch() shows the layer)
     DICE.waiting = true; DICE.flying = false; DICE.canInteract = isMyTurn;
 
     if (isMyTurn) {

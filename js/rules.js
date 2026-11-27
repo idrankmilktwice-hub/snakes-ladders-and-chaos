@@ -53,7 +53,7 @@ function syncGameState() {
     broadcast({
       type: "STATE_SYNC",
       stateSeq: ++NET.stateSeq,
-      players: G.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd || 0, disc: !!p.disconnected, ab: !!p.abandoned })),
+      players: G.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, fx: p.fx, items: p.items, big: p.big, cd: p.cd || 0, disc: !!p.disconnected, ab: !!p.abandoned })),
       turnNo: G.turnNo || 0,
       S: G.S,
       L: G.L,
@@ -134,8 +134,13 @@ async function hit(v, np, why) {
 }
 // rollBonus(p): read and clear player p's pending bonus (p.cb: energy drinks, cat knock-downs) and penalty (p.pen: cat charm, stones, toy bricks).
 // Returns bonus - penalty, which is added to their roll (the move is never less than 0). These are the numbers on the Buff / Debuff counters.
+// ---- Buff / Debuff bookkeeping. p.cb / p.pen are the two totals; p.fx remembers WHERE the points came from (so the hover bubble on the Buff / Debuff square can list them):
+// p.fx = { drink: +3, stone: -2, ... } (buffs positive, debuffs negative; sources are the keys of FX_LABELS in config.js). Always use these two helpers to change cb / pen.
+function noteEffect(p, source, signed) { p.fx = p.fx || {}; p.fx[source] = (p.fx[source] || 0) + signed; }
+function addBuff(p, source, n) { p.cb = (p.cb || 0) + n; noteEffect(p, source, n); }       // +n on the next roll
+function addDebuff(p, source, n) { p.pen = (p.pen || 0) + n; noteEffect(p, source, -n); }   // -n on the next roll
 function rollBonus(p) {
-  const b = p.cb || 0, d = p.pen || 0; p.cb = 0; p.pen = 0;
+  const b = p.cb || 0, d = p.pen || 0; p.cb = 0; p.pen = 0; p.fx = {};   // (the bonus is used up, so the list of sources is emptied too)
   if (b) log(`${p.name} adds a +${b} bonus to this roll.`);
   if (d) log(`${p.name} suffers a -${d} penalty on this roll.`);
   if (b || d) { render(); syncGameState(); }
@@ -144,8 +149,8 @@ function rollBonus(p) {
 // infatuate(v): the cat charms v (-1 on their next roll). The Struggler may resist.
 async function infatuate(v) {
   if (v.character === "struggler" && !v.disconnected) { const r = await rollCheck(v, "roll against the cat\u2019s charm (even = immune)"); log(`${v.name} rolls ${r} against the cat\u2019s charm.`); if (r % 2 === 0) { cheer(v); log("Even! Immune to cuteness."); return; } log("Odd. Those eyes are irresistible."); }
-  v.pen = (v.pen || 0) + 1;
-  log(`${v.name} is infatuated with the cat: -1 on their next roll.`);
+  addDebuff(v, "charm", CAT_CHARM_PENALTY);
+  log(`${v.name} is infatuated with the cat: -${CAT_CHARM_PENALTY} on their next roll.`);
   render(); syncGameState();
 }
 
@@ -332,7 +337,7 @@ async function catTurn(p) {
     for (const v of G.players.filter(q => q !== p && q.pos !== t && path.has(q.pos))) await infatuate(v);
     let k = 0;
     for (const v of G.players.filter(q => q !== p && q.pos === t)) if (await hit(v, v.pos > CAT_KNOCKDOWN ? v.pos - CAT_KNOCKDOWN : 1, "knocked down by the cat")) k++;
-    if (k) { p.cb = (p.cb || 0) + CAT_BONUS_PER_HIT * k; log(`${p.name} gains +${CAT_BONUS_PER_HIT * k} on her next roll. Good kitty!`); render(); syncGameState(); }
+    if (k) { addBuff(p, "cat", CAT_BONUS_PER_HIT * k); log(`${p.name} gains +${CAT_BONUS_PER_HIT * k} on her next roll. Good kitty!`); render(); syncGameState(); }
   }
   G.catNow = false; render(); syncGameState();
 }
@@ -394,7 +399,7 @@ async function landOn(p) {
   const it = itemAt(p.pos);
   if (!it || p.disconnected) return;                                // a disconnected pawn picks nothing up and trips nothing
   if (it.trap) {                                                    // a toy-brick trap: it hurts whoever steps on it, including the player who placed it
-    G.items.splice(G.items.indexOf(it), 1); p.pen = (p.pen || 0) + BRICK_PENALTY; log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, TRAP_YELP_DELAY_MS); render(); syncGameState(); return;   // ouch: the character reacts just after the thud
+    G.items.splice(G.items.indexOf(it), 1); addDebuff(p, "brick", BRICK_PENALTY); log(FLAVOR.trap(p.name)); sfx("press"); gameSfx("bad_" + p.character, TRAP_YELP_DELAY_MS); render(); syncGameState(); return;   // ouch: the character reacts just after the thud
   }
   const name = ITEMS[it.type].name;
   if (p.items.length < ITEM_MAX) { G.items.splice(G.items.indexOf(it), 1); p.items.push(it.type); log(FLAVOR.pickup(p.name, name)); sfx("small"); cheer(p); render(); syncGameState(); return; }
@@ -419,7 +424,7 @@ async function useItem(p, i) {
     p.items.splice(i, 1); render(); syncGameState();
     await flyItem("drink", from, elCenter($("pw" + pi)), "toss");
     gameSfx("drink");   // glug!
-    p.cb = (p.cb || 0) + ENERGY_DRINK_BONUS; p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
+    addBuff(p, "drink", ENERGY_DRINK_BONUS); p.big = true; log(FLAVOR.drink(p.name)); render(); syncGameState();
   } else if (type === "stone") {                                    // -1 for another player (never the cat)
     const others = G.players.filter(q => q !== p && !q.abandoned);
     if (!others.length) { log("There is nobody to throw the stone at."); return; }
@@ -434,7 +439,7 @@ async function useItem(p, i) {
     p.items.splice(i, 1); render(); syncGameState();
     await flyItem("stone", from, xy(sq), "toss");   // (the stone impact sound plays as it lands, see flyItem in input.js)
     gameSfx("bad_" + v.character, STONE_BAD_DELAY, true);   // then the victim reacts, a moment after the impact
-    v.pen = (v.pen || 0) + 1; log(FLAVOR.stone(p.name, v.name)); render(); syncGameState();
+    addDebuff(v, "stone", STONE_PENALTY); log(FLAVOR.stone(p.name, v.name)); render(); syncGameState();
   } else if (type === "brick") {                                    // a trap in your row or the rows above/below
     const targets = [], row = rowOf(p.pos);
     for (let r = Math.max(0, row - 1); r <= Math.min(LAST_ROW, row + 1); r++) for (let c = 0; c < BOARD_COLS; c++) {

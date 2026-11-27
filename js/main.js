@@ -466,6 +466,8 @@ function showTab(k) {
     NET.unreadChat = 0;
     const btn = $("tb_chat");
     if (btn) btn.classList.remove("unread");
+    // put the cursor in the typing field. The panel is still hidden for a moment while it slides in (a hidden field cannot take the cursor), so wait CHAT_FOCUS_DELAY_MS first.
+    setTimeout(() => { const inp = $("chatInput"); if (TAB === "chat" && inp) inp.focus({ preventScroll: true }); }, CHAT_FOCUS_DELAY_MS);
   }
 }
 // ---- Current Event panel: shows the latest lines of the log (the flavour text) in a big font. A watcher on the hidden #log fills it, so lines from every source appear (host, guests, game rules). ----

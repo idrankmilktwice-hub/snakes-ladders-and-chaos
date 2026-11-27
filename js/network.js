@@ -1461,7 +1461,7 @@ function buildSnapshot() {
     hostIdx: NET.myPlayerIndex,
     hashes: NET.seatHash.slice(0, G.players.length),
     stateSeq: NET.stateSeq,
-    players: G.players.map(p => ({ name: p.name, character: p.character, pos: p.pos, color: p.color, items: (p.items || []).slice(), cb: p.cb || 0, pen: p.pen || 0, big: !!p.big, cd: p.cd || 0, disconnected: !!p.disconnected })),
+    players: G.players.map(p => ({ name: p.name, character: p.character, pos: p.pos, color: p.color, items: (p.items || []).slice(), cb: p.cb || 0, pen: p.pen || 0, fx: Object.assign({}, p.fx), big: !!p.big, cd: p.cd || 0, disconnected: !!p.disconnected })),
     items: G.items,
     turnNo: G.turnNo || 0,
     L: G.L, S: G.S, cobra: G.cobra, kind: G.kind,
@@ -1492,7 +1492,7 @@ function applyJoinSnapshot(snap) {
     G._stateSeq = snap.stateSeq || 0;        // the host's numbering is the truth now (a new host may count from a different place)
     applyStateSync({
       stateSeq: snap.stateSeq || 0, turnNo: snap.turnNo,
-      players: snap.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, items: p.items, big: p.big, cd: p.cd, disc: p.disconnected, ab: p.abandoned })),
+      players: snap.players.map(p => ({ pos: p.pos, cb: p.cb, pen: p.pen, fx: p.fx, items: p.items, big: p.big, cd: p.cd, disc: p.disconnected, ab: p.abandoned })),
       S: snap.S, L: snap.L, items: snap.items, cat: snap.cat, catSkin: snap.catSkin, catNow: snap.catNow,
       curIndex: snap.curIndex, winnerIndex: snap.winnerIndex
     });
@@ -2331,6 +2331,7 @@ function applyStateSync(msg) {
         }
         gp.cb = mp.cb;
         gp.pen = mp.pen;
+        gp.fx = mp.fx || {};   // where the buff / debuff points came from (for the hover bubble)
         gp.items = mp.items;
         gp.big = mp.big;
         if (mp.cd !== undefined) gp.cd = mp.cd;

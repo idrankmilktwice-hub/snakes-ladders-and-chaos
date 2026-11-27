@@ -265,7 +265,7 @@ function renderItems() {
   let s = "";
   for (const it of G.items) {
     const [x, y] = xy(it.sq), k = ITEM_BOARD_SCALE[it.type] || 1, f = itemFit(it.type, ITEM_BOARD_W * BS * k, ITEM_BOARD_H * BS * k);
-    s += `<image class="gitem${it.trap ? " trap" : ""}" href="${A(ITEMS[it.type].file)}" x="${f1(x - f.w / 2)}" y="${f1(y - f.h / 2 - 2)}" width="${f1(f.w)}" height="${f1(f.h)}"/>`;
+    s += `<image class="gitem${it.trap ? " trap" : ""}" data-tip="item:${it.type}" href="${A(ITEMS[it.type].file)}" x="${f1(x - f.w / 2)}" y="${f1(y - f.h / 2 - 2)}" width="${f1(f.w)}" height="${f1(f.h)}"/>`;
   }
   $("gItems").innerHTML = s;
 }
@@ -403,14 +403,14 @@ function slotCenter(i, j) { const el = document.querySelector(`.slot[data-p="${i
 function buildPanels() {
   const f = PANEL.field, pt = PANEL.portrait, c = PANEL.counter;
   $("panels").innerHTML = G.players.map((p, i) => {
-    const slots = PANEL.slots.map((s, j) => `<div class="slot" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
+    const slots = PANEL.slots.map((s, j) => `<div class="slot" title="" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
     return `<div class="pp" id="pp${i}" title="${esc(CHARACTERS.find(ch => ch.id === p.character).name)}"><div class="pbody">` +
       `<img class="pbg" src="${A("player_panel.svg")}" alt="">` +
       `<div class="pcol" style="left:${pt.cx - PANEL.disc}px;top:${pt.cy - PANEL.disc}px;width:${PANEL.disc * 2}px;height:${PANEL.disc * 2}px;background:${p.color}"></div>` +   // a disc in the player's pawn colour, behind the head and on top of the panel's dark circle
       `<img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size}px">` +
       `<img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">` +
       `<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - NAME_PAD, NAME_MAX_FONT)}px">${esc(p.name)}</div>${slots}` +
-      `<div class="cnt" id="cn${i}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px"></div></div></div>`;
+      `<div class="cnt" id="cn${i}" title="" data-tip="net:${i}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px"></div></div></div>`;
   }).join("");
   placePanels();
   requestAnimationFrame(() => requestAnimationFrame(() => $("panels").classList.add("anim")));   // switch the glide animation on only AFTER the first placement, so panels don't fly in from the corner
@@ -436,9 +436,10 @@ function updateSlots() {
       const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`), t = p.items[j] || "";
       if (el.dataset.t === t) return;
       el.dataset.t = t;
-      if (!t) { el.innerHTML = ""; return; }
+      if (!t) { el.innerHTML = ""; el.removeAttribute("data-tip"); return; }
       const f = itemFit(t, SLOT_ITEM_W, SLOT_ITEM_H);
-      el.innerHTML = `<img src="${A(ITEMS[t].file)}" alt="${ITEMS[t].name}" title="${ITEMS[t].name}" style="width:${f.w}px;height:${f.h}px">`;
+      el.dataset.tip = "item:" + t;                                  // the hover bubble reads this (see HOVER BUBBLES below)
+      el.innerHTML = `<img src="${A(ITEMS[t].file)}" alt="${ITEMS[t].name}" style="width:${f.w}px;height:${f.h}px">`;
     });
   });
 }
@@ -485,6 +486,7 @@ function render() {
     setNet(i, (p.cb || 0) - (p.pen || 0));                                           // buff minus debuff in the 4th square
   });
   if (G.cat && $("pwc")) $("pwc").classList.toggle("act", !!G.catNow && !G.winner);
+  refreshTip();                                                                    // a bubble that is open follows the change (item used, buff gone...)
 }
 
 // updateDisconnectLook(p, i, pp, pw): show / hide the disconnected icon on player i's panel and fade their pawn.
@@ -509,3 +511,49 @@ function switchCat() {
   if ($("catimg")) $("catimg").setAttribute("href", catHref());
   if (typeof NET !== "undefined" && NET.active && NET.isHost && typeof syncGameState === "function") syncGameState();
 }
+
+// ------------------------------------------------------------------ HOVER BUBBLES
+// Small speech bubbles (the #tip element in index.html, styled in css) that appear when the mouse rests on anything with a data-tip attribute:
+//   data-tip="item:<type>"  - an item (on the board or in a player's slot): shows its ITEM_TIPS line (config.js)
+//   data-tip="net:<i>"      - player i's Buff / Debuff square: one line per source that affects them right now (player.fx, kept by addBuff / addDebuff in rules.js)
+// To give another element a bubble: put data-tip on it and add a case to tipLines().
+let TIP_EL = null;   // the element the bubble is currently attached to (null = no bubble)
+// tipLines(key): the lines of text for a data-tip value (each line is shown on its own row).
+function tipLines(key) {
+  const [kind, id] = String(key).split(":");
+  if (kind === "item") return ITEM_TIPS[id] ? [ITEM_TIPS[id]] : [];
+  if (kind === "net") {
+    const p = G && G.players[+id], fx = (p && p.fx) || {};
+    const lines = Object.keys(FX_LABELS).filter(src => fx[src]).map(src => `${fx[src] > 0 ? "+" : "-"}${Math.abs(fx[src])} from ${FX_LABELS[src]}`);   // e.g. "-2 from Stones"
+    return lines.length ? lines : [TIP_NO_EFFECTS];
+  }
+  return [];
+}
+// hideTip(): close the bubble.
+function hideTip() { TIP_EL = null; const t = $("tip"); if (t) t.style.display = "none"; }
+// showTip(el): fill the bubble for element el and put it just above it (below it if there is no room above), kept inside the screen.
+function showTip(el) {
+  const t = $("tip"), key = el && el.getAttribute("data-tip"), lines = key ? tipLines(key) : [];
+  if (!t || !lines.length) { hideTip(); return; }
+  TIP_EL = el;
+  t.innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join("");   // one row per line
+  t.style.display = "block";
+  const r = el.getBoundingClientRect(), s = $("stage").getBoundingClientRect(), k = STAGE_W / s.width;   // (k converts window pixels to stage pixels)
+  const cx = (r.left + r.width / 2 - s.left) * k, top = (r.top - s.top) * k, bottom = (r.bottom - s.top) * k;
+  const w = t.offsetWidth, h = t.offsetHeight;
+  const left = cl(cx - w / 2, TIP_EDGE_PX, STAGE_W - w - TIP_EDGE_PX);
+  const above = top - TIP_GAP_PX - h >= TIP_EDGE_PX;
+  t.style.left = f1(left) + "px";
+  t.style.top = f1(above ? top - TIP_GAP_PX - h : bottom + TIP_GAP_PX) + "px";
+  t.style.setProperty("--tail", f1(cl(cx - left, TIP_TAIL_MARGIN_PX, w - TIP_TAIL_MARGIN_PX)) + "px");   // the little pointer aims at the middle of the hovered thing
+  t.classList.toggle("below", !above);
+}
+// refreshTip(): called after every render(): re-read the text of an open bubble, or close it if its element is gone.
+function refreshTip() { if (TIP_EL) { if (document.contains(TIP_EL) && TIP_EL.hasAttribute("data-tip")) showTip(TIP_EL); else hideTip(); } }
+// The mouse moved onto something: open the bubble if it (or a parent) has a data-tip, otherwise close it.
+document.addEventListener("pointerover", e => {
+  const el = e.target && e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (el === TIP_EL) return;
+  if (el) showTip(el); else hideTip();
+});
+document.addEventListener("pointerout", e => { if (!e.relatedTarget) hideTip(); });   // the mouse left the window

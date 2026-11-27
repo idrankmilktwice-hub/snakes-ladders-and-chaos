@@ -5,7 +5,7 @@
   <title>Snakes, Ladders and Chaos!</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="assets/game_icon.svg" type="image/svg+xml">   <!-- the game icon: the browser tab icon (put game_icon.svg in assets/) -->
-  <link rel="stylesheet" href="css/style.css?v=32">
+  <link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body>
   <!-- Everything lives on a fixed 1920x1080 "stage" that main.js scales to fit the window. -->
@@ -51,6 +51,7 @@
         <div id="opMusic" class="rp op"></div>                                    <!-- Music volume, song, play / loop / shuffle -->
       </div>
     </div>
+    <div id="tip"></div>                         <!-- the small hover bubble for items and the Buff / Debuff square (js/render.js HOVER BUBBLES) -->
     <div id="fly"></div>                         <!-- layer for thrown / sliding items -->
     <div id="setup" style="display:none"></div>                       <!-- start screen (setup) -->
     <div id="title"></div>                       <!-- title screen: logo, Play / Options / About (js/title.js) -->
@@ -64,21 +65,21 @@
   </div>
   <!-- The code, in loading order (each file only uses things from the files above it). -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="js/config.js?v=32"></script>
-  <script src="js/board.js?v=32"></script>
-  <script src="js/art.js?v=32"></script>
-  <script src="js/audio.js?v=32"></script>
-  <script src="js/preload.js?v=32"></script>
-  <script src="js/render.js?v=32"></script>
-  <script src="js/network.js?v=32"></script>
-  <script src="js/input.js?v=32"></script>
-  <script src="js/prompts.js?v=32"></script>
-  <script src="js/endgame.js?v=32"></script>
-  <script src="js/bubbles.js?v=32"></script>
-  <script src="js/rules.js?v=32"></script>
-  <script src="js/rulebook.js?v=32"></script>
-  <script src="js/main.js?v=32"></script>
-  <script src="js/title.js?v=32"></script>
-  <script src="js/local.js?v=32"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/board.js?v=33"></script>
+  <script src="js/art.js?v=33"></script>
+  <script src="js/audio.js?v=33"></script>
+  <script src="js/preload.js?v=33"></script>
+  <script src="js/render.js?v=33"></script>
+  <script src="js/network.js?v=33"></script>
+  <script src="js/input.js?v=33"></script>
+  <script src="js/prompts.js?v=33"></script>
+  <script src="js/endgame.js?v=33"></script>
+  <script src="js/bubbles.js?v=33"></script>
+  <script src="js/rules.js?v=33"></script>
+  <script src="js/rulebook.js?v=33"></script>
+  <script src="js/main.js?v=33"></script>
+  <script src="js/title.js?v=33"></script>
+  <script src="js/local.js?v=33"></script>
 </body>
 </html>
