@@ -239,7 +239,7 @@ async function openPage(id) {
     $("title").classList.remove("busy");
     return;
   }
-  TT.card.firstChild.innerHTML = pageHtml(id);
+  TT.card.firstChild.innerHTML = `<div class="tp-scroll">${pageHtml(id)}</div>`;   // the text scrolls inside this inner layer, well short of .tp-card's rounded corners (css "PUSH THE SCROLLBAR IN")
   TT.card.querySelectorAll(".sfx-seg").forEach(
     (s) =>
       (s.onclick = () => {
@@ -545,7 +545,6 @@ async function initTitle() {
       TT.instant = false;
       root.style.visibility = "";
       autoJoin(room);
-      clearRoomParam();   // the invite link has done its job; forget it before this player ever joins (or finishes) another game in this tab
     }
   } catch (e) {
     TT.instant = false;
@@ -556,7 +555,6 @@ async function initTitle() {
       window.TITLE_ACTIVE = false;
       setGameMode("online");
       joinRoom(room);
-      clearRoomParam();
     }
   }
 }

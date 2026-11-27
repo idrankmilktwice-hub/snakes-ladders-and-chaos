@@ -111,8 +111,7 @@ b, strong { font-weight: normal; }
 .mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
 #modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 14px; }   /* (14px at the bottom = the gap above the X button, so the scroll bar has equal space above and below) */   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
 #modal h2 { flex: none; margin: 0 60px 12px 0; }
-#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c3f73a #1c1002; }
-#modal .mbody::-webkit-scrollbar { width: 8px; } #modal .mbody::-webkit-scrollbar-track { background: #1c1002; border-radius: 4px; } #modal .mbody::-webkit-scrollbar-thumb { background: #c3f73a; border-radius: 4px; }
+#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
 #modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
 #modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
 
@@ -146,8 +145,7 @@ b, strong { font-weight: normal; }
 #evPtxt { font-size: 26px; line-height: 1.15; }
 #evAct { display: flex; justify-content: center; margin-top: 12px; }
 /* Information */
-#about { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 16px 20px; overflow-y: auto; font-size: 22px; line-height: 1.3; scrollbar-width: thin; scrollbar-color: #2f2504 #d6f093; }
-#about::-webkit-scrollbar { width: 8px; } #about::-webkit-scrollbar-track { background: #d6f093; border-radius: 4px; } #about::-webkit-scrollbar-thumb { background: #2f2504; border-radius: 4px; border: 1px solid #d6f093; }
+#about { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 16px 20px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
 #about p { margin: 0 0 10px; }
 .xbtn { --xb-w: 34px; position: absolute; top: 14px; right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2); width: var(--xb-w); height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button: centred over the scroll bar below it (same centre line) */
 .ptitle { position: absolute; left: 20px; top: 16px; height: 30px; display: flex; align-items: center; font-family: MC, monospace; font-size: 26px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button: pixel font, aligned with the text below */
@@ -388,8 +386,15 @@ body.on-title #stage { background: none; }   /* the stage's blue would otherwise
 
 /* the page that opens under the title */
 #tPage { display: none; position: absolute; left: 260px; top: 270px; width: 1400px; height: 740px; }
-.tp-card { width: 100%; height: 100%; box-sizing: border-box; padding: 44px 64px; overflow: auto; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; scrollbar-width: thin; scrollbar-color: var(--tt-ink) rgba(0, 0, 0, .15); }
-.tp-card::-webkit-scrollbar { width: 10px; } .tp-card::-webkit-scrollbar-track { background: rgba(0, 0, 0, .15); border-radius: 5px; } .tp-card::-webkit-scrollbar-thumb { background: var(--tt-ink); border-radius: 5px; }
+.tp-card { width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; }
+.tp-scroll { position: absolute; left: 0; top: 0; right: 12px; bottom: 0; box-sizing: border-box; padding: 44px 52px 44px 64px; overflow-y: auto; scrollbar-width: auto; scrollbar-color: #7fa21a var(--tt-seg); }
+.tp-scroll::-webkit-scrollbar { width: 18px; }
+.tp-scroll::-webkit-scrollbar-track { background: var(--tt-seg); border-radius: 9px; }
+.tp-scroll::-webkit-scrollbar-thumb { background: #7fa21a; border: 3px solid var(--tt-seg); border-radius: 9px; background-clip: padding-box; }
+.tp-scroll::-webkit-scrollbar-thumb:hover { background: #6d8a16; }
+.tp-scroll::-webkit-scrollbar-button:vertical:start:decrement { display: block; height: 18px; background: #7fa21a; border-radius: 9px 9px 0 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M5 0L10 6H0Z' fill='%232f2504'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 9px 6px; }
+.tp-scroll::-webkit-scrollbar-button:vertical:end:increment { display: block; height: 18px; background: #7fa21a; border-radius: 0 0 9px 9px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0H10L5 6Z' fill='%232f2504'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 9px 6px; }
+.tp-scroll::-webkit-scrollbar-button:vertical:start:increment, .tp-scroll::-webkit-scrollbar-button:vertical:end:decrement { display: none; }
 .tp-card h2 { margin: 0 0 18px; font-family: LM, MC, monospace; font-weight: normal; font-size: 64px; text-transform: uppercase; } .tp-card p { margin: 0 0 16px; }
 .tt-vol { display: flex; gap: 6px; margin: 8px 0 20px; } .tt-seg { flex: 1; height: 54px; box-sizing: border-box; border: 4px solid var(--tt-ink); border-radius: 8px; background: var(--tt-seg); cursor: pointer; } .tt-seg.on { background: #ff7529; } .tt-seg:hover { filter: brightness(1.15); }
 
