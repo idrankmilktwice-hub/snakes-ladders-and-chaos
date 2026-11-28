@@ -1963,11 +1963,13 @@ body.on-title #stage {
   height: 740px;
 }
 .tp-card {
+  --tp-inset: 14px; /* how far the scrolling layer (.tp-scroll) is pulled in from the card's top, bottom and right edges: raise it to move the scroll bar further from the corners */
+  position: relative; /* the custom scroll bar (attachScrollbar in js/main.js) positions itself inside this card */
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  padding: 44px 64px;
-  overflow: auto;
+  padding: 0; /* the spacing now lives on .tp-scroll below, so the scroll bar can sit clear of the rounded corners */
+  overflow: hidden; /* the card itself never scrolls any more: only .tp-scroll does, and it gets the custom bar */
   background: var(--tt-card);
   color: var(--tt-ink);
   border: 6px solid var(--tt-ink);
@@ -1980,6 +1982,19 @@ body.on-title #stage {
     background-color 0.35s,
     color 0.35s,
     border-color 0.35s;
+}
+/* PUSH THE SCROLLBAR IN: the layer that actually scrolls (title.js openPage builds it, then calls attachScrollbar on it).
+   It is pulled in (--tp-inset) from the top, bottom and right of the card, so the olive bar stays clear of the card's rounded corners.
+   The padding below makes up the difference, so the text sits exactly where it did before. */
+.tp-scroll {
+  position: absolute;
+  left: 0;
+  top: var(--tp-inset);
+  right: var(--tp-inset);
+  bottom: var(--tp-inset);
+  box-sizing: border-box;
+  padding: calc(44px - var(--tp-inset)) calc(64px - var(--tp-inset)) calc(44px - var(--tp-inset)) 64px; /* keeps the text where it was: 44px top/bottom, 64px sides */
+  overflow-y: auto; /* the browser's own bar is hidden by the "scr" class that attachScrollbar adds */
 }
 .tp-card h2 {
   margin: 0 0 18px;

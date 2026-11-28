@@ -258,6 +258,7 @@ async function openPage(id) {
     return;
   }
   TT.card.firstChild.innerHTML = `<div class="tp-scroll">${pageHtml(id)}</div>`; // the text scrolls inside this inner layer, well short of .tp-card's rounded corners (css "PUSH THE SCROLLBAR IN")
+  attachScrollbar(TT.card.querySelector(".tp-scroll")); // the same custom olive scroll bar as the Rulebook panel (attachScrollbar lives in js/main.js); it only appears when the text is taller than the card
   TT.card.querySelectorAll(".sfx-seg").forEach(
     (s) =>
       (s.onclick = () => {
