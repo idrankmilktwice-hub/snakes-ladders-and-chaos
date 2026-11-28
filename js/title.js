@@ -129,7 +129,9 @@ function gbBuild(btn, h, label, opt) {
     opt.maxW && base + fixed > opt.maxW
       ? Math.max(GB_MIN_SHRINK, (opt.maxW - fixed) / base)
       : 1; // too long for maxW: shrink the text
-  const w = Math.ceil(Math.max(base * k + fixed, opt.minW || 0, GB_MIN_WIDTH * sc)); // never narrower than the art's two corners (too narrow made the face spill out of its shadow)
+  const w = Math.ceil(
+    Math.max(base * k + fixed, opt.minW || 0, GB_MIN_WIDTH * sc),
+  ); // never narrower than the art's two corners (too narrow made the face spill out of its shadow)
   btn.dataset.h = h;
   btn.style.setProperty("--sc", sc);
   btn.style.setProperty("--tk", k);
@@ -181,10 +183,12 @@ function pop(el, show, dx, dy) {
     easing: show ? EASE_BOUNCE : "ease-in",
     fill: "both",
   });
-  return Promise.race([a.finished.catch(() => {}), sleep(POP_SAFETY_MS)]).then(() => {
-    if (!show) el.style.display = "none";
-    a.cancel();
-  });
+  return Promise.race([a.finished.catch(() => {}), sleep(POP_SAFETY_MS)]).then(
+    () => {
+      if (!show) el.style.display = "none";
+      a.cancel();
+    },
+  );
 }
 
 // showSetup(): leave the title screen and show the current (old) setup screen.
@@ -200,9 +204,13 @@ function pageHtml(id) {
   if (id === "options") {
     let bar = "";
     for (let i = 1; i <= VOLUME_MAX; i++)
-      bar += `<div class="tt-seg sfx-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`;   // "sfx-seg" marks the SOUND EFFECTS bar only (the music bar from audio.js has its own class and click code)
+      bar += `<div class="tt-seg sfx-seg${i <= VOLUME ? " on" : ""}" data-v="${i}"></div>`; // "sfx-seg" marks the SOUND EFFECTS bar only (the music bar from audio.js has its own class and click code)
     // Sound effects bar, then the music controls (music volume, now playing, mute switch) from audio.js
-    return muteRowHtml() + `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * VOLUME_STEP_PERCENT + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` + musicPanelHtml("tt");
+    return (
+      muteRowHtml() +
+      `<div class="mu-head"><span class="mu-title">Sound effects</span><span id="ttVolNum">${VOLUME ? VOLUME * VOLUME_STEP_PERCENT + "%" : "Muted"}</span></div><div class="tt-vol">${bar}</div>` +
+      musicPanelHtml("tt")
+    );
   }
   if (id === "about") return $("about").innerHTML; // same text as the About tab in the game
   return `<h2>Play screen coming next</h2><p>The new play screen will go here. Until then, the current setup screen still starts a game.</p><p><button class="cbtn tt-open" style="--s:1.5;width:480px"><span>Open current setup</span></button></p>`;
@@ -222,9 +230,19 @@ async function openPage(id) {
   let j = 0;
   TT.btns.forEach((b, k) => {
     if (k !== i)
-      exits.push(glide(b, { x: b._x, y: TITLE.off }, TITLE_MS.btnExit, EASE_IN, TITLE_MS.btnExitStagger * j++));
+      exits.push(
+        glide(
+          b,
+          { x: b._x, y: TITLE.off },
+          TITLE_MS.btnExit,
+          EASE_IN,
+          TITLE_MS.btnExitStagger * j++,
+        ),
+      );
   }); // the other buttons slide off the bottom, quickly, one after another
-  exits.push(glide(TT.logo, { x: 0, y: TITLE.logoOff }, TITLE_MS.logoExit, EASE_IN, 0)); // the logo slides up off the top
+  exits.push(
+    glide(TT.logo, { x: 0, y: TITLE.logoOff }, TITLE_MS.logoExit, EASE_IN, 0),
+  ); // the logo slides up off the top
   await Promise.all(exits); // wait until everything has fully left...
   await glide(
     me,
@@ -239,7 +257,7 @@ async function openPage(id) {
     $("title").classList.remove("busy");
     return;
   }
-  TT.card.firstChild.innerHTML = `<div class="tp-scroll">${pageHtml(id)}</div>`;   // the text scrolls inside this inner layer, well short of .tp-card's rounded corners (css "PUSH THE SCROLLBAR IN")
+  TT.card.firstChild.innerHTML = `<div class="tp-scroll">${pageHtml(id)}</div>`; // the text scrolls inside this inner layer, well short of .tp-card's rounded corners (css "PUSH THE SCROLLBAR IN")
   TT.card.querySelectorAll(".sfx-seg").forEach(
     (s) =>
       (s.onclick = () => {
@@ -247,12 +265,17 @@ async function openPage(id) {
         TT.card
           .querySelectorAll(".sfx-seg")
           .forEach((q) => q.classList.toggle("on", +q.dataset.v <= VOLUME));
-        $("ttVolNum").textContent = VOLUME ? VOLUME * VOLUME_STEP_PERCENT + "%" : "Muted";
+        $("ttVolNum").textContent = VOLUME
+          ? VOLUME * VOLUME_STEP_PERCENT + "%"
+          : "Muted";
       }),
   );
   const op = TT.card.querySelector(".tt-open");
   if (op) op.onclick = showSetup;
-  await Promise.all([pop(TT.back, true, ...POP_BACK), pop(TT.card, true, ...POP_CARD)]);
+  await Promise.all([
+    pop(TT.back, true, ...POP_BACK),
+    pop(TT.card, true, ...POP_CARD),
+  ]);
   TT.state = "page";
   $("title").classList.remove("busy");
 }
@@ -264,13 +287,29 @@ async function closePage() {
   const i = TT.open,
     me = TT.btns[i];
   if (i === 0) await playRowsOut(); // Play page: the rows leave first, last row first
-  await Promise.all([pop(TT.back, false, ...POP_BACK), pop(TT.card, false, ...POP_CARD)]);
+  await Promise.all([
+    pop(TT.back, false, ...POP_BACK),
+    pop(TT.card, false, ...POP_CARD),
+  ]);
   glide(me, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, 0);
   let j = 0;
   TT.btns.forEach((b, k) => {
-    if (k !== i) glide(b, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, TITLE_MS.btnReturnDelay + TITLE_MS.btnReturnStagger * j++);
+    if (k !== i)
+      glide(
+        b,
+        { x: 0, y: 0 },
+        TITLE_MS.bounce,
+        EASE_BOUNCE,
+        TITLE_MS.btnReturnDelay + TITLE_MS.btnReturnStagger * j++,
+      );
   }); // the others slide back up from the bottom, one by one
-  glide(TT.logo, { x: 0, y: 0 }, TITLE_MS.logoReturn, EASE_BOUNCE, TITLE_MS.logoReturnDelay); // the logo drops back in from the top
+  glide(
+    TT.logo,
+    { x: 0, y: 0 },
+    TITLE_MS.logoReturn,
+    EASE_BOUNCE,
+    TITLE_MS.logoReturnDelay,
+  ); // the logo drops back in from the top
   await sleep(TITLE_MS.homeSettle);
   me.classList.remove("is-title");
   me.style.zIndex = "";
@@ -305,10 +344,14 @@ function slideRow(i, out, delay) {
 }
 async function playRowsIn() {
   $("tRows").style.display = "block";
-  await Promise.all(TT.rows.map((r, i) => slideRow(i, false, i * TITLE_MS.rowStaggerIn)));
+  await Promise.all(
+    TT.rows.map((r, i) => slideRow(i, false, i * TITLE_MS.rowStaggerIn)),
+  );
 } // first row first
 async function playRowsOut() {
-  await Promise.all([2, 1, 0].map((k, j) => slideRow(k, true, j * TITLE_MS.rowStaggerOut)));
+  await Promise.all(
+    [2, 1, 0].map((k, j) => slideRow(k, true, j * TITLE_MS.rowStaggerOut)),
+  );
   $("tRows").style.display = "none";
 } // the reverse order
 // openSub(i): a row was chosen. Everything else leaves the way it came (reverse order); the green button takes the title spot.
@@ -325,7 +368,13 @@ async function openSub(i) {
     if (k !== i) exits.push(slideRow(k, true, j * TITLE_MS.rowStaggerOut));
     else
       exits.push(
-        glide(TT.rows[i].o, { x: ROWPOS.oOff, y: 0 }, TITLE_MS.rowOut, EASE_IN, j * TITLE_MS.rowStaggerOut),
+        glide(
+          TT.rows[i].o,
+          { x: ROWPOS.oOff, y: 0 },
+          TITLE_MS.rowOut,
+          EASE_IN,
+          j * TITLE_MS.rowStaggerOut,
+        ),
       );
   });
   exits.push(
@@ -366,8 +415,16 @@ async function closeSub() {
     TITLE_MS.playReturnDelay,
   );
   [0, 1, 2].forEach((k, j) => {
-    if (k !== i) slideRow(k, false, TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn);
-    else glide(TT.rows[i].o, { x: 0, y: 0 }, TITLE_MS.bounce, EASE_BOUNCE, TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn);
+    if (k !== i)
+      slideRow(k, false, TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn);
+    else
+      glide(
+        TT.rows[i].o,
+        { x: 0, y: 0 },
+        TITLE_MS.bounce,
+        EASE_BOUNCE,
+        TITLE_MS.logoReturnDelay + j * TITLE_MS.rowStaggerIn,
+      );
   });
   await sleep(TITLE_MS.lobbySettle);
   g.classList.remove("is-title");
@@ -466,7 +523,11 @@ function buildTitle(root, logoSvg, btnSvg, backSvg) {
   TT.btns[2].addEventListener("animationend", (e) => {
     if (e.target === TT.btns[2]) enterHome();
   });
-  setTimeout(enterHome, (TITLE.btnStart + 2 * TITLE.btnGap + TITLE_MS.homeTail) * MS_PER_SECOND + TITLE_MS.homeSafety); // safety net if the animation event never fires
+  setTimeout(
+    enterHome,
+    (TITLE.btnStart + 2 * TITLE.btnGap + TITLE_MS.homeTail) * MS_PER_SECOND +
+      TITLE_MS.homeSafety,
+  ); // safety net if the animation event never fires
   root.addEventListener("pointerdown", () => {
     if (TT.state === "intro")
       root.getAnimations({ subtree: true }).forEach((a) => a.finish());
@@ -475,19 +536,25 @@ function buildTitle(root, logoSvg, btnSvg, backSvg) {
 
 // ---- "Attempting to reconnect to the Lobby" card (bottom right): text + countdown + a small green "Abandon Game" button ----
 function showReconnectCard() {
-  if (!TT.btnSvg) return;                       // the title screen is not built (fallback screen): nothing to show
+  if (!TT.btnSvg) return; // the title screen is not built (fallback screen): nothing to show
   let el = $("tReconn");
   if (!el) {
     el = document.createElement("div");
     el.id = "tReconn";
     el.innerHTML = `<span class="rc-text"></span><span class="rc-time" id="rcTime"></span><button class="gbtn" id="rcBtn"></button>`;
     $("stage").appendChild(el);
-    gbBuild($("rcBtn"), 44, "Abandon Game");    // the normal green button, just much smaller (the title buttons are 165 high)
-    $("rcBtn").onclick = () => { if (typeof abandonRejoin === "function") abandonRejoin(); };
+    gbBuild($("rcBtn"), 44, "Abandon Game"); // the normal green button, just much smaller (the title buttons are 165 high)
+    $("rcBtn").onclick = () => {
+      if (typeof abandonRejoin === "function") abandonRejoin();
+    };
   }
-  el.querySelector(".rc-text").textContent = "Attempting to reconnect to the Lobby";
-  $("rcTime").style.display = ""; $("rcBtn").style.display = "";
-  onRejoinTick(window.REJOIN_STATE ? window.REJOIN_STATE.msLeft : REJOIN_GIVEUP_MS);
+  el.querySelector(".rc-text").textContent =
+    "Attempting to reconnect to the Lobby";
+  $("rcTime").style.display = "";
+  $("rcBtn").style.display = "";
+  onRejoinTick(
+    window.REJOIN_STATE ? window.REJOIN_STATE.msLeft : REJOIN_GIVEUP_MS,
+  );
   el.style.display = "flex";
 }
 // onRejoinTick(msLeft): called by network.js while it keeps trying
@@ -499,10 +566,14 @@ function onRejoinTick(ms) {
 function onRejoinEnd(result) {
   const el = $("tReconn");
   if (!el) return;
-  if (result === "ended") {                    // say so for a moment, then tidy away
+  if (result === "ended") {
+    // say so for a moment, then tidy away
     el.querySelector(".rc-text").textContent = "The lobby has ended.";
-    $("rcTime").style.display = "none"; $("rcBtn").style.display = "none";
-    setTimeout(() => { el.style.display = "none"; }, BANNER_HIDE_MS);
+    $("rcTime").style.display = "none";
+    $("rcBtn").style.display = "none";
+    setTimeout(() => {
+      el.style.display = "none";
+    }, BANNER_HIDE_MS);
   } else el.style.display = "none";
 }
 
@@ -513,9 +584,20 @@ async function initTitle() {
   const root = $("title");
   $("setup").style.display = "none";
   // A page that is going back into a running game (reload / crash / closed and reopened) never shows the title at all: wait for the rejoin result first.
-  if (typeof sessionForAutoRejoin === "function" && sessionForAutoRejoin() && window.REJOIN_P) {
+  if (
+    typeof sessionForAutoRejoin === "function" &&
+    sessionForAutoRejoin() &&
+    window.REJOIN_P
+  ) {
     let back = false;
-    try { back = await Promise.race([window.REJOIN_P, sleep(REJOIN_TITLE_WAIT_MS).then(() => false)]); } catch (e) { /* treat as "not rejoined" */ }   // (if it takes longer than 2s the title appears, with a countdown card, and a late rejoin still takes over)
+    try {
+      back = await Promise.race([
+        window.REJOIN_P,
+        sleep(REJOIN_TITLE_WAIT_MS).then(() => false),
+      ]);
+    } catch (e) {
+      /* treat as "not rejoined" */
+    } // (if it takes longer than 2s the title appears, with a countdown card, and a late rejoin still takes over)
     if (back) return; // the game board is already showing
   }
   root.classList.add("on");
@@ -533,12 +615,18 @@ async function initTitle() {
       /* font not ready: the fallback shows briefly */
     }
     buildTitle(root, logo, btn, back);
-    if (window.REJOIN_STATE && window.REJOIN_STATE.active) showReconnectCard();   // still trying to get back into a game: show the countdown
+    if (window.REJOIN_STATE && window.REJOIN_STATE.active) showReconnectCard(); // still trying to get back into a game: show the countdown
     if (room) {
       // invite link: no animations at all - jump straight to the Join screen (hidden while it is put in place, so nothing flashes), then join
       root.style.visibility = "hidden";
       TT.instant = true;
-      root.getAnimations({ subtree: true }).forEach((a) => { try { a.finish(); } catch (e) { /* already done */ } });
+      root.getAnimations({ subtree: true }).forEach((a) => {
+        try {
+          a.finish();
+        } catch (e) {
+          /* already done */
+        }
+      });
       enterHome();
       await openPage("play");
       await openSub(2);

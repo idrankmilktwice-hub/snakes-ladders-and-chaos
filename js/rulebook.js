@@ -41,7 +41,9 @@ const CHARACTER_RULES = {
       k("1") +
       ", the gamble backfires: go BACK by the other die (never below 1) and the turn ends. Double 1s (snake eyes): stay put.",
     "No bonus roll for a single 6, only for " + k("double 6s") + ".",
-    "Past 100 he " + k("stays put") + ", like everybody else (no bouncing back).",
+    "Past 100 he " +
+      k("stays put") +
+      ", like everybody else (no bouncing back).",
     k("The finish:") +
       " from 97, 98 or 99 the total no longer counts. EITHER die must show the exact number needed (on 99, a 1 wins). If not, he stays - but a 1 still sends him back by the other die (double 1s: stay). From 96 and below the normal rule applies (an exact total of 100 wins; past 100 he stays).",
   ],
@@ -147,15 +149,38 @@ const RULES_HTML = () => `<div class="rb">
 <table>${BONUS_ROLL.map((r) => `<tr><td>${r[0]}</td><td class="${r[1] ? "yes" : "no"}">${r[1] ? "Yes" : "No"}</td><td>${r[2]}</td></tr>`).join("")}</table>
 <h2>The characters</h2>${CHARACTERS.map((c) => `<h3>${c.name}</h3>${ul(CHARACTER_RULES[c.id] || [c.text])}`).join("")}
 <h2>Prompts</h2>${ul([
-  "When you have to decide something, the board goes dark " + k("on your screen only") + " and your character steps in from the left. A panel next to them asks the question; press a button to answer.",
-  k("Bully:") + " PUSH or PULL, before he rolls (only if somebody is within 6 squares ahead).",
+  "When you have to decide something, the board goes dark " +
+    k("on your screen only") +
+    " and your character steps in from the left. A panel next to them asks the question; press a button to answer.",
+  k("Bully:") +
+    " PUSH or PULL, before he rolls (only if somebody is within 6 squares ahead).",
   k("Oracle:") + " predict a number from 1 to 6 before she rolls.",
-  k("Struggler:") + " pick two numbers to FAIL the climb when he lands on the bottom of a ladder.",
+  k("Struggler:") +
+    " pick two numbers to FAIL the climb when he lands on the bottom of a ladder.",
   "Before you roll (and when you hold items) the character stands next to the dice and the ROLL button. Glowing items on your panel can still be clicked; pressing one clears the board for its animation.",
-  "The red " + k("QUIT") + " button (bottom right, next to the other buttons) asks YES or NO. If you quit an online game your panel and pawn are removed, the others see \"<name> abandoned the game\" in the log, and you go back to the title screen.",
-  k("When somebody wins,") + " everybody sees the winner's character with " + k("WINNER!") + " and their name, and a PLAY AGAIN button. Players who did not win also get " + k("BOO") + " and " + k("CHEER") + ": they play a sad or happy sound of their own character that " + k("everybody") + " hears (sounds overlap, so spam away). In an online game " + k("PLAY AGAIN") + " takes the host to a new lobby with a new code and moves every connected player into it.",
-  "The small " + k("eye button") + " at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring the prompt back.",
-  "Everybody else just reads the " + k("Current Event") + " panel. While the game waits for YOUR move (or a target), that panel shows the message and a " + k("MOVE ME") + " button.",
+  "The red " +
+    k("QUIT") +
+    ' button (bottom right, next to the other buttons) asks YES or NO. If you quit an online game your panel and pawn are removed, the others see "<name> abandoned the game" in the log, and you go back to the title screen.',
+  k("When somebody wins,") +
+    " everybody sees the winner's character with " +
+    k("WINNER!") +
+    " and their name, and a PLAY AGAIN button. Players who did not win also get " +
+    k("BOO") +
+    " and " +
+    k("CHEER") +
+    ": they play a sad or happy sound of their own character that " +
+    k("everybody") +
+    " hears (sounds overlap, so spam away). In an online game " +
+    k("PLAY AGAIN") +
+    " takes the host to a new lobby with a new code and moves every connected player into it.",
+  "The small " +
+    k("eye button") +
+    " at the top right of the board hides the prompt and the darkness so you can look at the board; press it again to bring the prompt back.",
+  "Everybody else just reads the " +
+    k("Current Event") +
+    " panel. While the game waits for YOUR move (or a target), that panel shows the message and a " +
+    k("MOVE ME") +
+    " button.",
 ])}
 <h2>Items</h2>${ul([
   `The game starts with ${ITEM_START} random items on empty squares, and a new one appears every ${ITEM_EVERY} turns. Items never appear on square 1 or 100, under a pawn, the cat or another item, or on a snake head or the bottom of a ladder.`,
@@ -168,8 +193,21 @@ const RULES_HTML = () => `<div class="rb">
   k("Space bar") +
     ': roll the dice, or press the helper button ("Move me", "Just roll", "Roll", "Cancel").',
   k("Buttons at the bottom right") +
-    ": " + k("Settings") + " (Mute, SFX and Music volume from 0 to 10 with the arrows, song controls, and Switch Device in online games), " + k("Rulebook") + ", " + k("Board log") + " (everything that happens, with a bit of flavour text), " + k("Chat") + " (online games) and " + k("Information") + ". Press an open button again to go back to the Current Event panel.",
-  "Rulebook, Board log and Information open in a small panel; its " + k("expand button") + " opens the same text in a big window. Close the big window with the X or by clicking outside it.",
-  k("Current Event") + " panel: the latest events of the game, newest in big letters, plus the message when it is your turn to act.",
+    ": " +
+    k("Settings") +
+    " (Mute, SFX and Music volume from 0 to 10 with the arrows, song controls, and Switch Device in online games), " +
+    k("Rulebook") +
+    ", " +
+    k("Board log") +
+    " (everything that happens, with a bit of flavour text), " +
+    k("Chat") +
+    " (online games) and " +
+    k("Information") +
+    ". Press an open button again to go back to the Current Event panel.",
+  "Rulebook, Board log and Information open in a small panel; its " +
+    k("expand button") +
+    " opens the same text in a big window. Close the big window with the X or by clicking outside it.",
+  k("Current Event") +
+    " panel: the latest events of the game, newest in big letters, plus the message when it is your turn to act.",
 ])}
 </div>`;

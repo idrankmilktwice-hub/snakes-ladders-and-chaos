@@ -68,7 +68,7 @@ function prep(text, K) {
 // loadBody(file): load a picture as a BITMAP the canvas can slice up and stamp quickly. Used for snake BODIES (a long horizontal strip, thick at the
 // head end, thin at the tail) and for LADDERS.
 // BODY_RES = how many image pixels per SVG unit (2 = sharp when drawn at 2x). The SVG only has a viewBox, so width/height are added to a copy of its text.
-const BODY_RES = 3;   // (already a named number: picture pixels per SVG unit; 3 = very sharp)
+const BODY_RES = 3; // (already a named number: picture pixels per SVG unit; 3 = very sharp)
 async function loadBody(file) {
   let t = await T(file);
   const v = t
@@ -162,16 +162,27 @@ async function initPatternArt() {
 // initTabArt(): the five tab buttons (assets/button_settings.svg, button_rulebook.svg, button_boardlog.svg, button_chat.svg, button_about.svg) come in ONE colour (green).
 // The PRESSED (selected) look is made here by swapping the four colours inside a copy of each file's text (key face, base, highlight, icon) for orange ones.
 // ART.tabs[name] = { n: normal picture address, p: pressed picture address }, used by showTab() in main.js.
-const TAB_PRESSED = { "#c3f73a": "#ff7529", "#7d9926": "#d23a0e", "#eeffae": "#ffc99a", "#4b5b18": "#7a1f06" };   // green colour -> orange colour
+const TAB_PRESSED = {
+  "#c3f73a": "#ff7529",
+  "#7d9926": "#d23a0e",
+  "#eeffae": "#ffc99a",
+  "#4b5b18": "#7a1f06",
+}; // green colour -> orange colour
 async function initTabArt() {
   ART.tabs = {};
   for (const k of ["settings", "rulebook", "boardlog", "chat", "about"]) {
     try {
       const t = await T(`button_${k}.svg`);
-      const p = t.replace(/#[0-9a-fA-F]{6}\b/g, (c) => TAB_PRESSED[c.toLowerCase()] || c);
-      const url = (x) => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(x);
+      const p = t.replace(
+        /#[0-9a-fA-F]{6}\b/g,
+        (c) => TAB_PRESSED[c.toLowerCase()] || c,
+      );
+      const url = (x) =>
+        "data:image/svg+xml;charset=utf-8," + encodeURIComponent(x);
       ART.tabs[k] = { n: url(t), p: url(p) };
-    } catch (e) { console.warn("Tab button art missing:", k, e); }
+    } catch (e) {
+      console.warn("Tab button art missing:", k, e);
+    }
   }
 }
 
@@ -179,7 +190,11 @@ async function initTabArt() {
 // Browsers only fetch a font when something uses it, so this asks for it up front; the board is then drawn with the real font from the first frame.
 // If the font file is missing the game still works (the numbers fall back to a plain bold font).
 async function loadNumberFont() {
-  try { await document.fonts.load("40px Blustrue", "0123456789"); } catch (e) { console.warn("Blustrue font not loaded:", e); }
+  try {
+    await document.fonts.load("40px Blustrue", "0123456789");
+  } catch (e) {
+    console.warn("Blustrue font not loaded:", e);
+  }
 }
 
 // loadAssets(): reads manifest.json and every SVG it names. Called once when the page opens (see main.js).
@@ -254,7 +269,7 @@ function assignKinds() {
     headOf[t] = +h;
   }); // headOf[tail] = head square
   let pool = [...Array(ART.heads.length).keys()].sort(
-      () => Math.random() - .5,
+      () => Math.random() - 0.5,
     ),
     left = tails; // pool = all ordinary heads, shuffled once
   G.kind = {};

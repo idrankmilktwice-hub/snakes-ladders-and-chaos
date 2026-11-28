@@ -1,0 +1,267 @@
+==============================================================================
+  SNAKES, LADDERS AND CHAOS  -  BALANCE REPORT
+==============================================================================
+  Created:            2026-11-28 09:36:51
+  Lobby sizes:        6 players
+  Games per size:     2,000   (finished games in total: 2,000, unfinished: 0)
+  Random seed:        812100272   (run with --seed 812100272 to repeat this exact run)
+  Run time:           1.1 seconds on 12 CPU core(s)
+  Board:              9 snakes, 9 ladders (fresh random board every game)
+  Item numbers:       drink +3, brick -3, stone -1, cat charm -1, cat bonus +3 per hit
+
+  HOW TO READ THIS REPORT
+  * 'Fair' win rate = 1 divided by the number of players (for example 16.7% with 6).
+  * 'Diff' = actual win rate minus fair, in percentage points. '+/-' is the 95% margin
+    of error: a difference smaller than that is probably just luck of the dice.
+  * '>>' = 2+ points off fair.  '!!' = 4+ points off fair.
+  * Characters are drawn at random for every game, so every character meets every
+    mix of opponents. Win rate = wins / games that character was in.
+
+==============================================================================
+  1. OVERALL WIN RATES  (all lobby sizes together)
+==============================================================================
+  Character         Games    Wins   Win %  Fair %    Diff   +/-   Verdict
+------------------------------------------------------------------------------
+  Oracle            2,000     385   19.2%   16.7%    +2.6   1.7   >> stronger than fair
+  Struggler         2,000     356   17.8%   16.7%    +1.1   1.7   OK (within random noise)
+  Gambler           2,000     343   17.2%   16.7%    +0.5   1.7   OK (within random noise)
+  Cat Lady          2,000     314   15.7%   16.7%    -1.0   1.6   OK (within random noise)
+  Bully             2,000     304   15.2%   16.7%    -1.5   1.6   OK (within random noise)
+  Snake Charmer     2,000     298   14.9%   16.7%    -1.8   1.6   OK (slightly weaker)
+
+==============================================================================
+  2. WIN RATES BY LOBBY SIZE
+==============================================================================
+  6 players  (2,000 games, fair = 16.7%)
+  Character         Games    Wins   Win %    Diff   +/-   Verdict
+  Oracle            2,000     385   19.2%    +2.6   1.7   >> stronger than fair
+  Struggler         2,000     356   17.8%    +1.1   1.7   OK (within random noise)
+  Gambler           2,000     343   17.2%    +0.5   1.7   OK (within random noise)
+  Cat Lady          2,000     314   15.7%    -1.0   1.6   OK (within random noise)
+  Bully             2,000     304   15.2%    -1.5   1.6   OK (within random noise)
+  Snake Charmer     2,000     298   14.9%    -1.8   1.6   OK (slightly weaker)
+
+==============================================================================
+  3. GAME LENGTH  (a round = every player has had one turn)
+==============================================================================
+  Players    Average  Median  Shortest  Longest  Fast 10%  Slow 10%  Unfinished
+  6             13.6      13         2       40         7        21           0
+  ('Fast 10%' = 1 game in 10 ends within that many rounds; 'Slow 10%' = 1 in 10 lasts longer.)
+
+==============================================================================
+  4. WINS BY TURN-ORDER POSITION
+==============================================================================
+  Position 1 plays first. NOTE: the Snake Charmer is always first and the Cat Lady always
+  last, so these figures mix 'seat' and 'character'. Use them to spot a big first / last
+  mover effect, not to judge single characters.
+  6 players (fair 16.7% each):  #1: 14.9%   #2: 18.6%   #3: 17.2%   #4: 16.6%   #5: 17.0%   #6: 15.7%
+
+==============================================================================
+  5. ABILITIES  (totals over all games, and the average per game the character played)
+==============================================================================
+  BULLY   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Turns he chose PUSH (someone in reach)                                1,661  (0.83 per game)
+  Turns he chose PULL (someone in reach)                               10,171  (5.09 per game)
+  Turns with nobody in reach                                           19,816  (9.91 per game)
+  Landed exactly on a player (push / pull triggered)                    2,611  (1.31 per game)
+  Overpushed past 100 (no effect)                                          17  (0.01 per game)
+  Pushes that landed                                                      308  (0.15 per game)
+  Pushes dodged by the Struggler                                           28  (0.01 per game)
+  Average squares a pushed victim moved (after snakes / ladders)        -0.75  (over 308)
+  Victims pushed straight onto 100 (they won!)                              0  (0.00 per game)
+  Pulls that landed                                                     2,016  (1.01 per game)
+  Pulls dodged by the Struggler                                           242  (0.12 per game)
+  Average squares a pulled victim moved (after snakes / ladders)        -2.21  (over 2,016)
+  Players passed over (nudge chances)                                   6,726  (3.36 per game)
+  Nudged forward                                                        1,040  (0.52 per game)
+  Nudged back                                                           5,686  (2.84 per game)
+  Nudges dodged by the Struggler                                          774  (0.39 per game)
+  Average squares a nudged victim moved                                 -2.74  (over 5,952)
+
+  GAMBLER   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Double 6s (extra turn)                                                  754  (0.38 per game)
+  Backfires (a 1 on a die: go back)                                     7,612  (3.81 per game)
+  Average squares lost per backfire                                     +3.46  (over 7,612)
+  Snake eyes (double 1s: stay put)                                        744  (0.37 per game)
+  Exact finishes from 97-99                                               179  (0.09 per game)
+  Near the end but no exact number (stayed put)                           309  (0.15 per game)
+  Overshoots past 100 (stayed put)                                        773  (0.39 per game)
+
+  CAT LADY   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Cat rolls                                                            30,370  (15.19 per game)
+  Players charmed (-1 on next roll)                                     6,730  (3.37 per game)
+  Charms resisted by the Struggler                                        983  (0.49 per game)
+  Knock-downs that landed                                               2,632  (1.32 per game)
+  Knock-downs dodged by the Struggler                                     350  (0.17 per game)
+  Average squares a knocked-down victim lost (after snakes / ladders)      -6.15  (over 2,632)
+  Bonus points earned for her own rolls                                 7,896  (3.95 per game)
+
+  STRUGGLER   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Ladder rolls                                                          3,314  (1.66 per game)
+  Ladders that failed (should be about 33%)                             32.3%  (1,072 of 3,314)
+  Squares lost to failed ladders                                       34,769  (17.38 per game)
+  Snake rolls                                                           2,730  (1.36 per game)
+  Snakes dodged (should be about 50%)                                   49.2%  (1,344 of 2,730)
+  Squares saved by dodging snakes                                      36,718  (18.36 per game)
+  Pushes / pulls / nudges / cat knock-downs dodged                      49.8%  (1,394 of 2,802)
+  Cat charms resisted                                                   49.4%  (983 of 1,989)
+
+  ORACLE   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Calls made                                                           31,467  (15.73 per game)
+  Calls that were right (should be about 17%)                           16.4%  (5,159 of 31,467)
+  Bonus squares gained                                                  9,692  (4.85 per game)
+  Average bonus per right call                                          +1.88  (over 5,159)
+  Right calls wasted by overshooting 100                                  325  (0.16 per game)
+  Snake bites avoided by the immunity                                     412  (0.21 per game)
+  Squares saved by that immunity                                       11,103  (5.55 per game)
+
+  SNAKE CHARMER   (played in 2,000 games)
+------------------------------------------------------------------------------
+  Times the ability was used (snake head moved)                         8,191  (4.10 per game)
+  Turns the ability was ready but not worth using                       3,962  (1.98 per game)
+  Recharge turns                                                        7,398  (3.70 per game)
+  Opponents bitten on a head she moved                                  3,316  (1.66 per game)
+  Squares those opponents lost                                         92,284  (46.14 per game)
+  Herself bitten on a head she moved                                      632  (0.32 per game)
+
+==============================================================================
+  6. EVERYTHING ELSE, PER CHARACTER  (total, and average per game played)
+==============================================================================
+  BULLY
+------------------------------------------------------------------------------
+  Turns played                                                         26,369  (13.18 per game)
+  Extra turns earned                                                    5,279  (2.64 per game)
+  Snake bites suffered                                                  2,836  (1.42 per game)
+  Average squares lost per bite                                        +27.02  (over 2,836)
+  Ladders climbed                                                       3,290  (1.65 per game)
+  Average squares gained per ladder                                    +31.94  (over 3,290)
+  Items picked up                                                       4,805  (2.40 per game)
+  Items swapped (hands full)                                                1  (0.00 per game)
+  Energy drinks used                                                    1,100  (0.55 per game)
+  Stones thrown                                                         1,163  (0.58 per game)
+  Toy bricks placed                                                     1,090  (0.55 per game)
+  Sticks used                                                             903  (0.45 per game)
+  Stepped on a toy brick                                                  549  (0.27 per game)
+  Roll bonus points used (drinks, cat)                                  3,300  (1.65 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              4,015  (2.01 per game)
+
+  GAMBLER
+------------------------------------------------------------------------------
+  Turns played                                                         26,377  (13.19 per game)
+  Extra turns earned                                                      752  (0.38 per game)
+  Snake bites suffered                                                  2,154  (1.08 per game)
+  Average squares lost per bite                                        +25.64  (over 2,154)
+  Ladders climbed                                                       2,559  (1.28 per game)
+  Average squares gained per ladder                                    +31.57  (over 2,559)
+  Items picked up                                                       3,966  (1.98 per game)
+  Items swapped (hands full)                                                1  (0.00 per game)
+  Energy drinks used                                                      913  (0.46 per game)
+  Stones thrown                                                           900  (0.45 per game)
+  Toy bricks placed                                                       918  (0.46 per game)
+  Sticks used                                                             753  (0.38 per game)
+  Stepped on a toy brick                                                  331  (0.17 per game)
+  Roll bonus points used (drinks, cat)                                  2,739  (1.37 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              3,064  (1.53 per game)
+
+  CAT LADY
+------------------------------------------------------------------------------
+  Turns played                                                         25,535  (12.77 per game)
+  Extra turns earned                                                    5,118  (2.56 per game)
+  Snake bites suffered                                                  2,893  (1.45 per game)
+  Average squares lost per bite                                        +27.51  (over 2,893)
+  Ladders climbed                                                       3,122  (1.56 per game)
+  Average squares gained per ladder                                    +31.59  (over 3,122)
+  Items picked up                                                       5,018  (2.51 per game)
+  Items swapped (hands full)                                                2  (0.00 per game)
+  Energy drinks used                                                    1,158  (0.58 per game)
+  Stones thrown                                                         1,201  (0.60 per game)
+  Toy bricks placed                                                     1,128  (0.56 per game)
+  Sticks used                                                             974  (0.49 per game)
+  Stepped on a toy brick                                                  550  (0.28 per game)
+  Roll bonus points used (drinks, cat)                                 11,097  (5.55 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              2,477  (1.24 per game)
+
+  STRUGGLER
+------------------------------------------------------------------------------
+  Turns played                                                         26,395  (13.20 per game)
+  Extra turns earned                                                    5,285  (2.64 per game)
+  Snake bites suffered                                                  1,386  (0.69 per game)
+  Average squares lost per bite                                        +27.56  (over 1,386)
+  Ladders climbed                                                       2,242  (1.12 per game)
+  Average squares gained per ladder                                    +31.64  (over 2,242)
+  Items picked up                                                       4,327  (2.16 per game)
+  Items swapped (hands full)                                                4  (0.00 per game)
+  Energy drinks used                                                    1,009  (0.50 per game)
+  Stones thrown                                                         1,010  (0.51 per game)
+  Toy bricks placed                                                       989  (0.49 per game)
+  Sticks used                                                             847  (0.42 per game)
+  Stepped on a toy brick                                                  552  (0.28 per game)
+  Roll bonus points used (drinks, cat)                                  3,027  (1.51 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              3,463  (1.73 per game)
+
+  ORACLE
+------------------------------------------------------------------------------
+  Turns played                                                         26,413  (13.21 per game)
+  Extra turns earned                                                    5,054  (2.53 per game)
+  Snake bites suffered                                                  2,487  (1.24 per game)
+  Average squares lost per bite                                        +27.51  (over 2,487)
+  Ladders climbed                                                       3,132  (1.57 per game)
+  Average squares gained per ladder                                    +31.68  (over 3,132)
+  Items picked up                                                       4,595  (2.30 per game)
+  Items swapped (hands full)                                                2  (0.00 per game)
+  Energy drinks used                                                    1,068  (0.53 per game)
+  Stones thrown                                                         1,108  (0.55 per game)
+  Toy bricks placed                                                       981  (0.49 per game)
+  Sticks used                                                             914  (0.46 per game)
+  Stepped on a toy brick                                                  513  (0.26 per game)
+  Roll bonus points used (drinks, cat)                                  3,204  (1.60 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              3,992  (2.00 per game)
+
+  SNAKE CHARMER
+------------------------------------------------------------------------------
+  Turns played                                                         27,221  (13.61 per game)
+  Extra turns earned                                                        0  (0.00 per game)
+  Snake bites suffered                                                  1,581  (0.79 per game)
+  Average squares lost per bite                                        +25.74  (over 1,581)
+  Ladders climbed                                                       2,961  (1.48 per game)
+  Average squares gained per ladder                                    +31.16  (over 2,961)
+  Items picked up                                                       3,969  (1.98 per game)
+  Items swapped (hands full)                                                2  (0.00 per game)
+  Energy drinks used                                                      975  (0.49 per game)
+  Stones thrown                                                           870  (0.43 per game)
+  Toy bricks placed                                                       918  (0.46 per game)
+  Sticks used                                                             710  (0.35 per game)
+  Stepped on a toy brick                                                  449  (0.22 per game)
+  Roll bonus points used (drinks, cat)                                  2,925  (1.46 per game)
+  Roll penalty points suffered (stones, bricks, cat charm)              3,729  (1.86 per game)
+
+==============================================================================
+  7. ITEMS  (all characters together)
+==============================================================================
+  Item            Appeared      Used   Used %
+  stick             15,921     5,101    32.0%
+  brick             16,146     6,024    37.3%
+  drink             15,995     6,223    38.9%
+  stone             16,023     6,252    39.0%
+  Toy brick traps placed: 6,024.  Stepped on by an opponent: 2,478.  By their own placer: 466.
+  (3,080 traps were still on the board when the game ended.)
+  'Appeared' counts every item spawned, including the starting items; items that nobody
+  picks up or uses before the game ends are normal.
+
+==============================================================================
+  8. NOTES ON THE SIMULATED PLAYERS
+==============================================================================
+  * Bully: chooses Push or Pull by whichever leaves the players in reach furthest back on
+    average (looking at snakes and ladders); nudges each passed player the worse way for them.
+  * Snake Charmer: moves a head only when it is expected to cost the others at least
+    1 square(s) more than it costs her (one roll ahead); uses the ability whenever it is ready and worth it.
+  * Oracle calls a random number; Struggler picks random failure numbers (neither changes the odds).
+  * Items: drinks and stones are used at once (stones hit the leader); bricks go where opponents
+    are likelier to step than the owner; sticks are used when worth >= 1 square(s).
+  * Stone and cat-charm penalties were not in config.js, so -1 each was assumed (see top of script).
+==============================================================================

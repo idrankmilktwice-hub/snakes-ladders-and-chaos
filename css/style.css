@@ -1,61 +1,240 @@
 /* Snakes, Ladders and Chaos! - styles. The game is a fixed 1920x1080 stage (see fit() in js/main.js) so it matches the mockup at any window size. */
-@font-face { font-family: MC; src: url(../assets/Minecraft.ttf); }
-@font-face { font-family: Blustrue; src: url(../assets/Blustrue.otf); }   /* the font of the square numbers on the board (drawn in js/render.js) */
-html, body { margin: 0; height: 100%; overflow: hidden; background: #c3f73a; }
-#stage {
-  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
-  background: var(--pattern-img, none) 0 0 repeat #c3f73a;   /* the tiled pattern (assets/pattern.svg, set by initPatternArt in art.js) on top of the flat blue (same value as assets/screen_bg.svg) */
-  font-family: MC, monospace; color: #2f2504;
+@font-face {
+  font-family: MC;
+  src: url(../assets/Minecraft.ttf);
 }
-#game { display: none; position: absolute; inset: 0; }
-#stage.ingame { overflow: visible; }   /* during a game the stage does not clip: the window itself does, so panels can fly in from the real window edge (main.js sets the class) */
-img { display: block; user-select: none; -webkit-user-drag: none; }
+@font-face {
+  font-family: Blustrue;
+  src: url(../assets/Blustrue.otf);
+} /* the font of the square numbers on the board (drawn in js/render.js) */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #c3f73a;
+}
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: var(--pattern-img, none) 0 0 repeat #c3f73a; /* the tiled pattern (assets/pattern.svg, set by initPatternArt in art.js) on top of the flat blue (same value as assets/screen_bg.svg) */
+  font-family: MC, monospace;
+  color: #2f2504;
+}
+#game {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+#stage.ingame {
+  overflow: visible;
+} /* during a game the stage does not clip: the window itself does, so panels can fly in from the real window edge (main.js sets the class) */
+img {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
 
 /* ---- the three red containers behind the sections (container_red.svg stretched like a 9-slice picture; positions come from BOXES in js/config.js) ---- */
-.box { position: absolute; box-sizing: border-box; background: #ff7529; border: 6px solid #a00f36; border-radius: 24px; }   /* the board sits on an orange rounded rectangle with a red outline (plain CSS: no picture) */
+.box {
+  position: absolute;
+  box-sizing: border-box;
+  background: #ff7529;
+  border: 6px solid #a00f36;
+  border-radius: 24px;
+} /* the board sits on an orange rounded rectangle with a red outline (plain CSS: no picture) */
 
 /* ---- player panels (right). Every .pp is the full-size panel art (510 x 220.89); js/render.js (placePanels) moves and scales it to its place with a CSS transform.
    When the turn changes the transform changes and the panel glides there (and grows / shrinks): that is the rotation animation. #panels gets the class "anim" after the first placement. ---- */
-#panels { position: absolute; inset: 0; pointer-events: none; }   /* (the panels themselves take clicks, for the item slots) */
-.pp { position: absolute; left: 0; top: 0; width: 510px; height: 220.89px; transform-origin: 0 0; pointer-events: auto; }
-#panels.anim .pp { transition: transform .7s cubic-bezier(.45, .05, .25, 1); }
-.pp img { position: absolute; }
-.pp .pbody { position: absolute; left: 0; top: 0; width: 510px; height: 220.89px; }
+#panels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+} /* (the panels themselves take clicks, for the item slots) */
+.pp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 510px;
+  height: 220.89px;
+  transform-origin: 0 0;
+  pointer-events: auto;
+}
+#panels.anim .pp {
+  transition: transform 0.7s cubic-bezier(0.45, 0.05, 0.25, 1);
+}
+.pp img {
+  position: absolute;
+}
+.pp .pbody {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 510px;
+  height: 220.89px;
+}
 /* the brown outline round the panel, shifted down: four hard drop-shadows (top, right, left, and a deeper one at the bottom) */
-.pp .pbg { left: 0; top: 0; width: 510px; filter: drop-shadow(0 -3px 0 #2f2504) drop-shadow(3px 0 0 #2f2504) drop-shadow(-3px 0 0 #2f2504) drop-shadow(0 9px 0 #2f2504); }
-.pp .pcol { position: absolute; border-radius: 50%; }   /* the coloured disc behind the head: a circle in the player's pawn colour */
-.pp .port { width: auto; transform: translate(-50%, -50%); }          /* position + height are set inline from PANEL in config.js (centre of the round portrait window) */
-.pp .fld { position: absolute; display: flex; align-items: center; justify-content: flex-start; white-space: nowrap; overflow: hidden; padding: 3px 0 0 16px; box-sizing: border-box; color: #fff; }   /* the player's name, white on the dark box */
+.pp .pbg {
+  left: 0;
+  top: 0;
+  width: 510px;
+  filter: drop-shadow(0 -3px 0 #2f2504) drop-shadow(3px 0 0 #2f2504)
+    drop-shadow(-3px 0 0 #2f2504) drop-shadow(0 9px 0 #2f2504);
+}
+.pp .pcol {
+  position: absolute;
+  border-radius: 50%;
+} /* the coloured disc behind the head: a circle in the player's pawn colour */
+.pp .port {
+  width: auto;
+  transform: translate(-50%, -50%);
+} /* position + height are set inline from PANEL in config.js (centre of the round portrait window) */
+.pp .fld {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 3px 0 0 16px;
+  box-sizing: border-box;
+  color: #fff;
+} /* the player's name, white on the dark box */
 /* the 4th square: buff / debuff number. Colour is set from JS (orange = positive, blue = negative, brown = zero). Minecraft font, white with a brown outline, no sign. */
-.pp .cnt { position: absolute; border-radius: 5px; background: #2f2504; display: flex; align-items: center; justify-content: center; padding-top: 1.5px; box-sizing: border-box; font-size: 44px; line-height: 1; color: #fff; -webkit-text-stroke: 7px #2f2504; paint-order: stroke fill; }
-.pp .cnt.two { font-size: 34px; }
+.pp .cnt {
+  position: absolute;
+  border-radius: 5px;
+  background: #2f2504;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1.5px;
+  box-sizing: border-box;
+  font-size: 44px;
+  line-height: 1;
+  color: #fff;
+  -webkit-text-stroke: 7px #2f2504;
+  paint-order: stroke fill;
+}
+.pp .cnt.two {
+  font-size: 34px;
+}
 /* item slots: the three dark rectangles; the item picture is centred in each */
-.pp .slot { position: absolute; display: flex; align-items: center; justify-content: center; }
-.pp .slot img { position: static; display: block; pointer-events: none; }
-.pp .slot.usable { cursor: pointer; }
-.pp .slot.usable img { filter: drop-shadow(0 0 5px #c3f73a) drop-shadow(0 0 2px #c3f73a); animation: itempulse .7s ease-in-out infinite alternate; }   /* usable items pulse in size with a lime glow */
-@keyframes itempulse { from { transform: scale(1); } to { transform: scale(1.22); } }
-.pp .slot.usable:hover img { filter: drop-shadow(0 0 9px #c3f73a) drop-shadow(0 0 4px #c3f73a); }
+.pp .slot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp .slot img {
+  position: static;
+  display: block;
+  pointer-events: none;
+}
+.pp .slot.usable {
+  cursor: pointer;
+}
+.pp .slot.usable img {
+  filter: drop-shadow(0 0 5px #c3f73a) drop-shadow(0 0 2px #c3f73a);
+  animation: itempulse 0.7s ease-in-out infinite alternate;
+} /* usable items pulse in size with a lime glow */
+@keyframes itempulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.22);
+  }
+}
+.pp .slot.usable:hover img {
+  filter: drop-shadow(0 0 9px #c3f73a) drop-shadow(0 0 4px #c3f73a);
+}
 /* items lying on the board; a placed toy brick (trap) glows red */
-.gitem { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); pointer-events: none; }
-.gitem.trap { filter: drop-shadow(0 0 5px #e2330a) drop-shadow(0 0 2px #e2330a); }
+.gitem {
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+.gitem.trap {
+  filter: drop-shadow(0 0 5px #e2330a) drop-shadow(0 0 2px #e2330a);
+}
 /* a thrown / sliding item picture (see flyItem in js/input.js) */
-#fly { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
-#fly .fly { position: absolute; left: 0; top: 0; transform-origin: center; }
+#fly {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+#fly .fly {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: center;
+}
 
 /* ---- board ---- */
-#board { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; }
-#board svg { width: 1276px; height: 1064px; display: block; overflow: visible; }
-.tile { transform: translateY(-5px); transition: transform .18s ease-out; }
-.tile.occ { transform: none; }
+#board {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 1276px;
+  height: 1064px;
+}
+#board svg {
+  width: 1276px;
+  height: 1064px;
+  display: block;
+  overflow: visible;
+}
+.tile {
+  transform: translateY(-5px);
+  transition: transform 0.18s ease-out;
+}
+.tile.occ {
+  transform: none;
+}
 
 /* ---- top-right icon buttons ---- */
-.ib { position: absolute; top: 24px; width: 72px; height: 52px; padding: 0; border: 0; background: none; cursor: pointer; }
-.ib img { position: absolute; left: 0; top: 0; width: 72px; }
-.ib .bsh { display: none; }   /* (the old shadow picture is not used: the shadow is the dark plate below, drawn by CSS) */
-.ib::before { content: ""; position: absolute; left: -2px; top: 6px; width: 76px; height: 54px; border-radius: 9px; background: #2f2504; }   /* the shadow under every button */
-.ib .face { transform: translateY(-5px); transition: transform .15s; }   /* tabs that are not selected hover above their shadow... */
-.ib.on .face { transform: none; }                                       /* ...the selected one is pressed down onto it */
+.ib {
+  position: absolute;
+  top: 24px;
+  width: 72px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.ib img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+}
+.ib .bsh {
+  display: none;
+} /* (the old shadow picture is not used: the shadow is the dark plate below, drawn by CSS) */
+.ib::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 6px;
+  width: 76px;
+  height: 54px;
+  border-radius: 9px;
+  background: #2f2504;
+} /* the shadow under every button */
+.ib .face {
+  transform: translateY(-5px);
+  transition: transform 0.15s;
+} /* tabs that are not selected hover above their shadow... */
+.ib.on .face {
+  transform: none;
+} /* ...the selected one is pressed down onto it */
 .ib.unread::after {
   content: "";
   position: absolute;
@@ -66,217 +245,1382 @@ img { display: block; user-select: none; -webkit-user-drag: none; }
   border-radius: 50%;
   background: #ff7529;
   border: 3px solid #c3f73a;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 
 /* ---- no bold anywhere (the pixel font looks smeared when bolded) ---- */
-b, strong { font-weight: normal; }
+b,
+strong {
+  font-weight: normal;
+}
 
 /* ---- buttons drawn with your counter art (assets/counter_buff.svg = orange, counter_debuff.svg = blue, "alt") ----
    The art is stretched like a 9-slice picture (corners stay sharp). --s is the size multiplier; the white label is centred in the dark rounded rectangle.
    The --btn-orange / --btn-blue pictures are filled in by initButtonArt() in js/art.js. */
-.cbtn { --s: 1.3; --img: var(--btn-orange); position: relative; display: block; height: calc(49.04px * var(--s)); padding: 0; border: 0; background: none; cursor: pointer; font-family: MC, monospace; color: #fff; }
-.cbtn.alt { --img: var(--btn-blue); }
-.cbtn::before { content: ""; position: absolute; inset: 0; box-sizing: border-box; border-style: solid; border-width: calc(12px * var(--s)) calc(20px * var(--s)) calc(14px * var(--s)) calc(20px * var(--s)); border-image: var(--img) 12 20 14 20 fill / calc(12px * var(--s)) calc(20px * var(--s)) calc(14px * var(--s)) calc(20px * var(--s)) stretch; }
-.cbtn span { position: absolute; left: calc(2.44px * var(--s)); right: calc(2.44px * var(--s)); top: calc(2.16px * var(--s)); bottom: calc(15.2px * var(--s)); display: flex; align-items: center; justify-content: center; padding-top: calc(2px * var(--s)); font-size: calc(21px * var(--s)); white-space: nowrap; }
-.cbtn:hover { filter: brightness(1.12); } .cbtn:active { transform: translateY(2px); }
+.cbtn {
+  --s: 1.3;
+  --img: var(--btn-orange);
+  position: relative;
+  display: block;
+  height: calc(49.04px * var(--s));
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: MC, monospace;
+  color: #fff;
+}
+.cbtn.alt {
+  --img: var(--btn-blue);
+}
+.cbtn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-style: solid;
+  border-width: calc(12px * var(--s)) calc(20px * var(--s))
+    calc(14px * var(--s)) calc(20px * var(--s));
+  border-image: var(--img) 12 20 14 20 fill / calc(12px * var(--s))
+    calc(20px * var(--s)) calc(14px * var(--s)) calc(20px * var(--s)) stretch;
+}
+.cbtn span {
+  position: absolute;
+  left: calc(2.44px * var(--s));
+  right: calc(2.44px * var(--s));
+  top: calc(2.16px * var(--s));
+  bottom: calc(15.2px * var(--s));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: calc(2px * var(--s));
+  font-size: calc(21px * var(--s));
+  white-space: nowrap;
+}
+.cbtn:hover {
+  filter: brightness(1.12);
+}
+.cbtn:active {
+  transform: translateY(2px);
+}
 
 /* ---- start screen: fills the whole 1920x1080 stage ---- */
-#setup, #modal > div { background: #2f2504; border: 5px solid #c3f73a; border-radius: 18px; color: #f6f1d8; box-sizing: border-box; }
-#setup { position: absolute; left: 40px; top: 40px; width: 1840px; height: 1000px; padding: 30px 44px; font-size: 34px; overflow: hidden; }
-#setup h2 { margin: 0 0 14px; color: #c3f73a; font-size: 64px; font-weight: normal; }
-#setup .top { display: flex; align-items: center; gap: 20px; margin-bottom: 12px; }
-#setup .row { display: flex; align-items: center; gap: 22px; margin: 0 0 10px; height: 92px; }
-#setup input, #setup select { font-family: MC, monospace; font-size: 34px; color: #2f2504; background: #c3f73a; border: 0; border-radius: 8px; padding: 0 16px; height: 76px; box-sizing: border-box; }
-#setup select { height: 64px; } #setup input { width: 520px; }
-#setup input:disabled, #setup .cls:disabled { opacity: .6; }
+#setup,
+#modal > div {
+  background: #2f2504;
+  border: 5px solid #c3f73a;
+  border-radius: 18px;
+  color: #f6f1d8;
+  box-sizing: border-box;
+}
+#setup {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+  width: 1840px;
+  height: 1000px;
+  padding: 30px 44px;
+  font-size: 34px;
+  overflow: hidden;
+}
+#setup h2 {
+  margin: 0 0 14px;
+  color: #c3f73a;
+  font-size: 64px;
+  font-weight: normal;
+}
+#setup .top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+#setup .row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin: 0 0 10px;
+  height: 92px;
+}
+#setup input,
+#setup select {
+  font-family: MC, monospace;
+  font-size: 34px;
+  color: #2f2504;
+  background: #c3f73a;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 76px;
+  box-sizing: border-box;
+}
+#setup select {
+  height: 64px;
+}
+#setup input {
+  width: 520px;
+}
+#setup input:disabled,
+#setup .cls:disabled {
+  opacity: 0.6;
+}
 /* the character "dropdown" button on each row: head picture + character name */
-#setup .cls { flex: 1; height: 92px; display: flex; align-items: center; gap: 20px; padding: 0 22px; font-family: MC, monospace; font-size: 38px; color: #2f2504; background: #c3f73a; border: 0; border-bottom: 6px solid #7fa21a; border-radius: 10px; cursor: pointer; text-align: left; }
-#setup .cls img { height: 84px; width: 84px; object-fit: contain; } #setup .cls small { margin-left: auto; font-size: 22px; opacity: .6; }
-#setup .go { --s: 2.6; width: 400px; margin-top: 14px; }   /* the big Start game button */
-#setup .card:hover { filter: brightness(1.12); }
-#smsg { color: #ff9a62; font-size: 26px; min-height: 34px; margin: 4px 0; }
+#setup .cls {
+  flex: 1;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 22px;
+  font-family: MC, monospace;
+  font-size: 38px;
+  color: #2f2504;
+  background: #c3f73a;
+  border: 0;
+  border-bottom: 6px solid #7fa21a;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+#setup .cls img {
+  height: 84px;
+  width: 84px;
+  object-fit: contain;
+}
+#setup .cls small {
+  margin-left: auto;
+  font-size: 22px;
+  opacity: 0.6;
+}
+#setup .go {
+  --s: 2.6;
+  width: 400px;
+  margin-top: 14px;
+} /* the big Start game button */
+#setup .card:hover {
+  filter: brightness(1.12);
+}
+#smsg {
+  color: #ff9a62;
+  font-size: 26px;
+  min-height: 34px;
+  margin: 4px 0;
+}
 /* the character chooser that opens over the start screen: one card per character (head, big name, small description) */
-#chooser { position: absolute; inset: 0; background: rgba(20, 14, 2, .8); display: flex; align-items: center; justify-content: center; z-index: 5; }
-#chooser .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 1740px; }
-#chooser .card { display: flex; align-items: center; gap: 24px; padding: 14px 24px; height: 290px; box-sizing: border-box; background: #c3f73a; color: #2f2504; border: 0; border-bottom: 8px solid #7fa21a; border-radius: 14px; cursor: pointer; text-align: left; font-family: MC, monospace; }
-#chooser .card img { height: 220px; width: 190px; object-fit: contain; flex: none; }
-#chooser .card b { display: block; font-weight: normal; font-size: 46px; margin-bottom: 8px; } #chooser .card span { display: block; font-size: 21px; line-height: 1.3; }
-.dot { display: inline-block; width: 40px; height: 40px; border-radius: 50%; border: 3px solid #000; flex: none; }
-#modal { display: none; position: fixed; inset: 0; background: rgba(20, 14, 2, .72); align-items: center; justify-content: center; z-index: 60; font-family: MC, monospace; color: #2f2504; }   /* covers the WHOLE browser window (it lives outside the stage); JS shows it with display:flex. The window inside is scaled like the stage. */
-#modal > div { position: relative; transform: scale(var(--fit, 1)); flex: none; }   /* width / max-height are set by openModal() from MODAL in config.js */
+#chooser {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 14, 2, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+#chooser .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  width: 1740px;
+}
+#chooser .card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  height: 290px;
+  box-sizing: border-box;
+  background: #c3f73a;
+  color: #2f2504;
+  border: 0;
+  border-bottom: 8px solid #7fa21a;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: MC, monospace;
+}
+#chooser .card img {
+  height: 220px;
+  width: 190px;
+  object-fit: contain;
+  flex: none;
+}
+#chooser .card b {
+  display: block;
+  font-weight: normal;
+  font-size: 46px;
+  margin-bottom: 8px;
+}
+#chooser .card span {
+  display: block;
+  font-size: 21px;
+  line-height: 1.3;
+}
+.dot {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid #000;
+  flex: none;
+}
+#modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 2, 0.72);
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  font-family: MC, monospace;
+  color: #2f2504;
+} /* covers the WHOLE browser window (it lives outside the stage); JS shows it with display:flex. The window inside is scaled like the stage. */
+#modal > div {
+  position: relative;
+  transform: scale(var(--fit, 1));
+  flex: none;
+} /* width / max-height are set by openModal() from MODAL in config.js */
 /* the small X at the top right of a big window (clicking outside the window also closes it) */
-.mclose { position: absolute; right: calc(var(--modal-pad, 34px) + var(--sb-edge-modal, 0px) + var(--sb-w, 24px) / 2 - 22px); top: 14px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
-.mclose svg { width: 20px; height: 20px; } .mclose:hover { filter: brightness(1.1); } .mclose:active { transform: translateY(2px); }
-#modal > div { --modal-pad: 34px; display: flex; flex-direction: column; overflow: visible; padding: 26px var(--modal-pad) 14px; }   /* (14px at the bottom = the gap above the X button, so the scroll bar has equal space above and below) */   /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
-#modal h2 { flex: none; margin: 0 60px 12px 0; }
-#modal .mbody { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
-#modal .big { font-size: 26px; line-height: 1.4; color: #d8f58c; } #modal .biglog { max-height: none; } #modal .biglog div { padding: 7px 4px 8px; border-bottom: 2px dashed #5a4a12; } #modal .biglog div:last-child { border-bottom: 0; }   /* every log line is separated by a thin dashed rule */ #modal .big p { margin: 0 0 10px; } #modal .big h3 { font-size: 28px; }
-#modal h2 { margin: 0 0 10px; color: #c3f73a; font-weight: normal; font-size: 30px; } #modal h3 { margin: 14px 0 2px; color: #ffa42c; font-weight: normal; font-size: 20px; } #modal p { margin: 0; }
+.mclose {
+  position: absolute;
+  right: calc(
+    var(--modal-pad, 34px) + var(--sb-edge-modal, 0px) + var(--sb-w, 24px) / 2 -
+      22px
+  );
+  top: 14px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #c3f73a;
+  color: #2f2504;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+.mclose svg {
+  width: 20px;
+  height: 20px;
+}
+.mclose:hover {
+  filter: brightness(1.1);
+}
+.mclose:active {
+  transform: translateY(2px);
+}
+#modal > div {
+  --modal-pad: 34px;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 26px var(--modal-pad) 14px;
+} /* (14px at the bottom = the gap above the X button, so the scroll bar has equal space above and below) */ /* the window: title on top, then a scrolling body (.mbody) with the custom scroll bar */
+#modal h2 {
+  flex: none;
+  margin: 0 60px 12px 0;
+}
+#modal .mbody {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+#modal .big {
+  font-size: 26px;
+  line-height: 1.4;
+  color: #d8f58c;
+}
+#modal .biglog {
+  max-height: none;
+}
+#modal .biglog div {
+  padding: 7px 4px 8px;
+  border-bottom: 2px dashed #5a4a12;
+}
+#modal .biglog div:last-child {
+  border-bottom: 0;
+} /* every log line is separated by a thin dashed rule */
+#modal .big p {
+  margin: 0 0 10px;
+}
+#modal .big h3 {
+  font-size: 28px;
+}
+#modal h2 {
+  margin: 0 0 10px;
+  color: #c3f73a;
+  font-weight: normal;
+  font-size: 30px;
+}
+#modal h3 {
+  margin: 14px 0 2px;
+  color: #ffa42c;
+  font-weight: normal;
+  font-size: 20px;
+}
+#modal p {
+  margin: 0;
+}
 
 /* ---- RIGHT-HAND PANELS: Current Event, Information, Chat (light lime "lp" panels) and the four orange Settings panels ("op"). ----
    Every panel (class "rp") waits beyond the right edge of the screen. When its view opens it gets the class "in" and slides to its place, overshooting a little and springing back
    (the 1.5 in the curve is the overshoot); main.js staggers the Settings panels with --d. "#sidebox.again" = the view was opened before: the same animation, but faster.
    When the view closes ("in" is removed) the panel slides out quickly. */
-#sidebox { position: absolute; inset: 0; pointer-events: none; }
-.rp { position: absolute; visibility: hidden; transform: translateX(var(--off, 760px)); pointer-events: none; transition: transform .2s cubic-bezier(.5, 0, .9, .45), visibility 0s .2s; }
-.rp.in { visibility: visible; transform: none; pointer-events: auto; transition: transform var(--dur, .5s) cubic-bezier(.3, 1.5, .5, 1) var(--d, 0s), visibility 0s var(--d, 0s); }
-#sidebox.again .rp.in { --dur: .28s; }
+#sidebox {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rp {
+  position: absolute;
+  visibility: hidden;
+  transform: translateX(var(--off, 760px));
+  pointer-events: none;
+  transition:
+    transform 0.2s cubic-bezier(0.5, 0, 0.9, 0.45),
+    visibility 0s 0.2s;
+}
+.rp.in {
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    transform var(--dur, 0.5s) cubic-bezier(0.3, 1.5, 0.5, 1) var(--d, 0s),
+    visibility 0s var(--d, 0s);
+}
+#sidebox.again .rp.in {
+  --dur: 0.28s;
+}
 /* light lime panels: a plain pale-lime rectangle with a brown outline that is thicker at the bottom (offset downward) */
-.lp { box-sizing: border-box; background: #ebffad; border: 6px solid #2f2504; border-radius: 20px; box-shadow: 0 9px 0 #2f2504; color: #2f2504; }
-#rulePanel, #logPanel { left: 1330px; top: 650px; width: 559px; height: 322px; }   /* the small Rulebook / Combat log panels: same size and place as the chat */
-#ruleView, #log { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 14px 20px; overflow-y: auto; font-size: 20px; line-height: 1.3; }
-#log div { padding: 6px 0 7px; border-bottom: 2px dashed #b8cc6a; } #log div:last-child { border-bottom: 0; } #log b { font-weight: normal; color: #b3410a; }
-#ruleView .rb h2 { color: #2f2504; border-bottom: 2px solid #2f2504; } #ruleView .rb h3 { color: #b3410a; } #ruleView .rb .k { color: #6b5a10; } #ruleView .rb li::marker { color: #b3410a; } #ruleView .rb td { border-bottom-color: #b8cc6a; } #ruleView .rb td:first-child { color: #2f2504; } #ruleView .rb .yes { color: #4b7a10; } #ruleView .rb .no { color: #b3410a; }
-#evPanel, #aboutPanel { left: 1330px; top: 703px; width: 559px; height: 215px; }
-#chatPanel { --chat-w: 521px; left: 1330px; top: 650px; width: 559px; height: 322px; }   /* --chat-w = the width of the message area AND of the input row, so the scroll bar's right edge lines up with the send button's right edge */   /* ends well above the tab buttons (they start at y=1000) */
+.lp {
+  box-sizing: border-box;
+  background: #ebffad;
+  border: 6px solid #2f2504;
+  border-radius: 20px;
+  box-shadow: 0 9px 0 #2f2504;
+  color: #2f2504;
+}
+#rulePanel,
+#logPanel {
+  left: 1330px;
+  top: 650px;
+  width: 559px;
+  height: 322px;
+} /* the small Rulebook / Combat log panels: same size and place as the chat */
+#ruleView,
+#log {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 60px;
+  padding: 4px 24px 14px 20px;
+  overflow-y: auto;
+  font-size: 20px;
+  line-height: 1.3;
+}
+#log div {
+  padding: 6px 0 7px;
+  border-bottom: 2px dashed #b8cc6a;
+}
+#log div:last-child {
+  border-bottom: 0;
+}
+#log b {
+  font-weight: normal;
+  color: #b3410a;
+}
+#ruleView .rb h2 {
+  color: #2f2504;
+  border-bottom: 2px solid #2f2504;
+}
+#ruleView .rb h3 {
+  color: #b3410a;
+}
+#ruleView .rb .k {
+  color: #6b5a10;
+}
+#ruleView .rb li::marker {
+  color: #b3410a;
+}
+#ruleView .rb td {
+  border-bottom-color: #b8cc6a;
+}
+#ruleView .rb td:first-child {
+  color: #2f2504;
+}
+#ruleView .rb .yes {
+  color: #4b7a10;
+}
+#ruleView .rb .no {
+  color: #b3410a;
+}
+#evPanel,
+#aboutPanel {
+  left: 1330px;
+  top: 703px;
+  width: 559px;
+  height: 215px;
+}
+#chatPanel {
+  --chat-w: 521px;
+  left: 1330px;
+  top: 650px;
+  width: 559px;
+  height: 322px;
+} /* --chat-w = the width of the message area AND of the input row, so the scroll bar's right edge lines up with the send button's right edge */ /* ends well above the tab buttons (they start at y=1000) */
 /* Current Event: the newest line is big, the lines before it are smaller and faded. Text sits at the bottom. */
-#evPanel { display: flex; flex-direction: column; justify-content: center; padding: 14px 22px 16px; }
-#evText { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-height: 0; overflow: hidden; line-height: 1.15; }
+#evPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 22px 16px;
+}
+#evText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  line-height: 1.15;
+}
 /* the log lines in the Current Event panel: same look as the Board log (dark text, orange turn headings, dashed lines between), but small and muted; the newest line is big */
-#evText .evl { font-size: 18px; color: #7d9926; padding: 4px 0 5px; border-bottom: 2px dashed #c4d889; opacity: 1; } #evText .evl b { color: #d28a5a; }
-#evText .evl.new { font-size: 28px; color: #2f2504; border-bottom: 0; padding: 8px 0 2px; } #evText .evl.new b { color: #b3410a; }
-#evText b { font-weight: normal; }
+#evText .evl {
+  font-size: 18px;
+  color: #7d9926;
+  padding: 4px 0 5px;
+  border-bottom: 2px dashed #c4d889;
+  opacity: 1;
+}
+#evText .evl b {
+  color: #d28a5a;
+}
+#evText .evl.new {
+  font-size: 28px;
+  color: #2f2504;
+  border-bottom: 0;
+  padding: 8px 0 2px;
+}
+#evText .evl.new b {
+  color: #b3410a;
+}
+#evText b {
+  font-weight: normal;
+}
 /* while the game waits for YOU (move your piece, pick a target...) the Current Event panel shows that message and the helper button under one small line of the log */
-#evMsg { display: none; flex-direction: column; align-items: stretch; }
-#evPanel.prompting #evMsg { display: flex; } #game.scened #evMsg { display: none; }
-#evPanel.prompting #evText .evl { display: none; } #evPanel.prompting #evText .evl.new { display: block; font-size: 20px; color: #7d9926; border-bottom: 0; padding: 0 0 4px; } #evPanel.prompting #evText .evl.new b { color: #d28a5a; }   /* while a message is shown: just the last log line, small */
-#evPtxt { font-size: 26px; line-height: 1.15; }
-#evAct { display: flex; justify-content: center; margin-top: 12px; }
+#evMsg {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+}
+#evPanel.prompting #evMsg {
+  display: flex;
+}
+#game.scened #evMsg {
+  display: none;
+}
+#evPanel.prompting #evText .evl {
+  display: none;
+}
+#evPanel.prompting #evText .evl.new {
+  display: block;
+  font-size: 20px;
+  color: #7d9926;
+  border-bottom: 0;
+  padding: 0 0 4px;
+}
+#evPanel.prompting #evText .evl.new b {
+  color: #d28a5a;
+} /* while a message is shown: just the last log line, small */
+#evPtxt {
+  font-size: 26px;
+  line-height: 1.15;
+}
+#evAct {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
 /* Information */
-#about { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; padding: 4px 24px 16px 20px; overflow-y: auto; font-size: 22px; line-height: 1.3; }
-#about p { margin: 0 0 10px; }
-.xbtn { --xb-w: 34px; position: absolute; top: 14px; right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2); width: var(--xb-w); height: 34px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; z-index: 4; }   /* Expand button: centred over the scroll bar below it (same centre line) */
-.ptitle { position: absolute; left: 20px; top: 16px; height: 30px; display: flex; align-items: center; font-family: MC, monospace; font-size: 26px; line-height: 1; text-transform: uppercase; color: #2f2504; }   /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button: pixel font, aligned with the text below */
-.xbtn svg { display: block; margin: 0 auto; } .xbtn:active { transform: translateY(2px); border-bottom-width: 2px; }
+#about {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 60px;
+  padding: 4px 24px 16px 20px;
+  overflow-y: auto;
+  font-size: 22px;
+  line-height: 1.3;
+}
+#about p {
+  margin: 0 0 10px;
+}
+.xbtn {
+  --xb-w: 34px;
+  position: absolute;
+  top: 14px;
+  right: calc(var(--sb-edge, 6px) - (var(--xb-w) - var(--sb-w, 24px)) / 2);
+  width: var(--xb-w);
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-bottom: 4px solid #e2330a;
+  border-radius: 6px;
+  background: #ff7529;
+  cursor: pointer;
+  z-index: 4;
+} /* Expand button: centred over the scroll bar below it (same centre line) */
+.ptitle {
+  position: absolute;
+  left: 20px;
+  top: 16px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  font-family: MC, monospace;
+  font-size: 26px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #2f2504;
+} /* panel title ("RULEBOOK", "BOARD LOG", "INFORMATION") next to the Expand button: pixel font, aligned with the text below */
+.xbtn svg {
+  display: block;
+  margin: 0 auto;
+}
+.xbtn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
 /* Chat: message area with its own scrollbar, then the input and the chevron send button */
-#chatView { position: absolute; left: 14px; top: 14px; width: var(--chat-w); height: 222px; overflow-y: scroll; box-sizing: border-box; padding-right: 8px; font-size: 20px; line-height: 1.25; }
+#chatView {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: var(--chat-w);
+  height: 222px;
+  overflow-y: scroll;
+  box-sizing: border-box;
+  padding-right: 8px;
+  font-size: 20px;
+  line-height: 1.25;
+}
 /* custom scroll bar (built by attachScrollbar in js/main.js): olive strip, dark arrow buttons, lime handle. The browser's own bar is hidden. Sizes are set from SCROLLBAR in js/config.js. */
-.scr { overflow-y: auto; scrollbar-width: none; } .scr::-webkit-scrollbar { display: none; }
-.sb { position: absolute; display: none; flex-direction: column; align-items: center; box-sizing: border-box; background: #7d9926; border-radius: 10px; z-index: 3; }
-.sbb { flex: none; padding: 0; border: 0; border-radius: 5px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; } .sbb svg { width: 70%; height: 70%; } .sbb:active { transform: translateY(1px); }
-.sbt { position: relative; flex: 1; width: 100%; min-height: 0; cursor: pointer; }
-.sbh { position: absolute; left: 50%; top: 0; border-radius: 6px; background: #c3f73a; cursor: grab; } .sbh:active { cursor: grabbing; }
-#chatInputBar { position: absolute; left: 14px; top: 246px; width: var(--chat-w); height: 46px; display: flex; gap: 10px; }
-#chatInput { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; font-family: MC, monospace; font-size: 20px; background: #ebffad; border: 4px solid #2f2504; border-radius: 12px; padding: 0 12px; color: #2f2504; outline: none; }
-#chatSendBtn { flex: none; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 10px; background: #2f2504; color: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-#chatSendBtn svg { height: 55%; width: auto; } #chatSendBtn:hover { background: #3d3108; } #chatSendBtn:active { transform: translateY(2px); }
+.scr {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.scr::-webkit-scrollbar {
+  display: none;
+}
+.sb {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  background: #7d9926;
+  border-radius: 10px;
+  z-index: 3;
+}
+.sbb {
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: #2f2504;
+  color: #c3f73a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sbb svg {
+  width: 70%;
+  height: 70%;
+}
+.sbb:active {
+  transform: translateY(1px);
+}
+.sbt {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  cursor: pointer;
+}
+.sbh {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  border-radius: 6px;
+  background: #c3f73a;
+  cursor: grab;
+}
+.sbh:active {
+  cursor: grabbing;
+}
+#chatInputBar {
+  position: absolute;
+  left: 14px;
+  top: 246px;
+  width: var(--chat-w);
+  height: 46px;
+  display: flex;
+  gap: 10px;
+}
+#chatInput {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  box-sizing: border-box;
+  font-family: MC, monospace;
+  font-size: 20px;
+  background: #ebffad;
+  border: 4px solid #2f2504;
+  border-radius: 12px;
+  padding: 0 12px;
+  color: #2f2504;
+  outline: none;
+}
+#chatSendBtn {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #2f2504;
+  color: #c3f73a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#chatSendBtn svg {
+  height: 55%;
+  width: auto;
+}
+#chatSendBtn:hover {
+  background: #3d3108;
+}
+#chatSendBtn:active {
+  transform: translateY(2px);
+}
 /* Settings: orange panels with a red outline (positions measured from the mockup) */
-.op { box-sizing: border-box; background: #ff7529; border: 4px solid #a00f36; border-radius: 18px; color: #fff; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#opSw { left: 1332px; top: 647px; width: 305px; height: 155px; flex-direction: column; justify-content: center; align-items: stretch; padding: 8px 14px; }
-#opMute { left: 1673px; top: 647px; width: 216px; height: 77px; }
-#opSfx { left: 1673px; top: 729px; width: 216px; height: 73px; }
-#opMusic { left: 1566px; top: 809px; width: 323px; height: 182px; flex-direction: column; justify-content: space-between; align-items: stretch; padding: 10px 14px 12px; }
-.oph { font-family: LM, MC, monospace; text-transform: uppercase; font-size: 36px; line-height: 1; color: #fff; }   /* headings: the condensed hand-drawn font in white capitals */
-#opSw .oph { text-align: center; }
-#opSw.live { padding: 10px 14px; justify-content: center; gap: 12px; } #opSw.live .oph { font-size: 27px; }   /* with a code showing: smaller heading, and heading / code row / timer are centred as a group with equal gaps, so the space above the heading equals the space below the timer */
-#opSw.live .swrow, #opSw.live .swcodebox, #opSw.live .swleft { margin: 0; } #opSw.live .swleft { line-height: 1; }
-.mrow { display: flex; align-items: center; justify-content: space-between; }
-.stp { display: flex; align-items: center; gap: 4px; }
-.stp .arr { width: 18px; height: 30px; padding: 0; border: 0; background: none; color: #2f2504; cursor: pointer; } .stp .arr svg { width: 100%; height: 100%; } .stp .arr:active { transform: scale(.88); }
-.stp-num { min-width: 52px; height: 42px; box-sizing: border-box; border-radius: 7px; background: #2f2504; color: #fff; font-size: 28px; font-weight: normal; display: flex; align-items: center; justify-content: center; padding-top: 3px; }
-#opMute .msw { width: 62px; height: 37px; flex: none; } #opMute .ms-rim { fill: #a00f36; } #opMute .ms-trk { fill: #2f2504; }
-#opMusic .mu-now { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#opMusic .mu-ctl { display: flex; justify-content: center; gap: 14px; }
-#opMusic .mu-btn { width: 40px; height: 40px; border-radius: 10px; background: #2f2504; color: #ff7529; border: 0; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-#opMusic .mu-btn svg { width: 55%; height: 55%; } #opMusic .mu-btn[aria-pressed="true"] { background: #fff3cf; color: #2f2504; } #opMusic .mu-btn:active { transform: translateY(2px); }
-#opMusic .mu-song { flex: 1; min-width: 0; text-align: left; line-height: 1.05; } #opMusic .mu-song small { display: block; font-size: 13px; color: #ffef8a; } #opMusic .mu-name { display: block; font-size: 19px; font-weight: normal; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.swgen, .swcodebox { height: 44px; box-sizing: border-box; border: 3px solid #a00f36; border-radius: 9px; background: #2f2504; color: #fff; font-family: MC, monospace; font-size: 24px; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
-.swgen { cursor: pointer; width: 100%; } .swgen:active { transform: translateY(2px); }
-.swrow { display: flex; gap: 8px; align-items: center; margin-top: 10px; } .swrow .swcodebox { margin-top: 0; flex: 1; min-width: 0; font-size: 18px; user-select: all; }
-.swx { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 9px; background: #2f2504; color: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; } .swx svg { width: 18px; height: 18px; }
-.swleft { text-align: center; font-size: 16px; margin-top: 4px; } .swerr { margin: 6px 0 0; font-size: 14px; color: #ffef8a; text-align: center; }
+.op {
+  box-sizing: border-box;
+  background: #ff7529;
+  border: 4px solid #a00f36;
+  border-radius: 18px;
+  color: #fff;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+#opSw {
+  left: 1332px;
+  top: 647px;
+  width: 305px;
+  height: 155px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 8px 14px;
+}
+#opMute {
+  left: 1673px;
+  top: 647px;
+  width: 216px;
+  height: 77px;
+}
+#opSfx {
+  left: 1673px;
+  top: 729px;
+  width: 216px;
+  height: 73px;
+}
+#opMusic {
+  left: 1566px;
+  top: 809px;
+  width: 323px;
+  height: 182px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 10px 14px 12px;
+}
+.oph {
+  font-family: LM, MC, monospace;
+  text-transform: uppercase;
+  font-size: 36px;
+  line-height: 1;
+  color: #fff;
+} /* headings: the condensed hand-drawn font in white capitals */
+#opSw .oph {
+  text-align: center;
+}
+#opSw.live {
+  padding: 10px 14px;
+  justify-content: center;
+  gap: 12px;
+}
+#opSw.live .oph {
+  font-size: 27px;
+} /* with a code showing: smaller heading, and heading / code row / timer are centred as a group with equal gaps, so the space above the heading equals the space below the timer */
+#opSw.live .swrow,
+#opSw.live .swcodebox,
+#opSw.live .swleft {
+  margin: 0;
+}
+#opSw.live .swleft {
+  line-height: 1;
+}
+.mrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.stp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stp .arr {
+  width: 18px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2f2504;
+  cursor: pointer;
+}
+.stp .arr svg {
+  width: 100%;
+  height: 100%;
+}
+.stp .arr:active {
+  transform: scale(0.88);
+}
+.stp-num {
+  min-width: 52px;
+  height: 42px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  background: #2f2504;
+  color: #fff;
+  font-size: 28px;
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 3px;
+}
+#opMute .msw {
+  width: 62px;
+  height: 37px;
+  flex: none;
+}
+#opMute .ms-rim {
+  fill: #a00f36;
+}
+#opMute .ms-trk {
+  fill: #2f2504;
+}
+#opMusic .mu-now {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#opMusic .mu-ctl {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+#opMusic .mu-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #2f2504;
+  color: #ff7529;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#opMusic .mu-btn svg {
+  width: 55%;
+  height: 55%;
+}
+#opMusic .mu-btn[aria-pressed="true"] {
+  background: #fff3cf;
+  color: #2f2504;
+}
+#opMusic .mu-btn:active {
+  transform: translateY(2px);
+}
+#opMusic .mu-song {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  line-height: 1.05;
+}
+#opMusic .mu-song small {
+  display: block;
+  font-size: 13px;
+  color: #ffef8a;
+}
+#opMusic .mu-name {
+  display: block;
+  font-size: 19px;
+  font-weight: normal;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.swgen,
+.swcodebox {
+  height: 44px;
+  box-sizing: border-box;
+  border: 3px solid #a00f36;
+  border-radius: 9px;
+  background: #2f2504;
+  color: #fff;
+  font-family: MC, monospace;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+.swgen {
+  cursor: pointer;
+  width: 100%;
+}
+.swgen:active {
+  transform: translateY(2px);
+}
+.swrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.swrow .swcodebox {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  user-select: all;
+}
+.swx {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: #2f2504;
+  color: #ff7529;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swx svg {
+  width: 18px;
+  height: 18px;
+}
+.swleft {
+  text-align: center;
+  font-size: 16px;
+  margin-top: 4px;
+}
+.swerr {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #ffef8a;
+  text-align: center;
+}
 /* ---- the tab buttons: pinned to the bottom-right corner of the WINDOW (outside the stage), scaled like the stage (--fit, set by fit() in main.js) ---- */
-#dockfix { display: none; position: fixed; right: 0; bottom: 0; width: 420px; height: 80px; transform-origin: 100% 100%; transform: scale(var(--fit, 1)); z-index: 20; }
-#dock { position: absolute; inset: 0; box-sizing: border-box; background: #ff7529; border: 5px solid #a00f36; border-right: 0; border-bottom: 0; border-radius: 18px 0 0 0; }
+#dockfix {
+  display: none;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  height: 80px;
+  transform-origin: 100% 100%;
+  transform: scale(var(--fit, 1));
+  z-index: 20;
+}
+#dock {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  background: #ff7529;
+  border: 5px solid #a00f36;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 18px 0 0 0;
+}
 /* ---- the prompt over the board. Two looks: a small BANNER at the top of the board (plain messages: the board stays clear), and a DIALOG in the middle (class "choice": the board
    behind it is darkened by #shade, but only on the screen of the player who has to act). "roll" moves the dialog above the dice. ---- */
-#prompt { display: none; position: absolute; left: 146px; top: 24px; width: 1000px; box-sizing: border-box; padding: 10px 22px 12px; background: #2f2504; border: 4px solid #c3f73a; border-radius: 16px; color: #fff3cf; font-size: 26px; line-height: 1.25; text-align: center; z-index: 8; pointer-events: none; }
-#prompt.has { display: flex; flex-direction: column; align-items: center; } #prompt.has:not(.choice) { display: none; }   /* plain messages no longer sit on the board: they are in the Current Event panel */
-#prompt.choice { top: 540px; left: 296px; width: 700px; transform: translateY(-50%); padding: 26px 32px 30px; font-size: 32px; border-width: 5px; pointer-events: auto; }
-#prompt.choice.roll { top: 120px; transform: none; }
-#prompt.choice ~ #shade, #game.scened #shade { opacity: 1; } #game.peek #shade { opacity: 0; }   /* the dark layer: game-over box or a prompt scene; the eye button ("peek") hides it */
-#btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; pointer-events: auto; }
-#btns:empty { display: none; }
-#btns .cbtn { --s: 1.6; flex: 1 1 30%; }                 /* 3 per row; 2 options share the row; a single button takes the full width */
-#btns .cbtn:only-child { flex-basis: 100%; }
+#prompt {
+  display: none;
+  position: absolute;
+  left: 146px;
+  top: 24px;
+  width: 1000px;
+  box-sizing: border-box;
+  padding: 10px 22px 12px;
+  background: #2f2504;
+  border: 4px solid #c3f73a;
+  border-radius: 16px;
+  color: #fff3cf;
+  font-size: 26px;
+  line-height: 1.25;
+  text-align: center;
+  z-index: 8;
+  pointer-events: none;
+}
+#prompt.has {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#prompt.has:not(.choice) {
+  display: none;
+} /* plain messages no longer sit on the board: they are in the Current Event panel */
+#prompt.choice {
+  top: 540px;
+  left: 296px;
+  width: 700px;
+  transform: translateY(-50%);
+  padding: 26px 32px 30px;
+  font-size: 32px;
+  border-width: 5px;
+  pointer-events: auto;
+}
+#prompt.choice.roll {
+  top: 120px;
+  transform: none;
+}
+#prompt.choice ~ #shade,
+#game.scened #shade {
+  opacity: 1;
+}
+#game.peek #shade {
+  opacity: 0;
+} /* the dark layer: game-over box or a prompt scene; the eye button ("peek") hides it */
+#btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  pointer-events: auto;
+}
+#btns:empty {
+  display: none;
+}
+#btns .cbtn {
+  --s: 1.6;
+  flex: 1 1 30%;
+} /* 3 per row; 2 options share the row; a single button takes the full width */
+#btns .cbtn:only-child {
+  flex-basis: 100%;
+}
 /* chat bubbles (js/bubbles.js): drawn over the board only, above the dark layer; sizes and colours come from CHAT_BUBBLE in config.js */
-#chatLayer { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; border-radius: 24px; overflow: hidden; pointer-events: none; z-index: 5; }
-.cbub { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
-.cbub .cin { position: relative; width: 100%; height: 100%; animation: cbpop 140ms cubic-bezier(.2, .9, .3, 1.2) both; }
-.cbub .cbody { box-sizing: border-box; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; font-family: Blustrue, MC, monospace; }
-.cbub .ctail { position: absolute; overflow: visible; transform-origin: 0 0; }
-@keyframes cbpop { from { transform: scale(.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-#shade { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; box-sizing: border-box; background: rgba(15, 10, 0, .7); border-radius: 24px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; }
+#chatLayer {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 1276px;
+  height: 1064px;
+  border-radius: 24px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+.cbub {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+.cbub .cin {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: cbpop 140ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.cbub .cbody {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  font-family: Blustrue, MC, monospace;
+}
+.cbub .ctail {
+  position: absolute;
+  overflow: visible;
+  transform-origin: 0 0;
+}
+@keyframes cbpop {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+#shade {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 1276px;
+  height: 1064px;
+  box-sizing: border-box;
+  background: rgba(15, 10, 0, 0.7);
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 5;
+}
 
 /* ---- the dice layer: it covers the whole board area while the dice are on the table (js/input.js trayShow / trayHide) ---- */
-#tray { position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; pointer-events: none; touch-action: none; z-index: 6; }
-#tray.on { opacity: 1; visibility: visible; transition: opacity .15s; }
-#dice { position: absolute; left: 0; top: 0; width: 1276px; height: 1064px; }
+#tray {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 1276px;
+  height: 1064px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s,
+    visibility 0s 0.3s;
+  pointer-events: none;
+  touch-action: none;
+  z-index: 6;
+}
+#tray.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s;
+}
+#dice {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1276px;
+  height: 1064px;
+}
 /* each die is a 3D cube: six faces placed around the middle (turned by multiples of 90 degrees and pushed out 45px) */
-.die { position: absolute; left: 0; top: 0; width: 90px; height: 90px; cursor: grab; touch-action: none; perspective: 630px; }
-.cube { position: relative; width: 90px; height: 90px; transform-style: preserve-3d; pointer-events: none; }
-.cube .df { position: absolute; left: 0; top: 0; width: 90px; height: 90px; backface-visibility: hidden; display: block; background-repeat: no-repeat; }   /* (each face shows its own sixth of the die's picture: set in js/input.js diceFaceHtml) */
+.die {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 90px;
+  height: 90px;
+  cursor: grab;
+  touch-action: none;
+  perspective: 630px;
+}
+.cube {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.cube .df {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 90px;
+  height: 90px;
+  backface-visibility: hidden;
+  display: block;
+  background-repeat: no-repeat;
+} /* (each face shows its own sixth of the die's picture: set in js/input.js diceFaceHtml) */
 /* the shine: a bright diagonal band that sweeps over the face turned towards the player when the die stops (js/input.js finishRollPlayback). It sits on top of the cube, pushed out 45px like the front face so it is the same size, clipped to the face's rounded shape. */
-.die-shine { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; border-radius: var(--die-radius, 5px); pointer-events: none; transform: translateZ(45px); }
-.die-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: -45%; width: 38%; opacity: 0; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.85) 50%, transparent); }
-.die-shine.go::before { animation: tb-shine var(--die-shine-ms, 550ms) ease-out var(--die-shine-delay, 0ms) forwards; }   /* (tb-shine = the same sweep the buttons use) */
-.df1 { transform: translateZ(45px); } .df6 { transform: rotateY(180deg) translateZ(45px); } .df3 { transform: rotateY(90deg) translateZ(45px); }
-.df4 { transform: rotateY(-90deg) translateZ(45px); } .df2 { transform: rotateX(90deg) translateZ(45px); } .df5 { transform: rotateX(-90deg) translateZ(45px); }
-#moveBtn { display: none; }   /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */
-#rollBtn { --k: 1.5; display: none; position: absolute; left: calc(var(--scene-x, 860px) - var(--w) * var(--k) / 2); top: 600px; z-index: 8; }   /* the ROLL button under the dice: the orange prompt button (.pbtn.long) at 1.5 x size; hidden except while the active player waits to throw */
-#rollBtn.ready { display: block; animation: rdy .7s ease-in-out infinite alternate; }
-@keyframes rdy { to { transform: scale(1.08); } }
+.die-shine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--die-radius, 5px);
+  pointer-events: none;
+  transform: translateZ(45px);
+}
+.die-shine::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -45%;
+  width: 38%;
+  opacity: 0;
+  transform: skewX(-22deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.85) 50%,
+    transparent
+  );
+}
+.die-shine.go::before {
+  animation: tb-shine var(--die-shine-ms, 550ms) ease-out
+    var(--die-shine-delay, 0ms) forwards;
+} /* (tb-shine = the same sweep the buttons use) */
+.df1 {
+  transform: translateZ(45px);
+}
+.df6 {
+  transform: rotateY(180deg) translateZ(45px);
+}
+.df3 {
+  transform: rotateY(90deg) translateZ(45px);
+}
+.df4 {
+  transform: rotateY(-90deg) translateZ(45px);
+}
+.df2 {
+  transform: rotateX(90deg) translateZ(45px);
+}
+.df5 {
+  transform: rotateX(-90deg) translateZ(45px);
+}
+#moveBtn {
+  display: none;
+} /* the helper button ("Move me" / "Roll" / "Cancel"): shown by JS, sits in the Current Event panel or in a prompt panel */
+#rollBtn {
+  --k: 1.5;
+  display: none;
+  position: absolute;
+  left: calc(var(--scene-x, 860px) - var(--w) * var(--k) / 2);
+  top: 600px;
+  z-index: 8;
+} /* the ROLL button under the dice: the orange prompt button (.pbtn.long) at 1.5 x size; hidden except while the active player waits to throw */
+#rollBtn.ready {
+  display: block;
+  animation: rdy 0.7s ease-in-out infinite alternate;
+}
+@keyframes rdy {
+  to {
+    transform: scale(1.08);
+  }
+}
 
 /* ---- pawns (heads on the board) ---- */
-.pw { transition: transform .4s cubic-bezier(.3, 1.25, .5, 1); pointer-events: none; }   /* smooth moving / growing / shrinking */
-.pw.drag { transition: none; }
-.pw.rdrag { transition: transform .06s linear; }
-.pw.grab { pointer-events: all; cursor: grab; }
-.pw.cat { pointer-events: all; cursor: pointer; }
-.pw .ring { display: none; }
-.pw.act .ring { display: inline; }                                      /* bright lime outline = whose turn it is */
-.pw.act .bob { animation: bob 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }   /* gentle pulse */
-@keyframes bob { 50% { transform: scale(1.05); } }
-.hd { cursor: grab; }
+.pw {
+  transition: transform 0.4s cubic-bezier(0.3, 1.25, 0.5, 1);
+  pointer-events: none;
+} /* smooth moving / growing / shrinking */
+.pw.drag {
+  transition: none;
+}
+.pw.rdrag {
+  transition: transform 0.06s linear;
+}
+.pw.grab {
+  pointer-events: all;
+  cursor: grab;
+}
+.pw.cat {
+  pointer-events: all;
+  cursor: pointer;
+}
+.pw .ring {
+  display: none;
+}
+.pw.act .ring {
+  display: inline;
+} /* bright lime outline = whose turn it is */
+.pw.act .bob {
+  animation: bob 1.1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+} /* gentle pulse */
+@keyframes bob {
+  50% {
+    transform: scale(1.05);
+  }
+}
+.hd {
+  cursor: grab;
+}
 
 /* ---- pulsing lime outline on squares a dragged piece may land on ---- */
-.hl { fill: none; stroke: #c3f73a; stroke-width: 5; opacity: 0; pointer-events: none; }
-.hl.on { opacity: 1; animation: hlp .7s ease-in-out infinite alternate; }
-@keyframes hlp { from { stroke-width: 3; opacity: .55; } to { stroke-width: 8; opacity: 1; } }
+.hl {
+  fill: none;
+  stroke: #c3f73a;
+  stroke-width: 5;
+  opacity: 0;
+  pointer-events: none;
+}
+.hl.on {
+  opacity: 1;
+  animation: hlp 0.7s ease-in-out infinite alternate;
+}
+@keyframes hlp {
+  from {
+    stroke-width: 3;
+    opacity: 0.55;
+  }
+  to {
+    stroke-width: 8;
+    opacity: 1;
+  }
+}
 
 /* ---- Settings tab: volume bar. Blue = the whole bar, orange = the selected volume, every step has a lime outline ---- */
-.volbar { display: flex; gap: 4px; margin: 10px 0 6px; }
-.volbar .seg { flex: 1; height: 56px; box-sizing: border-box; border: 3px solid #c3f73a; border-radius: 6px; background: #105c7a; cursor: pointer; }
-.volbar .seg.on { background: #ff7529; }
-.volbar .seg:hover { filter: brightness(1.15); }
-.volnum { color: #fff3cf; }
+.volbar {
+  display: flex;
+  gap: 4px;
+  margin: 10px 0 6px;
+}
+.volbar .seg {
+  flex: 1;
+  height: 56px;
+  box-sizing: border-box;
+  border: 3px solid #c3f73a;
+  border-radius: 6px;
+  background: #105c7a;
+  cursor: pointer;
+}
+.volbar .seg.on {
+  background: #ff7529;
+}
+.volbar .seg:hover {
+  filter: brightness(1.15);
+}
+.volnum {
+  color: #fff3cf;
+}
 
 /* ---- Buff / Debuff counter: when the number changes it sinks, comes back up and glows lime ---- */
-.pp .cnt.pop { animation: ctrpop .75s ease-out; }
+.pp .cnt.pop {
+  animation: ctrpop 0.75s ease-out;
+}
 @keyframes ctrpop {
-  0%   { transform: translateY(0); filter: none; }
-  15%  { transform: translateY(6px); filter: drop-shadow(0 0 6px #c3f73a) drop-shadow(0 0 3px #c3f73a); }
-  45%  { transform: translateY(0); filter: drop-shadow(0 0 12px #c3f73a) drop-shadow(0 0 5px #c3f73a); }
-  100% { transform: translateY(0); filter: none; }
+  0% {
+    transform: translateY(0);
+    filter: none;
+  }
+  15% {
+    transform: translateY(6px);
+    filter: drop-shadow(0 0 6px #c3f73a) drop-shadow(0 0 3px #c3f73a);
+  }
+  45% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 12px #c3f73a) drop-shadow(0 0 5px #c3f73a);
+  }
+  100% {
+    transform: translateY(0);
+    filter: none;
+  }
 }
 
 /* ---- the Charmer's grabbable snake heads: lime outline around the head's shape + a pulse in size ---- */
-.hd .hpulse { filter: drop-shadow(4px 0 0 #c3f73a) drop-shadow(-4px 0 0 #c3f73a) drop-shadow(0 4px 0 #c3f73a) drop-shadow(0 -4px 0 #c3f73a) drop-shadow(0 0 8px #c3f73a); transform-box: fill-box; transform-origin: center; animation: hpulse .8s ease-in-out infinite alternate; }
-@keyframes hpulse { from { transform: scale(1); } to { transform: scale(1.14); } }
+.hd .hpulse {
+  filter: drop-shadow(4px 0 0 #c3f73a) drop-shadow(-4px 0 0 #c3f73a)
+    drop-shadow(0 4px 0 #c3f73a) drop-shadow(0 -4px 0 #c3f73a)
+    drop-shadow(0 0 8px #c3f73a);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hpulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes hpulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.14);
+  }
+}
 
 /* ---- Rulebook formatting (the .rb block built by RULES_HTML in js/rulebook.js; used in the tab and in the Expand pop-up) ---- */
-#rulebook .rb h2, #modal .rb h2 { margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 2px solid #c3f73a; color: #c3f73a; font-weight: normal; font-size: 1.15em; }
-#rulebook .rb h2:first-of-type, #modal .rb h2:first-of-type { margin-top: 10px; }
-#rulebook .rb h3, #modal .rb h3 { margin: 12px 0 3px; color: #ffa42c; font-weight: normal; font-size: 1em; }
-#modal .rb > p:first-child { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 2px solid #5a4a12; }
-.rb ul { margin: 0 0 6px; padding-left: 1.1em; list-style: square; }
-.rb li { margin-bottom: 4px; } .rb li::marker { color: #ffa42c; }
-.rb .k { color: #fff3cf; }
-.rb table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
-.rb td { padding: 3px 6px; border-bottom: 1px solid #5a4a12; vertical-align: top; } .rb td:first-child { color: #fff3cf; white-space: nowrap; }
-.rb .yes { color: #c3f73a; } .rb .no { color: #ff9a62; }
+#rulebook .rb h2,
+#modal .rb h2 {
+  margin: 16px 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 2px solid #c3f73a;
+  color: #c3f73a;
+  font-weight: normal;
+  font-size: 1.15em;
+}
+#rulebook .rb h2:first-of-type,
+#modal .rb h2:first-of-type {
+  margin-top: 10px;
+}
+#rulebook .rb h3,
+#modal .rb h3 {
+  margin: 12px 0 3px;
+  color: #ffa42c;
+  font-weight: normal;
+  font-size: 1em;
+}
+#modal .rb > p:first-child {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #5a4a12;
+}
+.rb ul {
+  margin: 0 0 6px;
+  padding-left: 1.1em;
+  list-style: square;
+}
+.rb li {
+  margin-bottom: 4px;
+}
+.rb li::marker {
+  color: #ffa42c;
+}
+.rb .k {
+  color: #fff3cf;
+}
+.rb table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 8px;
+}
+.rb td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #5a4a12;
+  vertical-align: top;
+}
+.rb td:first-child {
+  color: #fff3cf;
+  white-space: nowrap;
+}
+.rb .yes {
+  color: #c3f73a;
+}
+.rb .no {
+  color: #ff9a62;
+}
 
 /* ---- Reconnect Banner ---- */
 #netBanner {
@@ -292,16 +1636,24 @@ b, strong { font-weight: normal; }
   font-size: 26px;
   padding: 12px 30px;
   z-index: 999;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.6);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
   animation: pulseBanner 1s infinite alternate;
 }
 @keyframes pulseBanner {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.2); }
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.2);
+  }
 }
 
 /* ---- In-game Chat panel (see the right-hand panels section) ---- */
-.cmsg { margin-bottom: 6px; word-break: break-word; line-height: 1.25; }
+.cmsg {
+  margin-bottom: 6px;
+  word-break: break-word;
+  line-height: 1.25;
+}
 /* ---- Mode & Lobby Selection ---- */
 .mode-toggle {
   display: flex;
@@ -329,326 +1681,2040 @@ b, strong { font-weight: normal; }
   display: inline-block;
 }
 
-
 /* ============================================================================================================
    TITLE SCREEN (js/title.js). Every colour used by the title screen is a variable here: edit the two blocks
    below to retune light mode (default) and dark mode. --p-xxxxxx = what the art colour #xxxxxx turns into.
    ============================================================================================================ */
-@font-face { font-family: LM; src: url(../assets/Little_Monster_DEMO.ttf); }
+@font-face {
+  font-family: LM;
+  src: url(../assets/Little_Monster_DEMO.ttf);
+}
 html {
-  --tt-bg: #c3f73a; --tt-ink: #2f2504; --tt-rim: #2f2504; --tt-card: #eeffae; --tt-seg: #c3f73a;
-  --tt-track: #2f2504; --tt-trackrim: #7d9926; --tt-shine: rgba(255,255,255,.8); --tt-logo-shadow: rgba(0,0,0,.25);
-  --p-2f2504: #2f2504; --p-c3f73a: #c3f73a; --p-eeffae: #eeffae; --p-7d9926: #7d9926; --p-4b5b18: #4b5b18;
+  --tt-bg: #c3f73a;
+  --tt-ink: #2f2504;
+  --tt-rim: #2f2504;
+  --tt-card: #eeffae;
+  --tt-seg: #c3f73a;
+  --tt-track: #2f2504;
+  --tt-trackrim: #7d9926;
+  --tt-shine: rgba(255, 255, 255, 0.8);
+  --tt-logo-shadow: rgba(0, 0, 0, 0.25);
+  --p-2f2504: #2f2504;
+  --p-c3f73a: #c3f73a;
+  --p-eeffae: #eeffae;
+  --p-7d9926: #7d9926;
+  --p-4b5b18: #4b5b18;
 }
-html[data-theme=dark] {
-  --tt-bg: #2f2504; --tt-ink: #c3f73a; --tt-rim: #000; --tt-card: #1c1002; --tt-seg: #2f2504;
-  --tt-track: #1c1002; --tt-trackrim: #c3f73a; --tt-shine: rgba(195,247,58,.45); --tt-logo-shadow: rgba(0,0,0,.25);
-  --p-2f2504: #c3f73a; --p-c3f73a: #2f2504; --p-eeffae: #c3f73a; --p-7d9926: #1c1002; --p-4b5b18: #110d03;
+html[data-theme="dark"] {
+  --tt-bg: #2f2504;
+  --tt-ink: #c3f73a;
+  --tt-rim: #000;
+  --tt-card: #1c1002;
+  --tt-seg: #2f2504;
+  --tt-track: #1c1002;
+  --tt-trackrim: #c3f73a;
+  --tt-shine: rgba(195, 247, 58, 0.45);
+  --tt-logo-shadow: rgba(0, 0, 0, 0.25);
+  --p-2f2504: #c3f73a;
+  --p-c3f73a: #2f2504;
+  --p-eeffae: #c3f73a;
+  --p-7d9926: #1c1002;
+  --p-4b5b18: #110d03;
 }
-html.on-title, body.on-title { background: var(--tt-bg); transition: background-color .35s; }
-body.on-title #stage { background: none; }   /* the stage's blue would otherwise show as a thin edge around the lime title screen */
-#title { display: none; position: absolute; inset: 0; z-index: 20; background: var(--tt-bg); color: var(--tt-ink); font-family: LM, MC, monospace; overflow: hidden; transition: background-color .35s; }
-#title.on { display: block; }
-#title svg { display: block; overflow: visible; }
-.pc { transition: fill .35s; }
-.pc-2f2504 { fill: var(--p-2f2504); } .pc-c3f73a { fill: var(--p-c3f73a); } .pc-eeffae { fill: var(--p-eeffae); } .pc-7d9926 { fill: var(--p-7d9926); } .pc-4b5b18 { fill: var(--p-4b5b18); }
+html.on-title,
+body.on-title {
+  background: var(--tt-bg);
+  transition: background-color 0.35s;
+}
+body.on-title #stage {
+  background: none;
+} /* the stage's blue would otherwise show as a thin edge around the lime title screen */
+#title {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--tt-bg);
+  color: var(--tt-ink);
+  font-family: LM, MC, monospace;
+  overflow: hidden;
+  transition: background-color 0.35s;
+}
+#title.on {
+  display: block;
+}
+#title svg {
+  display: block;
+  overflow: visible;
+}
+.pc {
+  transition: fill 0.35s;
+}
+.pc-2f2504 {
+  fill: var(--p-2f2504);
+}
+.pc-c3f73a {
+  fill: var(--p-c3f73a);
+}
+.pc-eeffae {
+  fill: var(--p-eeffae);
+}
+.pc-7d9926 {
+  fill: var(--p-7d9926);
+}
+.pc-4b5b18 {
+  fill: var(--p-4b5b18);
+}
 
 /* logo: black 25% drop shadow; the words pop in one after another (delays are set in title.js) */
-#tLogo { position: absolute; left: 685px; top: 83px; width: 550px; }
-#tLogo svg { width: 550px; height: auto; filter: drop-shadow(8px 13px 0 var(--tt-logo-shadow)); }
-.lw { transform-box: fill-box; transform-origin: 50% 55%; }
-#title:not(.done) .lw { animation: lw-in .6s cubic-bezier(.2,1.5,.4,1) var(--d, 0s) both; }
-@keyframes lw-in { 0% { opacity: 0; transform: translateY(-70px) scale(.35) rotate(-6deg); } 100% { opacity: 1; transform: none; } }
+#tLogo {
+  position: absolute;
+  left: 685px;
+  top: 83px;
+  width: 550px;
+}
+#tLogo svg {
+  width: 550px;
+  height: auto;
+  filter: drop-shadow(8px 13px 0 var(--tt-logo-shadow));
+}
+.lw {
+  transform-box: fill-box;
+  transform-origin: 50% 55%;
+}
+#title:not(.done) .lw {
+  animation: lw-in 0.6s cubic-bezier(0.2, 1.5, 0.4, 1) var(--d, 0s) both;
+}
+@keyframes lw-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-70px) scale(0.35) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* menu buttons: a rounded shadow slab (.tb-rim) that stays put, and the face (.tb-face) that sinks onto it when pressed */
-#tMenu { position: absolute; inset: 0; pointer-events: none; }
-.tbtn { position: absolute; width: 323px; height: 165px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--tt-ink); font-family: LM, monospace; }
-.tbtn:focus-visible, #tBack:focus-visible, #tSwitch:focus-visible { outline: 3px dashed var(--tt-ink); outline-offset: 4px; }
-.tb-rim { position: absolute; inset: 0; border-radius: 11px; background: var(--tt-rim); transition: background-color .35s; }
-.tb-face { position: absolute; left: 6px; top: 5px; width: 309.39px; height: 139.57px; transition: transform .07s; }
-.tb-face svg { width: 309.39px; height: 139.57px; }
-.tbtn:active .tb-face { transform: translateY(11px); }
-.tb-label { position: absolute; left: 0; top: 0; width: 309.39px; height: 102.35px; display: flex; align-items: center; justify-content: center; font-size: 70.9px; line-height: 1; text-transform: uppercase; white-space: nowrap; transform: translateY(7.8px); }
-.tb-shine { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; pointer-events: none; }
-.tb-shine::before { content: ""; position: absolute; top: -20%; bottom: -20%; left: -45%; width: 30%; opacity: 0; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, var(--tt-shine) 50%, transparent); }
-.tbtn:hover .tb-shine::before, .gbtn:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }
-@keyframes tb-shine { 0% { left: -45%; opacity: 1; } 100% { left: 130%; opacity: 1; } }
-#title:not(.done) .tbtn { pointer-events: none; animation: tb-up .7s cubic-bezier(.2,1.35,.4,1) var(--d, 2s) both; }
-@keyframes tb-up { 0% { transform: translateY(330px); } 100% { transform: none; } }
-#title.busy .tbtn, .tbtn.is-title { pointer-events: none; }
+#tMenu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.tbtn {
+  position: absolute;
+  width: 323px;
+  height: 165px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  color: var(--tt-ink);
+  font-family: LM, monospace;
+}
+.tbtn:focus-visible,
+#tBack:focus-visible,
+#tSwitch:focus-visible {
+  outline: 3px dashed var(--tt-ink);
+  outline-offset: 4px;
+}
+.tb-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--tt-rim);
+  transition: background-color 0.35s;
+}
+.tb-face {
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  width: 309.39px;
+  height: 139.57px;
+  transition: transform 0.07s;
+}
+.tb-face svg {
+  width: 309.39px;
+  height: 139.57px;
+}
+.tbtn:active .tb-face {
+  transform: translateY(11px);
+}
+.tb-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 309.39px;
+  height: 102.35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 70.9px;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateY(7.8px);
+}
+.tb-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.tb-shine::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -45%;
+  width: 30%;
+  opacity: 0;
+  transform: skewX(-22deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--tt-shine) 50%,
+    transparent
+  );
+}
+.tbtn:hover .tb-shine::before,
+.gbtn:hover .tb-shine::before {
+  animation: tb-shine 0.55s ease-out forwards;
+}
+@keyframes tb-shine {
+  0% {
+    left: -45%;
+    opacity: 1;
+  }
+  100% {
+    left: 130%;
+    opacity: 1;
+  }
+}
+#title:not(.done) .tbtn {
+  pointer-events: none;
+  animation: tb-up 0.7s cubic-bezier(0.2, 1.35, 0.4, 1) var(--d, 2s) both;
+}
+@keyframes tb-up {
+  0% {
+    transform: translateY(330px);
+  }
+  100% {
+    transform: none;
+  }
+}
+#title.busy .tbtn,
+.tbtn.is-title {
+  pointer-events: none;
+}
 
 /* back button (left of the title button on a page) */
-#tBack { display: none; position: absolute; left: 50px; top: 50px; width: 93px; height: 180px; padding: 0; border: 0; background: none; cursor: pointer; }
-#tBack .tk-shadow { position: absolute; left: 0; top: 13px; width: 93px; height: auto; } #tBack .tk-shadow path { fill: var(--tt-rim); transition: fill .35s; }
-#tBack .tk-face { position: absolute; left: 0; top: 0; width: 93px; transition: transform .07s; } #tBack .tk-face svg { width: 93px; height: auto; }
-#tBack:active .tk-face { transform: translateY(11px); }
-#title.busy #tBack { pointer-events: none; }
+#tBack {
+  display: none;
+  position: absolute;
+  left: 50px;
+  top: 50px;
+  width: 93px;
+  height: 180px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+#tBack .tk-shadow {
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 93px;
+  height: auto;
+}
+#tBack .tk-shadow path {
+  fill: var(--tt-rim);
+  transition: fill 0.35s;
+}
+#tBack .tk-face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 93px;
+  transition: transform 0.07s;
+}
+#tBack .tk-face svg {
+  width: 93px;
+  height: auto;
+}
+#tBack:active .tk-face {
+  transform: translateY(11px);
+}
+#title.busy #tBack {
+  pointer-events: none;
+}
 
 /* the page that opens under the title */
-#tPage { display: none; position: absolute; left: 260px; top: 270px; width: 1400px; height: 740px; }
-.tp-card { width: 100%; height: 100%; box-sizing: border-box; padding: 44px 64px; overflow: auto; background: var(--tt-card); color: var(--tt-ink); border: 6px solid var(--tt-ink); border-radius: 22px; box-shadow: 0 14px 0 var(--tt-rim); font-family: MC, monospace; font-size: 30px; line-height: 1.5; transition: background-color .35s, color .35s, border-color .35s; }
-.tp-card h2 { margin: 0 0 18px; font-family: LM, MC, monospace; font-weight: normal; font-size: 64px; text-transform: uppercase; } .tp-card p { margin: 0 0 16px; }
-.tt-vol { display: flex; gap: 6px; margin: 8px 0 20px; } .tt-seg { flex: 1; height: 54px; box-sizing: border-box; border: 4px solid var(--tt-ink); border-radius: 8px; background: var(--tt-seg); cursor: pointer; } .tt-seg.on { background: #ff7529; } .tt-seg:hover { filter: brightness(1.15); }
+#tPage {
+  display: none;
+  position: absolute;
+  left: 260px;
+  top: 270px;
+  width: 1400px;
+  height: 740px;
+}
+.tp-card {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 44px 64px;
+  overflow: auto;
+  background: var(--tt-card);
+  color: var(--tt-ink);
+  border: 6px solid var(--tt-ink);
+  border-radius: 22px;
+  box-shadow: 0 14px 0 var(--tt-rim);
+  font-family: MC, monospace;
+  font-size: 30px;
+  line-height: 1.5;
+  transition:
+    background-color 0.35s,
+    color 0.35s,
+    border-color 0.35s;
+}
+.tp-card h2 {
+  margin: 0 0 18px;
+  font-family: LM, MC, monospace;
+  font-weight: normal;
+  font-size: 64px;
+  text-transform: uppercase;
+}
+.tp-card p {
+  margin: 0 0 16px;
+}
+.tt-vol {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 20px;
+}
+.tt-seg {
+  flex: 1;
+  height: 54px;
+  box-sizing: border-box;
+  border: 4px solid var(--tt-ink);
+  border-radius: 8px;
+  background: var(--tt-seg);
+  cursor: pointer;
+}
+.tt-seg.on {
+  background: #ff7529;
+}
+.tt-seg:hover {
+  filter: brightness(1.15);
+}
 
 /* light / dark switch (top right): orange sun, the switch, orange moon */
-#tSun, #tMoon { position: absolute; fill: #ff7529; stroke: #ff7529; } #tMoon { stroke: none; }
-#tSun { left: 1764px; top: 89.5px; width: 27px; height: 27px; } #tMoon { left: 1863px; top: 91.5px; width: 19px; height: 23px; }   /* half the old size, same right edge */
-#tSwitch { position: absolute; left: 1797px; top: 85px; width: 60px; height: 36px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; }
-#tSwitch svg { width: 60px; height: 36px; }
+#tSun,
+#tMoon {
+  position: absolute;
+  fill: #ff7529;
+  stroke: #ff7529;
+}
+#tMoon {
+  stroke: none;
+}
+#tSun {
+  left: 1764px;
+  top: 89.5px;
+  width: 27px;
+  height: 27px;
+}
+#tMoon {
+  left: 1863px;
+  top: 91.5px;
+  width: 19px;
+  height: 23px;
+} /* half the old size, same right edge */
+#tSwitch {
+  position: absolute;
+  left: 1797px;
+  top: 85px;
+  width: 60px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 18px;
+}
+#tSwitch svg {
+  width: 60px;
+  height: 36px;
+}
 /* the mute switch sits directly under it, same width: speaker, switch, muted speaker (the switch itself is styled in the MUSIC + MUTE section below) */
 /* Every piece is placed by hand (numbers are relative to the row's left edge, x = 1764) so the capsule sits exactly under the light/dark capsule (both start at x = 1797, 60px wide)
    and each speaker is centred under the sun / moon above it (sun centre x = 1777.5, moon centre x = 1872.5). */
-#tMuteRow { position: absolute; left: 1764px; top: 144px; width: 118px; height: 36px; }
-#tMuteRow .mu-ico { position: absolute; top: 6px; width: 24px; height: 24px; }
-#tMuteRow .mu-ico:first-child { left: 1.5px; }    /* speaker with sound waves, under the sun */
-#tMuteRow .mu-ico:last-child { left: 96.5px; }    /* speaker with a cross, under the moon */
-#tMuteRow .msw { position: absolute; left: 33px; top: 0; width: 60px; height: 36px; border-radius: 18px; }   /* the capsule: x = 1764 + 33 = 1797, same as #tSwitch */
-.tt-trkrim { fill: var(--tt-trackrim); transition: fill .35s; } .tt-trk { fill: var(--tt-track); transition: fill .35s; } .tt-knobring { stroke: var(--tt-track); transition: stroke .35s; }
-.tt-knob { transition: transform .3s cubic-bezier(.3,1.5,.5,1); } html[data-theme=dark] .tt-knob { transform: translateX(59px); }
+#tMuteRow {
+  position: absolute;
+  left: 1764px;
+  top: 144px;
+  width: 118px;
+  height: 36px;
+}
+#tMuteRow .mu-ico {
+  position: absolute;
+  top: 6px;
+  width: 24px;
+  height: 24px;
+}
+#tMuteRow .mu-ico:first-child {
+  left: 1.5px;
+} /* speaker with sound waves, under the sun */
+#tMuteRow .mu-ico:last-child {
+  left: 96.5px;
+} /* speaker with a cross, under the moon */
+#tMuteRow .msw {
+  position: absolute;
+  left: 33px;
+  top: 0;
+  width: 60px;
+  height: 36px;
+  border-radius: 18px;
+} /* the capsule: x = 1764 + 33 = 1797, same as #tSwitch */
+.tt-trkrim {
+  fill: var(--tt-trackrim);
+  transition: fill 0.35s;
+}
+.tt-trk {
+  fill: var(--tt-track);
+  transition: fill 0.35s;
+}
+.tt-knobring {
+  stroke: var(--tt-track);
+  transition: stroke 0.35s;
+}
+.tt-knob {
+  transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+html[data-theme="dark"] .tt-knob {
+  transform: translateX(59px);
+}
 
 /* Play page: the orange description buttons (art: assets/button_playscreen_description.svg) and the row container */
-#tRows { display: none; position: absolute; inset: 0; pointer-events: none; }
+#tRows {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 
 /* ============================================================================================================
    LOCAL SCREEN + CHARACTER PICK PANELS (js/local.js). Orange / blue alternate like the player panels.
    ============================================================================================================ */
-html { --tt-field: #2f2504; } html[data-theme=dark] { --tt-field: #1c1002; }
-#tLocal { display: none; position: absolute; inset: 0; pointer-events: none; } #tLocal > * { pointer-events: auto; }
-.lrow { position: absolute; width: 938px; height: 99px; transform-origin: 0 0; transition: top .3s, transform .3s, opacity .25s; }
-.lin { position: absolute; inset: 0; }
-.lname { position: absolute; left: 143px; top: 2px; width: 376px; height: 96px; box-sizing: border-box; padding: 12.4px 30px 0; line-height: 1; border: 0; border-radius: 9px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 49.8px; outline: none; transition: background-color .35s; }
-.lname::placeholder { color: #8f8a78; opacity: 1; }   /* the default "Player 1, 2..." in the name boxes is grey; typed names are white */ .lname:focus { box-shadow: 0 0 0 4px var(--tt-ink); }
-.pk-pick:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }
-#tCnt { position: absolute; left: 1208px; top: 85px; width: 412px; height: 95px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; }   /* label + number box stay together at the right edge */
-#tCnt .cl { font-family: LM, monospace; font-size: 42px; line-height: 1; transform: translateY(.1em); color: var(--tt-ink); white-space: nowrap; transition: color .35s; }   /* Little Monster, same size as the small buttons' labels; translateY centres its capitals (they sit high in the font) */
-#tCntBtn { position: relative; width: 125px; height: 95px; padding: 0 14px; box-sizing: border-box; border: 0; border-radius: 10px; background: var(--tt-field); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; transition: background-color .35s; }
+html {
+  --tt-field: #2f2504;
+}
+html[data-theme="dark"] {
+  --tt-field: #1c1002;
+}
+#tLocal {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#tLocal > * {
+  pointer-events: auto;
+}
+.lrow {
+  position: absolute;
+  width: 938px;
+  height: 99px;
+  transform-origin: 0 0;
+  transition:
+    top 0.3s,
+    transform 0.3s,
+    opacity 0.25s;
+}
+.lin {
+  position: absolute;
+  inset: 0;
+}
+.lname {
+  position: absolute;
+  left: 143px;
+  top: 2px;
+  width: 376px;
+  height: 96px;
+  box-sizing: border-box;
+  padding: 12.4px 30px 0;
+  line-height: 1;
+  border: 0;
+  border-radius: 9px;
+  background: var(--tt-field);
+  color: #fff;
+  font-family: MC, monospace;
+  font-size: 49.8px;
+  outline: none;
+  transition: background-color 0.35s;
+}
+.lname::placeholder {
+  color: #8f8a78;
+  opacity: 1;
+} /* the default "Player 1, 2..." in the name boxes is grey; typed names are white */
+.lname:focus {
+  box-shadow: 0 0 0 4px var(--tt-ink);
+}
+.pk-pick:hover .tb-shine::before {
+  animation: tb-shine 0.55s ease-out forwards;
+}
+#tCnt {
+  position: absolute;
+  left: 1208px;
+  top: 85px;
+  width: 412px;
+  height: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 25px;
+} /* label + number box stay together at the right edge */
+#tCnt .cl {
+  font-family: LM, monospace;
+  font-size: 42px;
+  line-height: 1;
+  transform: translateY(0.1em);
+  color: var(--tt-ink);
+  white-space: nowrap;
+  transition: color 0.35s;
+} /* Little Monster, same size as the small buttons' labels; translateY centres its capitals (they sit high in the font) */
+#tCntBtn {
+  position: relative;
+  width: 125px;
+  height: 95px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-field);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: background-color 0.35s;
+}
 /* box = 14px | digit | 12px | divider | 12px | chevron | 14px: the space left of the digit equals the space right of the chevron; the digit is centred vertically */
-#tCntBtn b { flex: none; width: 51.12px; margin-left: 0.0px; font-weight: normal; font-family: MC, monospace; font-size: 81.8px; line-height: 1; transform: translateY(10.23px); text-align: left; }
-#tCntBtn i { flex: none; width: 3px; height: 56px; background: #fff; margin-left: 6.89px; margin-right: 12px; } #tCntBtn svg { flex: none; width: 24px; height: 14px; }
-#tCntMenu { display: none; position: absolute; right: 0; top: 103px; width: 125px; z-index: 5; } #tCntMenu.open { display: block; }
-#tCntMenu button { display: block; width: 125px; height: 64px; margin-bottom: 6px; border: 0; border-radius: 10px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 44px; cursor: pointer; } #tCntMenu button:hover { background: #ff7529; }
-#tHint { position: absolute; left: 1430px; top: 815px; width: 440px; text-align: right; font-family: MC, monospace; font-size: 24px; color: var(--tt-ink); }
-#tStart { pointer-events: auto; }
+#tCntBtn b {
+  flex: none;
+  width: 51.12px;
+  margin-left: 0px;
+  font-weight: normal;
+  font-family: MC, monospace;
+  font-size: 81.8px;
+  line-height: 1;
+  transform: translateY(10.23px);
+  text-align: left;
+}
+#tCntBtn i {
+  flex: none;
+  width: 3px;
+  height: 56px;
+  background: #fff;
+  margin-left: 6.89px;
+  margin-right: 12px;
+}
+#tCntBtn svg {
+  flex: none;
+  width: 24px;
+  height: 14px;
+}
+#tCntMenu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 103px;
+  width: 125px;
+  z-index: 5;
+}
+#tCntMenu.open {
+  display: block;
+}
+#tCntMenu button {
+  display: block;
+  width: 125px;
+  height: 64px;
+  margin-bottom: 6px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-field);
+  color: #fff;
+  font-family: MC, monospace;
+  font-size: 44px;
+  cursor: pointer;
+}
+#tCntMenu button:hover {
+  background: #ff7529;
+}
+#tHint {
+  position: absolute;
+  left: 1430px;
+  top: 815px;
+  width: 440px;
+  text-align: right;
+  font-family: MC, monospace;
+  font-size: 24px;
+  color: var(--tt-ink);
+}
+#tStart {
+  pointer-events: auto;
+}
 
-#tPick { display: none; position: fixed; inset: 0; z-index: 100; }   /* outside the stage: covers the whole window */
-#pkPanels { position: fixed; inset: 0; pointer-events: none; }
-.pk-slot { position: absolute; bottom: 0; width: 264px; height: 806px; transform-origin: 0 100%; pointer-events: auto; }   /* positioned + scaled by layoutPanels() in local.js */
-.pk-dim { position: absolute; inset: 0; background: #000; opacity: .5; }   /* pure black, 50% */
-.pk-panel { position: absolute; top: 0; width: 264px; height: 806px; }
-.pk-art { position: absolute; left: 0; top: 0; height: 806px; width: auto; max-width: none; }
-.pk-head { position: absolute; left: 128px; top: 128px; width: auto; transform: translate(-50%, -50%); }
-.pk-name { position: absolute; left: 12px; top: 239px; width: 240px; height: 121px;   /* centred between the head circle (ends y=239) and the description box (starts y=360) */ display: flex; align-items: center; justify-content: center; text-align: center; font-family: LM, MC, monospace; font-size: 44px; line-height: .95; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.25); } .pk-name.long { font-size: 31px; }
-.pk-tag { position: absolute; left: 12px; top: 322px; width: 240px; text-align: center; font-family: MC, monospace; font-size: 14px; color: #fff3cf; }
-.pk-desc { position: absolute; left: 19.45px; top: 360.27px; width: 213.27px; height: 298.06px; box-sizing: border-box; padding: 0; overflow: hidden; color: #f6f1d8; font-family: MC, monospace; font-size: 15px; line-height: 1.28; }
-.pk-scroll { position: absolute; left: 0; top: 6px; right: 6px; bottom: 44px; box-sizing: border-box; padding: 6px 4px 6px 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ff7529 #1c1002; }   /* long text scrolls inside the brown box; "top: 6px" and "right: 6px" (instead of 0) keep the scrollbar off the box artwork's own rounded edge */
-.pk-scroll::-webkit-scrollbar { width: 6px; } .pk-scroll::-webkit-scrollbar-track { background: #1c1002; border-radius: 3px; } .pk-scroll::-webkit-scrollbar-thumb { background: #ff7529; border-radius: 3px; }
-.pk-desc ul { margin: 0; padding: 0; } .pk-desc li { position: relative; list-style: none; padding-left: 13px; margin-bottom: 7px; } .pk-desc li::before { content: ""; position: absolute; left: 0; top: 5px; width: 6px; height: 6px; background: #ff7529; } .pk-desc b { font-weight: normal; color: #ffa42c; }
-.pk-pick { position: absolute; left: 49.6px; top: 678px; width: 156.7px; height: 97.3px; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer; overflow: hidden; }
-.pk-shine { position: absolute; inset: 0; border-radius: 132px 132px 0 0; overflow: hidden; pointer-events: none; }
-.pk-shine::before { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; opacity: 0; transform: skewX(-18deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.75) 50%, transparent); }
-.pk-panel.shining .pk-shine::before { animation: tb-shine .2s ease-in-out forwards; }
-#tFull { display: none; position: fixed; inset: 0; z-index: 2; background: rgba(0,0,0,.5); }
-.tf-card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1000px, 92vw); height: min(820px, 88vh); box-sizing: border-box; padding: 34px 48px; overflow: auto; background: #2f2504; border: 5px solid #c3f73a; border-radius: 18px; color: #f6f1d8; font-family: MC, monospace; font-size: 26px; line-height: 1.4; }
-.tf-card h2 { margin: 0 0 14px; font-family: LM, MC, monospace; font-weight: normal; font-size: 60px; color: #c3f73a; } .tf-card ul { margin: 0; padding-left: 28px; } .tf-card li { margin-bottom: 12px; } .tf-card .k, .tf-card b { color: #ffa42c; font-weight: normal; }
+#tPick {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+} /* outside the stage: covers the whole window */
+#pkPanels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.pk-slot {
+  position: absolute;
+  bottom: 0;
+  width: 264px;
+  height: 806px;
+  transform-origin: 0 100%;
+  pointer-events: auto;
+} /* positioned + scaled by layoutPanels() in local.js */
+.pk-dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0.5;
+} /* pure black, 50% */
+.pk-panel {
+  position: absolute;
+  top: 0;
+  width: 264px;
+  height: 806px;
+}
+.pk-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 806px;
+  width: auto;
+  max-width: none;
+}
+.pk-head {
+  position: absolute;
+  left: 128px;
+  top: 128px;
+  width: auto;
+  transform: translate(-50%, -50%);
+}
+.pk-name {
+  position: absolute;
+  left: 12px;
+  top: 239px;
+  width: 240px;
+  height: 121px; /* centred between the head circle (ends y=239) and the description box (starts y=360) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: LM, MC, monospace;
+  font-size: 44px;
+  line-height: 0.95;
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+.pk-name.long {
+  font-size: 31px;
+}
+.pk-tag {
+  position: absolute;
+  left: 12px;
+  top: 322px;
+  width: 240px;
+  text-align: center;
+  font-family: MC, monospace;
+  font-size: 14px;
+  color: #fff3cf;
+}
+.pk-desc {
+  position: absolute;
+  left: 19.45px;
+  top: 360.27px;
+  width: 213.27px;
+  height: 298.06px;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  color: #f6f1d8;
+  font-family: MC, monospace;
+  font-size: 15px;
+  line-height: 1.28;
+}
+.pk-scroll {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  right: 6px;
+  bottom: 44px;
+  box-sizing: border-box;
+  padding: 6px 4px 6px 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ff7529 #1c1002;
+} /* long text scrolls inside the brown box; "top: 6px" and "right: 6px" (instead of 0) keep the scrollbar off the box artwork's own rounded edge */
+.pk-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.pk-scroll::-webkit-scrollbar-track {
+  background: #1c1002;
+  border-radius: 3px;
+}
+.pk-scroll::-webkit-scrollbar-thumb {
+  background: #ff7529;
+  border-radius: 3px;
+}
+.pk-desc ul {
+  margin: 0;
+  padding: 0;
+}
+.pk-desc li {
+  position: relative;
+  list-style: none;
+  padding-left: 13px;
+  margin-bottom: 7px;
+}
+.pk-desc li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  background: #ff7529;
+}
+.pk-desc b {
+  font-weight: normal;
+  color: #ffa42c;
+}
+.pk-pick {
+  position: absolute;
+  left: 49.6px;
+  top: 678px;
+  width: 156.7px;
+  height: 97.3px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+.pk-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 132px 132px 0 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pk-shine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  opacity: 0;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent
+  );
+}
+.pk-panel.shining .pk-shine::before {
+  animation: tb-shine 0.2s ease-in-out forwards;
+}
+#tFull {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.5);
+}
+.tf-card {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1000px, 92vw);
+  height: min(820px, 88vh);
+  box-sizing: border-box;
+  padding: 34px 48px;
+  overflow: auto;
+  background: #2f2504;
+  border: 5px solid #c3f73a;
+  border-radius: 18px;
+  color: #f6f1d8;
+  font-family: MC, monospace;
+  font-size: 26px;
+  line-height: 1.4;
+}
+.tf-card h2 {
+  margin: 0 0 14px;
+  font-family: LM, MC, monospace;
+  font-weight: normal;
+  font-size: 60px;
+  color: #c3f73a;
+}
+.tf-card ul {
+  margin: 0;
+  padding-left: 28px;
+}
+.tf-card li {
+  margin-bottom: 12px;
+}
+.tf-card .k,
+.tf-card b {
+  color: #ffa42c;
+  font-weight: normal;
+}
 
 /* Start pressed with a missing character: that player's badge + Pick a Character button shine and a chevron points at them */
-.lchev { position: absolute; left: -62px; top: 36px; width: 24px; height: 24px; box-sizing: border-box; border-top: 9px solid var(--tt-ink); border-right: 9px solid var(--tt-ink); transform: rotate(45deg); opacity: 0; pointer-events: none; }
-.lrow.need .lchev { opacity: 1; animation: lchev .4s ease-in-out infinite alternate; } @keyframes lchev { from { margin-left: 0; } to { margin-left: 14px; } }
-.lrow.need .tb-shine::before { animation: tb-shine .55s ease-out 2; }
+.lchev {
+  position: absolute;
+  left: -62px;
+  top: 36px;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border-top: 9px solid var(--tt-ink);
+  border-right: 9px solid var(--tt-ink);
+  transform: rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.lrow.need .lchev {
+  opacity: 1;
+  animation: lchev 0.4s ease-in-out infinite alternate;
+}
+@keyframes lchev {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: 14px;
+  }
+}
+.lrow.need .tb-shine::before {
+  animation: tb-shine 0.55s ease-out 2;
+}
 
 /* ============================================================================================================
    HOST / JOIN (js/local.js) + loading bar (js/preload.js)
    ============================================================================================================ */
-#tLocal #tCnt { display: none; } #tLocal[data-mode=local] #tCnt { display: flex; }
-.tgrp { display: none; position: absolute; left: 570px; top: 85px; height: 95px; gap: 18px; align-items: center; }
-#tLocal[data-mode=host] #tHost, #tLocal[data-mode=join] #tJoin { display: flex; }
+#tLocal #tCnt {
+  display: none;
+}
+#tLocal[data-mode="local"] #tCnt {
+  display: flex;
+}
+.tgrp {
+  display: none;
+  position: absolute;
+  left: 570px;
+  top: 85px;
+  height: 95px;
+  gap: 18px;
+  align-items: center;
+}
+#tLocal[data-mode="host"] #tHost,
+#tLocal[data-mode="join"] #tJoin {
+  display: flex;
+}
 /* the game's own orange button (blue at night): the .cbtn art, see css above */
-.hcode { box-sizing: border-box; width: 240px; height: 95px; padding: 14.0px 0 0 6px; line-height: 1; border: 0; border-radius: 10px; background: var(--tt-field); color: #fff; font-family: MC, monospace; font-size: 56px; letter-spacing: 6px; display: flex; align-items: center; justify-content: center; outline: none; text-align: center; text-transform: uppercase; transition: background-color .35s; }
-.hcode.empty { padding: 14px 0 0 0; font-size: 0; letter-spacing: 0; word-spacing: 0; }   /* the "- - - - -" text is hidden (zero size); the dashes below are drawn instead */
-.hcode.empty::before { content: ""; flex: none; width: 170px; height: 6px; border-radius: 1px;   /* 5 dashes x 34px. Every 34px: 8px gap, an 18px dash, 8px gap, so the space on the left and right of the box is identical (35px each) */
-  background: repeating-linear-gradient(90deg, transparent 0 8px, rgba(255,255,255,.5) 8px 26px, transparent 26px 34px); } input.hcode { width: 330px; } input.hcode::placeholder { color: #fff; opacity: .55; } input.hcode:placeholder-shown { font-size: 34px; letter-spacing: 2px; padding-top: 8.5px; }   /* text is centred using the font's own measurements */ input.hcode:focus { box-shadow: 0 0 0 4px var(--tt-ink); } input.hcode:disabled { -webkit-text-fill-color: #fff; opacity: .8; }
-#tToast { display: none; position: absolute; z-index: 6; height: 52px; padding: 0 24px; border-radius: 26px; align-items: center; font-family: MC, monospace; font-size: 26px; white-space: nowrap; pointer-events: none; box-shadow: 0 5px 0 rgba(0,0,0,.3); }
-#tToast.ok { background: #c3f73a; color: #2f2504; } #tToast.bad { background: #e2330a; color: #fff; }
-#tWait { display: none; position: absolute; left: 1430px; top: 900px; width: 440px; text-align: right; font-family: MC, monospace; font-size: 26px; color: var(--tt-ink); }
-.lname:disabled { -webkit-text-fill-color: #fff; opacity: 1; }
+.hcode {
+  box-sizing: border-box;
+  width: 240px;
+  height: 95px;
+  padding: 14px 0 0 6px;
+  line-height: 1;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-field);
+  color: #fff;
+  font-family: MC, monospace;
+  font-size: 56px;
+  letter-spacing: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  text-align: center;
+  text-transform: uppercase;
+  transition: background-color 0.35s;
+}
+.hcode.empty {
+  padding: 14px 0 0 0;
+  font-size: 0;
+  letter-spacing: 0;
+  word-spacing: 0;
+} /* the "- - - - -" text is hidden (zero size); the dashes below are drawn instead */
+.hcode.empty::before {
+  content: "";
+  flex: none;
+  width: 170px;
+  height: 6px;
+  border-radius: 1px; /* 5 dashes x 34px. Every 34px: 8px gap, an 18px dash, 8px gap, so the space on the left and right of the box is identical (35px each) */
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 8px,
+    rgba(255, 255, 255, 0.5) 8px 26px,
+    transparent 26px 34px
+  );
+}
+input.hcode {
+  width: 330px;
+}
+input.hcode::placeholder {
+  color: #fff;
+  opacity: 0.55;
+}
+input.hcode:placeholder-shown {
+  font-size: 34px;
+  letter-spacing: 2px;
+  padding-top: 8.5px;
+} /* text is centred using the font's own measurements */
+input.hcode:focus {
+  box-shadow: 0 0 0 4px var(--tt-ink);
+}
+input.hcode:disabled {
+  -webkit-text-fill-color: #fff;
+  opacity: 0.8;
+}
+#tToast {
+  display: none;
+  position: absolute;
+  z-index: 6;
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 26px;
+  align-items: center;
+  font-family: MC, monospace;
+  font-size: 26px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3);
+}
+#tToast.ok {
+  background: #c3f73a;
+  color: #2f2504;
+}
+#tToast.bad {
+  background: #e2330a;
+  color: #fff;
+}
+#tWait {
+  display: none;
+  position: absolute;
+  left: 1430px;
+  top: 900px;
+  width: 440px;
+  text-align: right;
+  font-family: MC, monospace;
+  font-size: 26px;
+  color: var(--tt-ink);
+}
+.lname:disabled {
+  -webkit-text-fill-color: #fff;
+  opacity: 1;
+}
 /* loading bar: thin capsule bottom-left (dark brown track + lime bar); when done it vanishes and a tiny tick + "assets loaded" stays */
-html { --tt-ldtrack: #2f2504; } html[data-theme=dark] { --tt-ldtrack: #000; }
-#tLoad { position: absolute; left: 28px; bottom: 24px; height: 16px; z-index: 21; display: flex; align-items: center; gap: 8px; font-family: MC, monospace; font-size: 14px; color: var(--tt-ink); pointer-events: none; transition: color .35s; }
-body:not(.on-title) #tLoad { display: none; }
-.ld-bar { width: 180px; height: 8px; border-radius: 4px; background: var(--tt-ldtrack); overflow: hidden; transition: opacity .4s, width .4s .1s; } .ld-bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: #c3f73a; transition: width .2s; }
-.ld-ok { display: none; align-items: center; gap: 6px; opacity: .85; } #tLoad.done .ld-bar { opacity: 0; width: 0; } #tLoad.done .ld-ok { display: flex; }
+html {
+  --tt-ldtrack: #2f2504;
+}
+html[data-theme="dark"] {
+  --tt-ldtrack: #000;
+}
+#tLoad {
+  position: absolute;
+  left: 28px;
+  bottom: 24px;
+  height: 16px;
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: MC, monospace;
+  font-size: 14px;
+  color: var(--tt-ink);
+  pointer-events: none;
+  transition: color 0.35s;
+}
+body:not(.on-title) #tLoad {
+  display: none;
+}
+.ld-bar {
+  width: 180px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--tt-ldtrack);
+  overflow: hidden;
+  transition:
+    opacity 0.4s,
+    width 0.4s 0.1s;
+}
+.ld-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 4px;
+  background: #c3f73a;
+  transition: width 0.2s;
+}
+.ld-ok {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+}
+#tLoad.done .ld-bar {
+  opacity: 0;
+  width: 0;
+}
+#tLoad.done .ld-ok {
+  display: flex;
+}
 
-#tLoad { transition: color .35s, transform .5s ease-in, opacity .5s; } #tLoad.gone { transform: translateX(-320px); opacity: 0; }   /* after loading: "Assets loaded" stays a second, then slides off */
+#tLoad {
+  transition:
+    color 0.35s,
+    transform 0.5s ease-in,
+    opacity 0.5s;
+}
+#tLoad.gone {
+  transform: translateX(-320px);
+  opacity: 0;
+} /* after loading: "Assets loaded" stays a second, then slides off */
 
 /* ============================================================================================================
    GREEN STRETCHABLE BUTTONS (.gbtn - built by gbBuild() in js/title.js) + the dark description boxes on the Play page
    ============================================================================================================ */
-.gbtn { position: relative; flex: none; padding: 0; border: 0; background: none; cursor: pointer; color: var(--tt-ink); font-family: LM, monospace; }
-.gbtn:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 6px; }
-.gb-rim { position: absolute; inset: 0; border-radius: calc(11px * var(--sc)); background: var(--tt-rim); transition: background-color .35s; }
-.gb-top { position: absolute; left: calc(6px * var(--sc)); top: calc(5px * var(--sc)); right: calc(7.6px * var(--sc)); bottom: calc(20.4px * var(--sc)); transition: transform .07s; }
-.gb-face { position: absolute; inset: 0; box-sizing: border-box; border-style: solid; border-color: transparent; border-width: calc(30px * var(--sc)) calc(65px * var(--sc)) calc(40px * var(--sc)) calc(95px * var(--sc)); border-image: var(--gbtn) 30 65 40 95 fill stretch; }   /* the 9-slice: corners keep their shape, the middle stretches */
-.gb-top .tb-shine { border-radius: calc(4px * var(--sc)); }
-.gb-t { position: absolute; left: 0; right: 0; top: 0; height: calc(102.35px * var(--sc)); display: flex; align-items: center; justify-content: center; gap: calc(14px * var(--sc)); font-size: calc(70.9px * var(--sc) * var(--tk, 1)); line-height: 1; white-space: nowrap; transform: translateY(calc(7.8px * var(--sc))); }
-.gb-fb { font-family: MC, monospace; font-size: 1.3em; }
-.gb-t img { position: relative; top: calc(-7.8px * var(--sc)); width: auto; flex: none; } .gb-t svg { position: relative; top: calc(-7.8px * var(--sc)); }
-.gbtn:active .gb-top { transform: translateY(calc(11px * var(--sc))); }
-.gbtn:disabled { opacity: .65; cursor: default; } .gbtn:disabled:active .gb-top { transform: none; }
-.lin .lbadge, .lin .lcls { position: absolute; top: 0; } .lin .lbadge { left: 0; pointer-events: none; } .lin .lcls { left: 560px; }
-.pk-x { position: absolute; right: 28px; top: 28px; }
-.pk-more { position: absolute; left: calc(50% - 20px); bottom: 10px; width: 40px; height: 28px; padding: 0; border: 0; border-bottom: 4px solid #e2330a; border-radius: 6px; background: #ff7529; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.pk-more:active { transform: translateY(2px); border-bottom-width: 2px; }
-.obtn { position: absolute; width: 1029.95px; height: 165px; box-sizing: border-box; padding: 15.0px 24px 0; border-radius: 22px; background: var(--tt-field); color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-family: MC, monospace; font-size: 60.0px; line-height: 1; white-space: nowrap; pointer-events: none; transition: background-color .35s; }
+.gbtn {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--tt-ink);
+  font-family: LM, monospace;
+}
+.gbtn:focus-visible {
+  outline: 4px dashed var(--tt-ink);
+  outline-offset: 6px;
+}
+.gb-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(11px * var(--sc));
+  background: var(--tt-rim);
+  transition: background-color 0.35s;
+}
+.gb-top {
+  position: absolute;
+  left: calc(6px * var(--sc));
+  top: calc(5px * var(--sc));
+  right: calc(7.6px * var(--sc));
+  bottom: calc(20.4px * var(--sc));
+  transition: transform 0.07s;
+}
+.gb-face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30px * var(--sc)) calc(65px * var(--sc))
+    calc(40px * var(--sc)) calc(95px * var(--sc));
+  border-image: var(--gbtn) 30 65 40 95 fill stretch;
+} /* the 9-slice: corners keep their shape, the middle stretches */
+.gb-top .tb-shine {
+  border-radius: calc(4px * var(--sc));
+}
+.gb-t {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(102.35px * var(--sc));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14px * var(--sc));
+  font-size: calc(70.9px * var(--sc) * var(--tk, 1));
+  line-height: 1;
+  white-space: nowrap;
+  transform: translateY(calc(7.8px * var(--sc)));
+}
+.gb-fb {
+  font-family: MC, monospace;
+  font-size: 1.3em;
+}
+.gb-t img {
+  position: relative;
+  top: calc(-7.8px * var(--sc));
+  width: auto;
+  flex: none;
+}
+.gb-t svg {
+  position: relative;
+  top: calc(-7.8px * var(--sc));
+}
+.gbtn:active .gb-top {
+  transform: translateY(calc(11px * var(--sc)));
+}
+.gbtn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.gbtn:disabled:active .gb-top {
+  transform: none;
+}
+.lin .lbadge,
+.lin .lcls {
+  position: absolute;
+  top: 0;
+}
+.lin .lbadge {
+  left: 0;
+  pointer-events: none;
+}
+.lin .lcls {
+  left: 560px;
+}
+.pk-x {
+  position: absolute;
+  right: 28px;
+  top: 28px;
+}
+.pk-more {
+  position: absolute;
+  left: calc(50% - 20px);
+  bottom: 10px;
+  width: 40px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-bottom: 4px solid #e2330a;
+  border-radius: 6px;
+  background: #ff7529;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pk-more:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+.obtn {
+  position: absolute;
+  width: 1029.95px;
+  height: 165px;
+  box-sizing: border-box;
+  padding: 15px 24px 0;
+  border-radius: 22px;
+  background: var(--tt-field);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: MC, monospace;
+  font-size: 60px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: background-color 0.35s;
+}
 
 /* =====================================================================================
    RECONNECT SYSTEM (online games)
    ===================================================================================== */
 /* ---- disconnected player: red icon centred on the portrait square, faded head and pawn ---- */
-.pp .dcicon { width: 130px; height: auto; transform: translate(-50%, -50%) scale(.5); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s cubic-bezier(.3, 1.5, .5, 1); z-index: 2; }
-.pp.dc .dcicon { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.pp.dc .port { filter: grayscale(.85) opacity(.55); }
-.pw.dc { opacity: .4; }
+.pp .dcicon {
+  width: 130px;
+  height: auto;
+  transform: translate(-50%, -50%) scale(0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.25s cubic-bezier(0.3, 1.5, 0.5, 1);
+  z-index: 2;
+}
+.pp.dc .dcicon {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.pp.dc .port {
+  filter: grayscale(0.85) opacity(0.55);
+}
+.pw.dc {
+  opacity: 0.4;
+}
 /* glow when a player drops (slow, red) and when they return (fast, lime) */
-.pp .pbody.flashdc { animation: dcPanelRed 1.3s ease-out 2; }
-.pp .pbody.flashback { animation: dcPanelLime .45s ease-out; }
-.pp .dcicon.flashdc { animation: dcIconRed 1.3s ease-out 2; }
-.pp .dcicon.flashback { animation: dcIconLime .45s ease-out; }
-@keyframes dcPanelRed  { 0% { filter: none; } 35% { filter: drop-shadow(0 0 14px #ff3b3b) drop-shadow(0 0 5px #ff3b3b); } 100% { filter: none; } }
-@keyframes dcPanelLime { 0% { filter: none; } 40% { filter: drop-shadow(0 0 12px #c3f73a) drop-shadow(0 0 4px #c3f73a); } 100% { filter: none; } }
-@keyframes dcIconRed   { 0% { filter: none; } 35% { filter: drop-shadow(0 0 16px #ff3b3b) drop-shadow(0 0 6px #ff3b3b) drop-shadow(0 0 2px #fff); } 100% { filter: none; } }
-@keyframes dcIconLime  { 0% { filter: none; } 40% { filter: drop-shadow(0 0 14px #c3f73a) drop-shadow(0 0 5px #c3f73a); } 100% { filter: none; } }
+.pp .pbody.flashdc {
+  animation: dcPanelRed 1.3s ease-out 2;
+}
+.pp .pbody.flashback {
+  animation: dcPanelLime 0.45s ease-out;
+}
+.pp .dcicon.flashdc {
+  animation: dcIconRed 1.3s ease-out 2;
+}
+.pp .dcicon.flashback {
+  animation: dcIconLime 0.45s ease-out;
+}
+@keyframes dcPanelRed {
+  0% {
+    filter: none;
+  }
+  35% {
+    filter: drop-shadow(0 0 14px #ff3b3b) drop-shadow(0 0 5px #ff3b3b);
+  }
+  100% {
+    filter: none;
+  }
+}
+@keyframes dcPanelLime {
+  0% {
+    filter: none;
+  }
+  40% {
+    filter: drop-shadow(0 0 12px #c3f73a) drop-shadow(0 0 4px #c3f73a);
+  }
+  100% {
+    filter: none;
+  }
+}
+@keyframes dcIconRed {
+  0% {
+    filter: none;
+  }
+  35% {
+    filter: drop-shadow(0 0 16px #ff3b3b) drop-shadow(0 0 6px #ff3b3b)
+      drop-shadow(0 0 2px #fff);
+  }
+  100% {
+    filter: none;
+  }
+}
+@keyframes dcIconLime {
+  0% {
+    filter: none;
+  }
+  40% {
+    filter: drop-shadow(0 0 14px #c3f73a) drop-shadow(0 0 5px #c3f73a);
+  }
+  100% {
+    filter: none;
+  }
+}
 
 /* ---- reconnect banner: now with a small "type the room code" form ---- */
-#netBanner #nbForm { display: none; align-items: center; gap: 12px; margin-left: 22px; vertical-align: middle; }
-#netBanner #nbCode { width: 170px; height: 44px; box-sizing: border-box; border: 0; border-radius: 8px; padding: 0 12px; background: #2f2504; color: #fff; font-family: MC, monospace; font-size: 24px; text-transform: uppercase; letter-spacing: 3px; text-align: center; }
-#netBanner .cbtn { display: inline-block; vertical-align: middle; }
+#netBanner #nbForm {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin-left: 22px;
+  vertical-align: middle;
+}
+#netBanner #nbCode {
+  width: 170px;
+  height: 44px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #2f2504;
+  color: #fff;
+  font-family: MC, monospace;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-align: center;
+}
+#netBanner .cbtn {
+  display: inline-block;
+  vertical-align: middle;
+}
 
 /* ---- full-screen notice: this page gave up its seat (opened elsewhere / lobby ended) ---- */
-#netOverlay { display: none; position: absolute; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(20, 14, 2, .86); }
-#netOverlay .nbox { max-width: 760px; padding: 40px 48px; text-align: center; background: #2f2504; border: 5px solid #c3f73a; border-radius: 18px; color: #fff3cf; font-size: 34px; line-height: 1.3; }
-#netOverlay .nbox p { margin: 0 0 26px; }
-#netOverlay .cbtn { margin: 0 auto; }
+#netOverlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 14, 2, 0.86);
+}
+#netOverlay .nbox {
+  max-width: 760px;
+  padding: 40px 48px;
+  text-align: center;
+  background: #2f2504;
+  border: 5px solid #c3f73a;
+  border-radius: 18px;
+  color: #fff3cf;
+  font-size: 34px;
+  line-height: 1.3;
+}
+#netOverlay .nbox p {
+  margin: 0 0 26px;
+}
+#netOverlay .cbtn {
+  margin: 0 auto;
+}
 
 /* ---- Settings tab: Sound effects row + "Switch Device" ---- */
-#settings .sfxrow { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
-#settings .volbar { margin: 6px 0 12px; } #settings .volbar .seg { height: 40px; }
-#settings .swbox { margin-top: 10px; }
-#settings .swhead { border-top: 2px solid #c3f73a; padding-top: 8px; }
-#settings .swrow { display: flex; gap: 8px; margin-top: 6px; }
-#settings .swgen, #settings .swcodebox { flex: 1; min-width: 0; height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 0; background: #2f2504; border: 3px solid #c3f73a; border-radius: 12px; font-family: MC, monospace; font-size: 22px; white-space: nowrap; }   /* brown rounded box, lime outline */
-#settings .swgen { color: #c3f73a; cursor: pointer; }
-#settings .swgen:hover { background: #3d3108; } #settings .swgen:active { transform: translateY(2px); }
-#settings .swcodebox { color: #fff3cf; letter-spacing: 1.5px; user-select: all; }   /* the code, centred in the box (one click selects it all) */
-#settings .swx { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; cursor: pointer; display: flex; align-items: center; justify-content: center; }   /* plain lime square with an X: cancels the code */
-#settings .swx svg { width: 20px; height: 20px; } #settings .swx:hover { filter: brightness(1.1); } #settings .swx:active { transform: translateY(2px); }
-#settings .swerr { margin: 6px 0 0; font-size: 15px; color: #ff9a62; }
+#settings .sfxrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+}
+#settings .volbar {
+  margin: 6px 0 12px;
+}
+#settings .volbar .seg {
+  height: 40px;
+}
+#settings .swbox {
+  margin-top: 10px;
+}
+#settings .swhead {
+  border-top: 2px solid #c3f73a;
+  padding-top: 8px;
+}
+#settings .swrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+#settings .swgen,
+#settings .swcodebox {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #2f2504;
+  border: 3px solid #c3f73a;
+  border-radius: 12px;
+  font-family: MC, monospace;
+  font-size: 22px;
+  white-space: nowrap;
+} /* brown rounded box, lime outline */
+#settings .swgen {
+  color: #c3f73a;
+  cursor: pointer;
+}
+#settings .swgen:hover {
+  background: #3d3108;
+}
+#settings .swgen:active {
+  transform: translateY(2px);
+}
+#settings .swcodebox {
+  color: #fff3cf;
+  letter-spacing: 1.5px;
+  user-select: all;
+} /* the code, centred in the box (one click selects it all) */
+#settings .swx {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #c3f73a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+} /* plain lime square with an X: cancels the code */
+#settings .swx svg {
+  width: 20px;
+  height: 20px;
+}
+#settings .swx:hover {
+  filter: brightness(1.1);
+}
+#settings .swx:active {
+  transform: translateY(2px);
+}
+#settings .swerr {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: #ff9a62;
+}
 
 /* ---- title screen: copyright notice (bottom middle) and the "Attempting to reconnect" card (bottom right) ---- */
-#tCopy { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 21; text-align: center; font-family: MC, monospace; font-size: 14px; line-height: 1.35; color: var(--tt-ink); opacity: .85; pointer-events: none; white-space: nowrap; transition: color .35s; }
-#tCopy .tc-sub { display: block; font-size: 12px; opacity: .85; }
-body:not(.on-title) #tCopy { display: none; }
-#tReconn { position: absolute; right: 28px; bottom: 14px; z-index: 22; display: none; align-items: center; gap: 14px; font-family: MC, monospace; font-size: 14px; color: var(--tt-ink); transition: color .35s; }
-#tReconn .rc-time { min-width: 2ch; text-align: right; font-size: 20px; }
-body:not(.on-title) #tReconn { display: none !important; }
+#tCopy {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 21;
+  text-align: center;
+  font-family: MC, monospace;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--tt-ink);
+  opacity: 0.85;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: color 0.35s;
+}
+#tCopy .tc-sub {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
+}
+body:not(.on-title) #tCopy {
+  display: none;
+}
+#tReconn {
+  position: absolute;
+  right: 28px;
+  bottom: 14px;
+  z-index: 22;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  font-family: MC, monospace;
+  font-size: 14px;
+  color: var(--tt-ink);
+  transition: color 0.35s;
+}
+#tReconn .rc-time {
+  min-width: 2ch;
+  text-align: right;
+  font-size: 20px;
+}
+body:not(.on-title) #tReconn {
+  display: none !important;
+}
 
 /* ============================================================================================================
    MUSIC + MUTE (js/audio.js builds the HTML). Used on the title screen's Options page (.tp-card) and in the Settings tab (#settings).
    ============================================================================================================ */
 /* the mute switch: same shape as the light/dark switch. Knob left = sound on, knob right = muted. Colours come from the two variables. */
-.msw { --ms-rim: var(--tt-trackrim); --ms-trk: var(--tt-track); flex: none; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 36px; }
-#settings .msw { --ms-rim: #c3f73a; --ms-trk: #2f2504; }   /* the board screen does not change with light/dark mode */
-.msw svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.msw:focus-visible, .mu-btn:focus-visible { outline: 4px dashed var(--tt-ink); outline-offset: 4px; }
-.ms-rim { fill: var(--ms-rim); transition: fill .35s; } .ms-trk { fill: var(--ms-trk); transition: fill .35s; } .ms-ring { stroke: var(--ms-trk); transition: stroke .35s; }
-.ms-knob { transition: transform .3s cubic-bezier(.3,1.5,.5,1); } .msw[aria-checked=true] .ms-knob { transform: translateX(59px); }
-.mu-ico { flex: none; fill: #ff7529; stroke: #ff7529; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
-.mu-head { display: flex; justify-content: space-between; align-items: baseline; }
-.mu-now { display: flex; align-items: center; gap: 14px; }
-.mu-song { flex: 1; min-width: 0; line-height: 1.15; } .mu-song small { display: block; opacity: .75; } .mu-name { display: block; font-weight: normal; }
-.mu-btn { flex: none; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
-.mu-btn svg { height: 55%; width: auto; } .mu-btn:hover { filter: brightness(1.12); } .mu-btn:active { transform: translateY(2px); }
-.mu-mute { display: flex; align-items: center; gap: 14px; } .mu-mute .mu-title { flex: 1; }
+.msw {
+  --ms-rim: var(--tt-trackrim);
+  --ms-trk: var(--tt-track);
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 36px;
+}
+#settings .msw {
+  --ms-rim: #c3f73a;
+  --ms-trk: #2f2504;
+} /* the board screen does not change with light/dark mode */
+.msw svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.msw:focus-visible,
+.mu-btn:focus-visible {
+  outline: 4px dashed var(--tt-ink);
+  outline-offset: 4px;
+}
+.ms-rim {
+  fill: var(--ms-rim);
+  transition: fill 0.35s;
+}
+.ms-trk {
+  fill: var(--ms-trk);
+  transition: fill 0.35s;
+}
+.ms-ring {
+  stroke: var(--ms-trk);
+  transition: stroke 0.35s;
+}
+.ms-knob {
+  transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.msw[aria-checked="true"] .ms-knob {
+  transform: translateX(59px);
+}
+.mu-ico {
+  flex: none;
+  fill: #ff7529;
+  stroke: #ff7529;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mu-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.mu-now {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mu-song {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.15;
+}
+.mu-song small {
+  display: block;
+  opacity: 0.75;
+}
+.mu-name {
+  display: block;
+  font-weight: normal;
+}
+.mu-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+.mu-btn svg {
+  height: 55%;
+  width: auto;
+}
+.mu-btn:hover {
+  filter: brightness(1.12);
+}
+.mu-btn:active {
+  transform: translateY(2px);
+}
+.mu-mute {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mu-mute .mu-title {
+  flex: 1;
+}
 
 /* ---- title screen Options page ---- */
-.tp-card .mu-head { margin: 0; } .tp-card .mu-title { font-family: LM, MC, monospace; font-size: 48px; text-transform: uppercase; }
-.tp-card .mu-head > span:last-child { font-size: 30px; }
-.tp-card .mu-btn { width: 64px; height: 64px; border: 4px solid var(--tt-ink); border-radius: 14px; background: var(--tt-seg); color: var(--tt-ink); }
-.tp-card .mu-song small { font-size: 22px; } .tp-card .mu-name { font-size: 34px; }
-.tp-card .mu-mute { margin: 0 0 14px; } .tp-card .mu-ico { width: 44px; height: 44px; } .tp-card .msw { width: 97px; height: 58px; }
+.tp-card .mu-head {
+  margin: 0;
+}
+.tp-card .mu-title {
+  font-family: LM, MC, monospace;
+  font-size: 48px;
+  text-transform: uppercase;
+}
+.tp-card .mu-head > span:last-child {
+  font-size: 30px;
+}
+.tp-card .mu-btn {
+  width: 64px;
+  height: 64px;
+  border: 4px solid var(--tt-ink);
+  border-radius: 14px;
+  background: var(--tt-seg);
+  color: var(--tt-ink);
+}
+.tp-card .mu-song small {
+  font-size: 22px;
+}
+.tp-card .mu-name {
+  font-size: 34px;
+}
+.tp-card .mu-mute {
+  margin: 0 0 14px;
+}
+.tp-card .mu-ico {
+  width: 44px;
+  height: 44px;
+}
+.tp-card .msw {
+  width: 97px;
+  height: 58px;
+}
 
 /* ---- Settings tab (board screen) ---- */
-#settings .mu-head { margin: 8px 0 0; } #settings .mu-num { color: #fff3cf; }
-#settings .mu-now { margin-top: 4px; }
-#settings .mu-btn { width: 44px; height: 44px; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; }
-#settings .mu-song small { font-size: 15px; color: #fff3cf; opacity: .75; } #settings .mu-name { font-size: 21px; color: #fff3cf; }
-#settings .mu-mute { margin: 0 0 10px; } #settings .mu-ico { width: 28px; height: 28px; } #settings .msw { width: 66px; height: 40px; }
+#settings .mu-head {
+  margin: 8px 0 0;
+}
+#settings .mu-num {
+  color: #fff3cf;
+}
+#settings .mu-now {
+  margin-top: 4px;
+}
+#settings .mu-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #c3f73a;
+  color: #2f2504;
+}
+#settings .mu-song small {
+  font-size: 15px;
+  color: #fff3cf;
+  opacity: 0.75;
+}
+#settings .mu-name {
+  font-size: 21px;
+  color: #fff3cf;
+}
+#settings .mu-mute {
+  margin: 0 0 10px;
+}
+#settings .mu-ico {
+  width: 28px;
+  height: 28px;
+}
+#settings .msw {
+  width: 66px;
+  height: 40px;
+}
 
 /* ---- characters another player already has: faded out on the pick screens (js/local.js refreshTaken, js/main.js old chooser) ---- */
-.pk-panel { transition: opacity .25s, filter .25s; }
-.pk-panel.taken { opacity: .3; filter: grayscale(1); }
-.pk-panel.taken .pk-pick { cursor: not-allowed; }
-#chooser .card.taken { opacity: .3; filter: grayscale(1); cursor: not-allowed; } #setup .card.taken:hover { filter: grayscale(1); }
+.pk-panel {
+  transition:
+    opacity 0.25s,
+    filter 0.25s;
+}
+.pk-panel.taken {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+.pk-panel.taken .pk-pick {
+  cursor: not-allowed;
+}
+#chooser .card.taken {
+  opacity: 0.3;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+#setup .card.taken:hover {
+  filter: grayscale(1);
+}
 
 /* ---- play / pause, loop and shuffle buttons (under the song name) ---- */
-.mu-ctl { display: flex; justify-content: center; gap: 14px; margin-top: 12px; }
-.mu-play[data-paused="false"] .i-play, .mu-play[data-paused="true"] .i-pause { display: none !important; }   /* playing: show "pause"; paused: show "play". (!important because the title screen has a general "#title svg { display: block }" rule that would otherwise show both) */
-.mu-ctl .mu-btn svg { height: 55%; width: auto; }
-.tp-card .mu-ctl .mu-btn { width: 56px; height: 56px; }
-.tp-card .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: var(--tt-ink); }   /* loop / shuffle switched ON: orange */
-#settings .mu-ctl .mu-btn[aria-pressed="true"] { background: #ff7529; color: #2f2504; }
+.mu-ctl {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+.mu-play[data-paused="false"] .i-play,
+.mu-play[data-paused="true"] .i-pause {
+  display: none !important;
+} /* playing: show "pause"; paused: show "play". (!important because the title screen has a general "#title svg { display: block }" rule that would otherwise show both) */
+.mu-ctl .mu-btn svg {
+  height: 55%;
+  width: auto;
+}
+.tp-card .mu-ctl .mu-btn {
+  width: 56px;
+  height: 56px;
+}
+.tp-card .mu-ctl .mu-btn[aria-pressed="true"] {
+  background: #ff7529;
+  color: var(--tt-ink);
+} /* loop / shuffle switched ON: orange */
+#settings .mu-ctl .mu-btn[aria-pressed="true"] {
+  background: #ff7529;
+  color: #2f2504;
+}
 
 /* =============================== PROMPT BUTTONS (orange, from the art) =============================== */
-.pbtn { position: relative; padding: 0; border: 0; background: none; cursor: pointer; width: calc(var(--w) * var(--k, 1)); height: calc(var(--h) * var(--k, 1)); font-family: Blustrue, MC, monospace; }
-.pbtn.long { --w: 225.43px; --h: 80.4px; --fh: 70.59px; } .pbtn.short { --w: 129.13px; --h: 114.63px; --fh: 100.64px; }   /* sizes of the art; --fh = height of the lit face (the rest is the dark-red base) */
-.pbtn::before { content: ""; position: absolute; left: calc(-4px * var(--k, 1)); top: calc(-4px * var(--k, 1)); right: calc(-4px * var(--k, 1)); bottom: calc(-9px * var(--k, 1)); border-radius: calc(14px * var(--k, 1)); background: #2f2504; }   /* the brown outline, thicker at the bottom (offset shadow) */
-.pbtn > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.pbtn .pbl { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--fh) * var(--k, 1)); display: flex; align-items: center; justify-content: center; gap: .25em; color: #fff; text-transform: uppercase; line-height: 1; }
-.pbtn .tb-shine { inset: 0 0 calc((var(--h) - var(--fh)) * var(--k, 1)) 0; border-radius: calc(10px * var(--k, 1)); }
-.pbtn:hover .tb-shine::before { animation: tb-shine .55s ease-out forwards; }   /* the same shine sweep as the title buttons */
-.pbtn:active:not(.off) { transform: translateY(3px); }
-.pbtn.off { opacity: .5; cursor: default; filter: saturate(.5); }
-.pbtn.mv .pbl { font-family: MC, monospace; font-size: calc(34px * var(--k, 1)); }   /* "MOVE ME >" uses the pixel font */
-.pbtn.mv .pbl svg { height: .8em; width: auto; color: #c3f73a; transform: translateY(-.08em); }   /* the pixel font sits a little high: the chevron is lifted to line up with the text */
+.pbtn {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  width: calc(var(--w) * var(--k, 1));
+  height: calc(var(--h) * var(--k, 1));
+  font-family: Blustrue, MC, monospace;
+}
+.pbtn.long {
+  --w: 225.43px;
+  --h: 80.4px;
+  --fh: 70.59px;
+}
+.pbtn.short {
+  --w: 129.13px;
+  --h: 114.63px;
+  --fh: 100.64px;
+} /* sizes of the art; --fh = height of the lit face (the rest is the dark-red base) */
+.pbtn::before {
+  content: "";
+  position: absolute;
+  left: calc(-4px * var(--k, 1));
+  top: calc(-4px * var(--k, 1));
+  right: calc(-4px * var(--k, 1));
+  bottom: calc(-9px * var(--k, 1));
+  border-radius: calc(14px * var(--k, 1));
+  background: #2f2504;
+} /* the brown outline, thicker at the bottom (offset shadow) */
+.pbtn > img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.pbtn .pbl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(var(--fh) * var(--k, 1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.pbtn .tb-shine {
+  inset: 0 0 calc((var(--h) - var(--fh)) * var(--k, 1)) 0;
+  border-radius: calc(10px * var(--k, 1));
+}
+.pbtn:hover .tb-shine::before {
+  animation: tb-shine 0.55s ease-out forwards;
+} /* the same shine sweep as the title buttons */
+.pbtn:active:not(.off) {
+  transform: translateY(3px);
+}
+.pbtn.off {
+  opacity: 0.5;
+  cursor: default;
+  filter: saturate(0.5);
+}
+.pbtn.mv .pbl {
+  font-family: MC, monospace;
+  font-size: calc(34px * var(--k, 1));
+} /* "MOVE ME >" uses the pixel font */
+.pbtn.mv .pbl svg {
+  height: 0.8em;
+  width: auto;
+  color: #c3f73a;
+  transform: translateY(-0.08em);
+} /* the pixel font sits a little high: the chevron is lifted to line up with the text */
 
 /* =============================== PROMPT SCENE (js/prompts.js) =============================== */
 /* The scene covers the whole stage (so positions are stage pixels). The character and the panel slide in / out VERY quickly, the panel a hair after the character on the way in and
    a hair BEFORE it on the way out. */
-#scene { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 7; }
-#sceneChar { position: absolute; opacity: 0; transform: translateX(-140px); transition: transform .15s cubic-bezier(.2, .9, .3, 1), opacity .1s; transition-delay: .035s; }
-#scene.on #sceneChar { opacity: 1; transform: none; transition-delay: 0s; }
-#scenePanelWrap { position: absolute; left: calc(var(--panel-x, 810px) - var(--panel-w, 660px) / 2); top: var(--panel-y, 610px); width: var(--panel-w, 660px); transform: translateY(-50%); z-index: -1; }   /* (behind the character: his arm / sleeve overlaps the panel) */
-#scenePanel { box-sizing: border-box; padding: 24px 30px 34px; text-align: center; font-family: Blustrue, MC, monospace; text-transform: uppercase; opacity: 0; transform: translateX(60px) scale(.95); transition: transform .15s cubic-bezier(.2, .9, .3, 1), opacity .1s; transition-delay: 0s; }
-#scene.on #scenePanel { opacity: 1; transform: none; transition-delay: .035s; pointer-events: auto; }
-#scene.rollmode #scenePanelWrap { display: none; }
-#scenePanel .st { font-size: 58px; line-height: 1; } #scenePanel .sh { font-size: 48px; line-height: 1.05; margin-top: 14px; } #scenePanel .sb2 { font-size: 42px; line-height: 1.05; margin-top: 18px; } #scenePanel .ss { font-size: 28px; line-height: 1.1; margin-top: 6px; }
-#sceneBtns.row { display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; gap: 28px; margin-top: 30px; padding: 0 10px; }
-#sceneBtns.grid { display: grid; grid-template-columns: repeat(3, 129.13px); gap: 22px 18px; justify-content: center; margin-top: 24px; }
-#sceneBtns .pbtn { margin-bottom: 9px; }
-#sceneBtns #moveBtn { margin: 0 auto 9px; }
-#sceneRoll.gone { visibility: hidden; }
-#sceneRoll { display: none; position: absolute; left: calc(var(--scene-x, 860px) - 450px); width: 900px; top: 230px; text-align: center; color: #fff; font-family: Blustrue, MC, monospace; text-transform: uppercase; -webkit-text-stroke: 9px #2f2504; paint-order: stroke fill; }
-#scene.rollmode #sceneRoll { display: block; } #sceneRoll .st { font-size: 68px; line-height: 1; } #sceneRoll .ss { font-size: 32px; margin-top: 8px; -webkit-text-stroke-width: 6px; }
-#game.peek #scene { visibility: hidden; }
+#scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  pointer-events: none;
+  z-index: 7;
+}
+#sceneChar {
+  position: absolute;
+  opacity: 0;
+  transform: translateX(-140px);
+  transition:
+    transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1),
+    opacity 0.1s;
+  transition-delay: 0.035s;
+}
+#scene.on #sceneChar {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+#scenePanelWrap {
+  position: absolute;
+  left: calc(var(--panel-x, 810px) - var(--panel-w, 660px) / 2);
+  top: var(--panel-y, 610px);
+  width: var(--panel-w, 660px);
+  transform: translateY(-50%);
+  z-index: -1;
+} /* (behind the character: his arm / sleeve overlaps the panel) */
+#scenePanel {
+  box-sizing: border-box;
+  padding: 24px 30px 34px;
+  text-align: center;
+  font-family: Blustrue, MC, monospace;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateX(60px) scale(0.95);
+  transition:
+    transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1),
+    opacity 0.1s;
+  transition-delay: 0s;
+}
+#scene.on #scenePanel {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.035s;
+  pointer-events: auto;
+}
+#scene.rollmode #scenePanelWrap {
+  display: none;
+}
+#scenePanel .st {
+  font-size: 58px;
+  line-height: 1;
+}
+#scenePanel .sh {
+  font-size: 48px;
+  line-height: 1.05;
+  margin-top: 14px;
+}
+#scenePanel .sb2 {
+  font-size: 42px;
+  line-height: 1.05;
+  margin-top: 18px;
+}
+#scenePanel .ss {
+  font-size: 28px;
+  line-height: 1.1;
+  margin-top: 6px;
+}
+#sceneBtns.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+  gap: 28px;
+  margin-top: 30px;
+  padding: 0 10px;
+}
+#sceneBtns.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 129.13px);
+  gap: 22px 18px;
+  justify-content: center;
+  margin-top: 24px;
+}
+#sceneBtns .pbtn {
+  margin-bottom: 9px;
+}
+#sceneBtns #moveBtn {
+  margin: 0 auto 9px;
+}
+#sceneRoll.gone {
+  visibility: hidden;
+}
+#sceneRoll {
+  display: none;
+  position: absolute;
+  left: calc(var(--scene-x, 860px) - 450px);
+  width: 900px;
+  top: 230px;
+  text-align: center;
+  color: #fff;
+  font-family: Blustrue, MC, monospace;
+  text-transform: uppercase;
+  -webkit-text-stroke: 9px #2f2504;
+  paint-order: stroke fill;
+}
+#scene.rollmode #sceneRoll {
+  display: block;
+}
+#sceneRoll .st {
+  font-size: 68px;
+  line-height: 1;
+}
+#sceneRoll .ss {
+  font-size: 32px;
+  margin-top: 8px;
+  -webkit-text-stroke-width: 6px;
+}
+#game.peek #scene {
+  visibility: hidden;
+}
 /* the eye button: peek at the board while a prompt is up */
-#eyeBtn { display: none; position: absolute; left: 1216px; top: 24px; width: 54px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: #c3f73a; color: #2f2504; box-shadow: 0 5px 0 #2f2504; cursor: pointer; align-items: center; justify-content: center; z-index: 9; }
-#eyeBtn.on { display: flex; } #eyeBtn svg { width: 30px; height: auto; } #eyeBtn .ec { display: none; } #eyeBtn.closed .eo { display: none; } #eyeBtn.closed .ec { display: block; } #eyeBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2f2504; }
+#eyeBtn {
+  display: none;
+  position: absolute;
+  left: 1216px;
+  top: 24px;
+  width: 54px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #c3f73a;
+  color: #2f2504;
+  box-shadow: 0 5px 0 #2f2504;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 9;
+}
+#eyeBtn.on {
+  display: flex;
+}
+#eyeBtn svg {
+  width: 30px;
+  height: auto;
+}
+#eyeBtn .ec {
+  display: none;
+}
+#eyeBtn.closed .eo {
+  display: none;
+}
+#eyeBtn.closed .ec {
+  display: block;
+}
+#eyeBtn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #2f2504;
+}
 
 /* prompt panel extras */
-.pbtn > svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }   /* a button drawn wider than the art (PLAY AGAIN) */
-#sceneBtns #moveBtn .pbl svg { display: none; }                                   /* the Roll / Use item button in a prompt panel has no green chevron */
-#sceneBtns.stack { display: flex; flex-direction: column; align-items: center; gap: 26px; margin-top: 28px; }
-#sceneBtns.stack .reactrow { display: flex; justify-content: center; gap: 30px; }  /* BOO and CHEER side by side under PLAY AGAIN */
+.pbtn > svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+} /* a button drawn wider than the art (PLAY AGAIN) */
+#sceneBtns #moveBtn .pbl svg {
+  display: none;
+} /* the Roll / Use item button in a prompt panel has no green chevron */
+#sceneBtns.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  margin-top: 28px;
+}
+#sceneBtns.stack .reactrow {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+} /* BOO and CHEER side by side under PLAY AGAIN */
 
 /* the eye (peek): the dice and the ROLL button go too, like the character art */
-#game.peek #tray, #game.peek #rollBtn { visibility: hidden; }
+#game.peek #tray,
+#game.peek #rollBtn {
+  visibility: hidden;
+}
 /* QUIT button: dark red, white pixel text, brown outline offset to the bottom; sits left of the tab buttons, in the same row */
-#quitBtn { --quit-text-drop: 5px; position: absolute; left: -190px; bottom: 12px; width: 150px; height: 66px; padding: 0; border: 0; background: none; cursor: pointer; }
-#quitBtn::before { content: ""; position: absolute; left: -4px; top: -4px; right: -4px; bottom: -9px; border-radius: 16px; background: #2f2504; }
-#quitBtn svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-#quitBtn span { position: absolute; left: 0; top: 0; width: 100%; height: 56px; display: flex; align-items: center; justify-content: center; font-family: MC, monospace; font-size: 38px; text-transform: uppercase; color: #fff; transform: translateY(var(--quit-text-drop)); }   /* the pixel font sits a little high in its line box: --quit-text-drop moves the word down so it is centred on the lit (upper) rounded rectangle */
-#quitBtn:hover svg rect:nth-child(2) { fill: #b40d44; } #quitBtn:active { transform: translateY(3px); }
+#quitBtn {
+  --quit-text-drop: 5px;
+  position: absolute;
+  left: -190px;
+  bottom: 12px;
+  width: 150px;
+  height: 66px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+#quitBtn::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  right: -4px;
+  bottom: -9px;
+  border-radius: 16px;
+  background: #2f2504;
+}
+#quitBtn svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+#quitBtn span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: MC, monospace;
+  font-size: 38px;
+  text-transform: uppercase;
+  color: #fff;
+  transform: translateY(var(--quit-text-drop));
+} /* the pixel font sits a little high in its line box: --quit-text-drop moves the word down so it is centred on the lit (upper) rounded rectangle */
+#quitBtn:hover svg rect:nth-child(2) {
+  fill: #b40d44;
+}
+#quitBtn:active {
+  transform: translateY(3px);
+}
 /* Quit? YES / NO: a light panel centred over the dark board */
-#quitBox { display: none; position: absolute; left: 8px; top: 8px; width: 1276px; height: 1064px; align-items: center; justify-content: center; background: rgba(15, 10, 0, .7); border-radius: 24px; z-index: 12; }
-#quitBox .lp { box-sizing: border-box; width: 640px; padding: 26px 30px 34px; text-align: center; font-family: Blustrue, MC, monospace; text-transform: uppercase; }
-#quitBox .st { font-size: 56px; line-height: 1; } #quitBox .sb2 { font-size: 36px; line-height: 1.05; margin-top: 16px; }
-#quitBox .qbtns { display: flex; justify-content: center; gap: 40px; margin-top: 30px; } #quitBox .pbtn { margin-bottom: 9px; }
+#quitBox {
+  display: none;
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 1276px;
+  height: 1064px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 10, 0, 0.7);
+  border-radius: 24px;
+  z-index: 12;
+}
+#quitBox .lp {
+  box-sizing: border-box;
+  width: 640px;
+  padding: 26px 30px 34px;
+  text-align: center;
+  font-family: Blustrue, MC, monospace;
+  text-transform: uppercase;
+}
+#quitBox .st {
+  font-size: 56px;
+  line-height: 1;
+}
+#quitBox .sb2 {
+  font-size: 36px;
+  line-height: 1.05;
+  margin-top: 16px;
+}
+#quitBox .qbtns {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 30px;
+}
+#quitBox .pbtn {
+  margin-bottom: 9px;
+}

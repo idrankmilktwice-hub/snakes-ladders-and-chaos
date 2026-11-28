@@ -6,32 +6,60 @@
 // ------------------------------------------------------------------ SNAKES
 // Snake bodies are straight horizontal / vertical / 45-degree runs with rounded bends, filled with the head's colour,
 // with a black border and a tapered tail. The route is chosen from random waypoints but always the same for the same head+tail.
-const SW = SNAKE_FLAT_WIDTH * BS;  // snake body thickness in pixels (flat bodies)
+const SW = SNAKE_FLAT_WIDTH * BS; // snake body thickness in pixels (flat bodies)
 const BEND = SNAKE_BEND_RADIUS * BS; // how round the bends are (bigger = rounder)
-let SNK = { key: "", svg: "", pts: [], headTf: {}, headSq: new Set() };   // cache of the last drawn snakes (so they are only rebuilt when something changed): svg text, centre-line points of every body, and the squares that hold a head
+let SNK = { key: "", svg: "", pts: [], headTf: {}, headSq: new Set() }; // cache of the last drawn snakes (so they are only rebuilt when something changed): svg text, centre-line points of every body, and the squares that hold a head
 
 // mulberry(seed): a seeded random-number generator, so a snake keeps the same shape every time it is drawn.
-function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const unit = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };   // turn an arrow (x,y) into length 1
-const rnd2 = (r, a, b) => a + Math.floor(r() * (b - a + 1));                         // random whole number a..b using a seeded generator r
+function mulberry(a) {
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const unit = (x, y) => {
+  const l = Math.hypot(x, y) || 1;
+  return [x / l, y / l];
+}; // turn an arrow (x,y) into length 1
+const rnd2 = (r, a, b) => a + Math.floor(r() * (b - a + 1)); // random whole number a..b using a seeded generator r
 
 // octi(A,B,flip): path from grid point A to B using only straight and 45-degree moves. Returns the corner (if any) plus B.
 function octi(A, B, flip) {
-  const dx = B[0] - A[0], dy = B[1] - A[1], ax = Math.abs(dx), ay = Math.abs(dy);
-  if (!dx || !dy || ax === ay) return [B];                       // already straight or exactly diagonal
-  const d = Math.min(ax, ay), sx = Math.sign(dx), sy = Math.sign(dy);
-  return [flip ? [A[0] + dx - sx * d, A[1] + dy - sy * d] : [A[0] + sx * d, A[1] + sy * d], B];   // "flip" chooses diagonal-first or straight-first
+  const dx = B[0] - A[0],
+    dy = B[1] - A[1],
+    ax = Math.abs(dx),
+    ay = Math.abs(dy);
+  if (!dx || !dy || ax === ay) return [B]; // already straight or exactly diagonal
+  const d = Math.min(ax, ay),
+    sx = Math.sign(dx),
+    sy = Math.sign(dy);
+  return [
+    flip
+      ? [A[0] + dx - sx * d, A[1] + dy - sy * d]
+      : [A[0] + sx * d, A[1] + sy * d],
+    B,
+  ]; // "flip" chooses diagonal-first or straight-first
 }
 // crosses(a,b,c,d): do segment a-b and segment c-d touch or cross? (used to stop a snake crossing itself)
 function crosses(a, b, c, d) {
   const r = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0]);
-  if (!r) {   // parallel lines: only a problem if they overlap on the same line
+  if (!r) {
+    // parallel lines: only a problem if they overlap on the same line
     const cr = (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0]);
     if (cr) return false;
-    const ux = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 0 : 1, lo = Math.min(a[ux], b[ux]), hi = Math.max(a[ux], b[ux]), p = Math.min(c[ux], d[ux]), q = Math.max(c[ux], d[ux]);
+    const ux = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]) ? 0 : 1,
+      lo = Math.min(a[ux], b[ux]),
+      hi = Math.max(a[ux], b[ux]),
+      p = Math.min(c[ux], d[ux]),
+      q = Math.max(c[ux], d[ux]);
     return Math.min(hi, q) - Math.max(lo, p) > GEOM_EPS;
   }
-  const t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / r, u = ((c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])) / r, e = GEOM_EPS;
+  const t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / r,
+    u = ((c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])) / r,
+    e = GEOM_EPS;
   return t >= -e && t <= 1 + e && u >= -e && u <= 1 + e;
 }
 // route(h,t): the grid path (list of [column, visualRow] corners) from head square h to tail square t.
@@ -43,60 +71,140 @@ function crosses(a, b, c, d) {
 function overlapLen(R, avoid) {
   let n = 0;
   for (let i = 1; i < R.length; i++) {
-    const [x0, y0] = R[i - 1], [x1, y1] = R[i], k = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * OVERLAP_SAMPLES_PER_SQUARE));   // 4 sample points per square
-    for (let j = 0; j <= k; j++) { const x = x0 + (x1 - x0) * j / k, y = y0 + (y1 - y0) * j / k; if (avoid.some(s => segDist(x, y, s[0], s[1], s[2], s[3]) < OVERLAP_NEAR)) n++; }
+    const [x0, y0] = R[i - 1],
+      [x1, y1] = R[i],
+      k = Math.max(
+        1,
+        Math.ceil(Math.hypot(x1 - x0, y1 - y0) * OVERLAP_SAMPLES_PER_SQUARE),
+      ); // 4 sample points per square
+    for (let j = 0; j <= k; j++) {
+      const x = x0 + ((x1 - x0) * j) / k,
+        y = y0 + ((y1 - y0) * j) / k;
+      if (
+        avoid.some((s) => segDist(x, y, s[0], s[1], s[2], s[3]) < OVERLAP_NEAR)
+      )
+        n++;
+    }
   }
   return n / OVERLAP_SAMPLES_PER_SQUARE;
 }
-const OVERLAP_COST = 6;   // every square of overlap counts as this many extra squares of snake length when choosing a route (bigger = avoid overlaps harder)
-function route(h, t, neckDown, avoid) {   // neckDown = true for the cobra: its neck goes DOWN exactly 1 square instead of sideways
-  const [hr, hc] = rc(h), [tr, tc] = rc(t), H = [hc, LAST_ROW - hr], T = [tc, LAST_ROW - tr], rng = mulberry(h * 977 + t * 31 + 7);
-  const dist = Math.max(Math.abs(H[0] - T[0]), Math.abs(H[1] - T[1])), minL = Math.max(MIN_ROUTE_LENGTH, dist * ROUTE_LENGTH_PER_DISTANCE + ROUTE_LENGTH_EXTRA);   // minL = shortest path length we accept (in squares)
-  const c0 = Math.max(0, Math.min(H[0], T[0]) - ROUTE_MARGIN), c1 = Math.min(LAST_COL, Math.max(H[0], T[0]) + ROUTE_MARGIN), r0 = Math.max(0, Math.min(H[1], T[1]) - ROUTE_MARGIN), r1 = Math.min(LAST_ROW, Math.max(H[1], T[1]) + ROUTE_MARGIN);   // area waypoints may land in
-  let best = null, bd = 1e9;
+const OVERLAP_COST = 6; // every square of overlap counts as this many extra squares of snake length when choosing a route (bigger = avoid overlaps harder)
+function route(h, t, neckDown, avoid) {
+  // neckDown = true for the cobra: its neck goes DOWN exactly 1 square instead of sideways
+  const [hr, hc] = rc(h),
+    [tr, tc] = rc(t),
+    H = [hc, LAST_ROW - hr],
+    T = [tc, LAST_ROW - tr],
+    rng = mulberry(h * 977 + t * 31 + 7);
+  const dist = Math.max(Math.abs(H[0] - T[0]), Math.abs(H[1] - T[1])),
+    minL = Math.max(
+      MIN_ROUTE_LENGTH,
+      dist * ROUTE_LENGTH_PER_DISTANCE + ROUTE_LENGTH_EXTRA,
+    ); // minL = shortest path length we accept (in squares)
+  const c0 = Math.max(0, Math.min(H[0], T[0]) - ROUTE_MARGIN),
+    c1 = Math.min(LAST_COL, Math.max(H[0], T[0]) + ROUTE_MARGIN),
+    r0 = Math.max(0, Math.min(H[1], T[1]) - ROUTE_MARGIN),
+    r1 = Math.min(LAST_ROW, Math.max(H[1], T[1]) + ROUTE_MARGIN); // area waypoints may land in
+  let best = null,
+    bd = 1e9;
   for (let k = 0; k < ROUTE_TRIES; k++) {
-    const nw = dist < SHORT_SNAKE_DISTANCE ? rnd2(rng, ...WAYPOINTS_SHORT) : rnd2(rng, ...WAYPOINTS_LONG);   // number of extra waypoints (short snakes get more so they curl)
-    let neck;   // neck = the first corner after the head
-    if (neckDown) neck = [H[0], H[1] + 1];                                           // cobra: straight down, 1 square
-    else { const dir = rng() < .5 ? -1 : 1, nk = rnd2(rng, ...NECK_SIDEWAYS); neck = [H[0] + dir * nk, H[1]]; }   // others: sideways (dir = left/right, nk = squares)
-    if (neck[0] < 0 || neck[0] > LAST_COL || neck[1] > LAST_ROW) continue;                         // neck would leave the board: try again
-    const P = [H, neck]; let cur = neck; const wp = [];
-    for (let i = 0; i < nw; i++) wp.push([rnd2(rng, c0, c1), rnd2(rng, r0, r1)]);
+    const nw =
+      dist < SHORT_SNAKE_DISTANCE
+        ? rnd2(rng, ...WAYPOINTS_SHORT)
+        : rnd2(rng, ...WAYPOINTS_LONG); // number of extra waypoints (short snakes get more so they curl)
+    let neck; // neck = the first corner after the head
+    if (neckDown)
+      neck = [H[0], H[1] + 1]; // cobra: straight down, 1 square
+    else {
+      const dir = rng() < 0.5 ? -1 : 1,
+        nk = rnd2(rng, ...NECK_SIDEWAYS);
+      neck = [H[0] + dir * nk, H[1]];
+    } // others: sideways (dir = left/right, nk = squares)
+    if (neck[0] < 0 || neck[0] > LAST_COL || neck[1] > LAST_ROW) continue; // neck would leave the board: try again
+    const P = [H, neck];
+    let cur = neck;
+    const wp = [];
+    for (let i = 0; i < nw; i++)
+      wp.push([rnd2(rng, c0, c1), rnd2(rng, r0, r1)]);
     wp.push(T);
-    for (const w of wp) { P.push(...octi(cur, w, rng() < .5)); cur = w; }
-    const Q = [P[0]];   // Q = P without repeated points
-    for (let i = 1; i < P.length; i++) if (P[i][0] !== Q[Q.length - 1][0] || P[i][1] !== Q[Q.length - 1][1]) Q.push(P[i]);
-    const R = [Q[0]];   // R = Q without pointless middle points on straight lines
+    for (const w of wp) {
+      P.push(...octi(cur, w, rng() < 0.5));
+      cur = w;
+    }
+    const Q = [P[0]]; // Q = P without repeated points
+    for (let i = 1; i < P.length; i++)
+      if (P[i][0] !== Q[Q.length - 1][0] || P[i][1] !== Q[Q.length - 1][1])
+        Q.push(P[i]);
+    const R = [Q[0]]; // R = Q without pointless middle points on straight lines
     for (let i = 1; i < Q.length; i++) {
       if (R.length > 1) {
-        const a = unit(R[R.length - 1][0] - R[R.length - 2][0], R[R.length - 1][1] - R[R.length - 2][1]), b = unit(Q[i][0] - R[R.length - 1][0], Q[i][1] - R[R.length - 1][1]);
-        if (Math.abs(a[0] - b[0]) < POINT_EPS && Math.abs(a[1] - b[1]) < POINT_EPS) R.pop();
+        const a = unit(
+            R[R.length - 1][0] - R[R.length - 2][0],
+            R[R.length - 1][1] - R[R.length - 2][1],
+          ),
+          b = unit(Q[i][0] - R[R.length - 1][0], Q[i][1] - R[R.length - 1][1]);
+        if (
+          Math.abs(a[0] - b[0]) < POINT_EPS &&
+          Math.abs(a[1] - b[1]) < POINT_EPS
+        )
+          R.pop();
       }
       R.push(Q[i]);
     }
-    let ok = R.length >= 3, len = 0;   // check the path: no tiny segments, no turn sharper than 90 degrees
+    let ok = R.length >= 3,
+      len = 0; // check the path: no tiny segments, no turn sharper than 90 degrees
     for (let i = 1; i < R.length && ok; i++) {
-      const l = Math.hypot(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1]); if (l < 1) ok = false; len += l;
-      if (i > 1) { const a = unit(R[i - 1][0] - R[i - 2][0], R[i - 1][1] - R[i - 2][1]), b = unit(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1]); if (a[0] * b[0] + a[1] * b[1] < -.01) ok = false; }
+      const l = Math.hypot(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1]);
+      if (l < 1) ok = false;
+      len += l;
+      if (i > 1) {
+        const a = unit(R[i - 1][0] - R[i - 2][0], R[i - 1][1] - R[i - 2][1]),
+          b = unit(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1]);
+        if (a[0] * b[0] + a[1] * b[1] < -0.01) ok = false;
+      }
     }
-    for (let i = 1; i < R.length && ok; i++) for (let j = i + 2; j < R.length && ok; j++) if (crosses(R[i - 1], R[i], R[j - 1], R[j])) ok = false;   // no self-crossing
+    for (let i = 1; i < R.length && ok; i++)
+      for (let j = i + 2; j < R.length && ok; j++)
+        if (crosses(R[i - 1], R[i], R[j - 1], R[j])) ok = false; // no self-crossing
     if (!ok || len < minL) continue;
-    if (len >= bd) continue;                                              // cannot beat the best so far even with no overlap
+    if (len >= bd) continue; // cannot beat the best so far even with no overlap
     const cost = len + OVERLAP_COST * overlapLen(R, avoid || []);
-    if (cost < bd) { bd = cost; best = R; }
+    if (cost < bd) {
+      bd = cost;
+      best = R;
+    }
   }
-  if (!best) { const nk = neckDown ? [H[0], Math.min(LAST_ROW, H[1] + 1)] : [cl(H[0] + (T[0] >= H[0] ? 1 : -1), 0, LAST_COL), H[1]]; best = [H, nk, ...octi(nk, T, false)]; }   // fallback: simplest path (still with a straight neck)
+  if (!best) {
+    const nk = neckDown
+      ? [H[0], Math.min(LAST_ROW, H[1] + 1)]
+      : [cl(H[0] + (T[0] >= H[0] ? 1 : -1), 0, LAST_COL), H[1]];
+    best = [H, nk, ...octi(nk, T, false)];
+  } // fallback: simplest path (still with a straight neck)
   return best;
 }
 // roundPts(P,R): turn corner points into a smooth path (curved bends of radius R).
 function roundPts(P, R) {
   const out = [P[0]];
   for (let i = 1; i < P.length - 1; i++) {
-    const A = P[i - 1], B = P[i], C = P[i + 1], a = unit(B[0] - A[0], B[1] - A[1]), b = unit(C[0] - B[0], C[1] - B[1]);
-    const la = Math.hypot(B[0] - A[0], B[1] - A[1]), lb = Math.hypot(C[0] - B[0], C[1] - B[1]), r = Math.min(R, la * .5, lb * .5);
-    const S0 = [B[0] - a[0] * r, B[1] - a[1] * r], E = [B[0] + b[0] * r, B[1] + b[1] * r];
+    const A = P[i - 1],
+      B = P[i],
+      C = P[i + 1],
+      a = unit(B[0] - A[0], B[1] - A[1]),
+      b = unit(C[0] - B[0], C[1] - B[1]);
+    const la = Math.hypot(B[0] - A[0], B[1] - A[1]),
+      lb = Math.hypot(C[0] - B[0], C[1] - B[1]),
+      r = Math.min(R, la * 0.5, lb * 0.5);
+    const S0 = [B[0] - a[0] * r, B[1] - a[1] * r],
+      E = [B[0] + b[0] * r, B[1] + b[1] * r];
     out.push(S0);
-    for (let k = 1; k <= CORNER_STEPS; k++) { const u = k / CORNER_STEPS, w = 1 - u; out.push([w * w * S0[0] + 2 * w * u * B[0] + u * u * E[0], w * w * S0[1] + 2 * w * u * B[1] + u * u * E[1]]); }
+    for (let k = 1; k <= CORNER_STEPS; k++) {
+      const u = k / CORNER_STEPS,
+        w = 1 - u;
+      out.push([
+        w * w * S0[0] + 2 * w * u * B[0] + u * u * E[0],
+        w * w * S0[1] + 2 * w * u * B[1] + u * u * E[1],
+      ]);
+    }
   }
   out.push(P[P.length - 1]);
   return out;
@@ -105,57 +213,132 @@ function roundPts(P, R) {
 function dens(p, step) {
   const o = [p[0]];
   for (let i = 1; i < p.length; i++) {
-    const [x0, y0] = p[i - 1], [x1, y1] = p[i], n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step));
-    for (let k = 1; k <= n; k++) o.push([x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]);
+    const [x0, y0] = p[i - 1],
+      [x1, y1] = p[i],
+      n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step));
+    for (let k = 1; k <= n; k++)
+      o.push([x0 + ((x1 - x0) * k) / n, y0 + ((y1 - y0) * k) / n]);
   }
   return o;
 }
 // snakeGeom(h,t,avoid): the finished body shape. Returns { p: centre-line points, d: SVG outline path text, R: the grid corners of the route }.
 // The tail thins out smoothly over its last 60% (max 300px) and ends in a rounded tip (TIP = tip thickness; raise it for a blunter tail).
 function snakeGeom(h, t, avoid) {
-  const R = route(h, t, t === G.cobra, avoid), P = R.map(q => cellPx(q[0], q[1])), p = dens(roundPts(P, BEND), SNAKE_POINT_SPACING), s = [0];
-  for (let i = 1; i < p.length; i++) s.push(s[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));   // s = distance along the snake at each point
-  const TIP = SNAKE_TIP_WIDTH, L = s[s.length - 1], TL = Math.min(L * SNAKE_TAPER_FRACTION, SNAKE_TAPER_MAX), A = [], B = [];   // L = total length, TL = taper length, A/B = left/right edge points
+  const R = route(h, t, t === G.cobra, avoid),
+    P = R.map((q) => cellPx(q[0], q[1])),
+    p = dens(roundPts(P, BEND), SNAKE_POINT_SPACING),
+    s = [0];
+  for (let i = 1; i < p.length; i++)
+    s.push(s[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1])); // s = distance along the snake at each point
+  const TIP = SNAKE_TIP_WIDTH,
+    L = s[s.length - 1],
+    TL = Math.min(L * SNAKE_TAPER_FRACTION, SNAKE_TAPER_MAX),
+    A = [],
+    B = []; // L = total length, TL = taper length, A/B = left/right edge points
   for (let i = 0; i < p.length; i++) {
-    const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 1)], [tx, ty] = unit(b[0] - a[0], b[1] - a[1]);
-    const u = Math.min(1, (L - s[i]) / TL), w = (TIP + (SW - TIP) * u * u * (3 - 2 * u)) / 2;   // half-thickness here (smooth ease from full width down to the tip)
-    A.push([p[i][0] - ty * w, p[i][1] + tx * w]); B.push([p[i][0] + ty * w, p[i][1] - tx * w]);
+    const a = p[Math.max(0, i - 1)],
+      b = p[Math.min(p.length - 1, i + 1)],
+      [tx, ty] = unit(b[0] - a[0], b[1] - a[1]);
+    const u = Math.min(1, (L - s[i]) / TL),
+      w = (TIP + (SW - TIP) * u * u * (3 - 2 * u)) / 2; // half-thickness here (smooth ease from full width down to the tip)
+    A.push([p[i][0] - ty * w, p[i][1] + tx * w]);
+    B.push([p[i][0] + ty * w, p[i][1] - tx * w]);
   }
   // rounded tip: a half circle around the last point, from the left edge to the right edge
-  const e = p[p.length - 1], pe = p[p.length - 2], [ex, ey] = unit(e[0] - pe[0], e[1] - pe[1]), cap = [];
-  for (let k = 1; k < TIP_CAP_STEPS; k++) { const a = k / TIP_CAP_STEPS * Math.PI, r = TIP / 2; cap.push([e[0] - ey * r * Math.cos(a) + ex * r * Math.sin(a), e[1] + ex * r * Math.cos(a) + ey * r * Math.sin(a)]); }
-  return { p, d: "M" + [...A, ...cap, ...B.reverse()].map(q => f1(q[0]) + " " + f1(q[1])).join("L") + "Z", R };
+  const e = p[p.length - 1],
+    pe = p[p.length - 2],
+    [ex, ey] = unit(e[0] - pe[0], e[1] - pe[1]),
+    cap = [];
+  for (let k = 1; k < TIP_CAP_STEPS; k++) {
+    const a = (k / TIP_CAP_STEPS) * Math.PI,
+      r = TIP / 2;
+    cap.push([
+      e[0] - ey * r * Math.cos(a) + ex * r * Math.sin(a),
+      e[1] + ex * r * Math.cos(a) + ey * r * Math.sin(a),
+    ]);
+  }
+  return {
+    p,
+    d:
+      "M" +
+      [...A, ...cap, ...B.reverse()]
+        .map((q) => f1(q[0]) + " " + f1(q[1]))
+        .join("L") +
+      "Z",
+    R,
+  };
 }
 // headTransform(h,t,kd,geom): where/how big/which way to draw a snake head. The head looks AWAY from its body.
 function headTransform(h, t, kd, g) {
-  const [hx, hy] = xy(h), q = g.p[Math.min(HEAD_DIRECTION_POINT, g.p.length - 1)], dx = q[0] - g.p[0][0], bx = kd.head.box, sc = kd.sc;
+  const [hx, hy] = xy(h),
+    q = g.p[Math.min(HEAD_DIRECTION_POINT, g.p.length - 1)],
+    dx = q[0] - g.p[0][0],
+    bx = kd.head.box,
+    sc = kd.sc;
   const face = Math.abs(dx) < HEAD_FLIP_DEADZONE ? kd.face : dx > 0 ? "L" : "R";
   return `translate(${f1(hx)} ${f1(hy - 6)}) scale(${face === kd.face ? sc : -sc} ${sc}) translate(${-(bx.x + bx.w / 2)} ${-(bx.y + bx.h / 2)})`;
 }
 // ---- body drawing. All bodies are painted onto ONE canvas (in order, so overlaps look right), which is then shown as a picture on the board. ----
-const BODY_W = SNAKE_BODY_HEAD_WIDTH * BS;   // thickness (pixels) of the head end of a body made from picture art (it tapers along the picture); flat bodies use SW instead
+const BODY_W = SNAKE_BODY_HEAD_WIDTH * BS; // thickness (pixels) of the head end of a body made from picture art (it tapers along the picture); flat bodies use SW instead
 // drawFlatBody(ctx, g, kd): the placeholder body: head-colour fill with a black border (used for snakes that have no body picture).
 function drawFlatBody(ctx, g, kd) {
   const p = new Path2D(g.d);
-  ctx.fillStyle = kd.color; ctx.strokeStyle = "#000"; ctx.lineWidth = SNAKE_OUTLINE_WIDTH; ctx.lineJoin = "round";
-  ctx.fill(p); ctx.stroke(p);
+  ctx.fillStyle = kd.color;
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = SNAKE_OUTLINE_WIDTH;
+  ctx.lineJoin = "round";
+  ctx.fill(p);
+  ctx.stroke(p);
 }
 // drawArtBody(ctx, g, kd): bend the body PICTURE along the snake's path. The picture is cut into thin slices (STEP pixels long);
 // each slice is drawn rotated to follow the path, so the pattern and the taper run smoothly around the bends.
 // The belly stripe stays on the same side of the snake all the way (it starts on the bottom of the neck).
 function drawArtBody(ctx, g, kd) {
-  const art = kd.body, p = g.p, STEP = SLICE_STEP, cum = [0];   // STEP = slice length in pixels: very thin slices so bends look like one smooth stretched body
-  for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));   // distance along the snake at every point
-  const L = cum[cum.length - 1], sy = BODY_W / art.h, H = art.h * sy;                                                  // L = length, H = drawn thickness at the head
+  const art = kd.body,
+    p = g.p,
+    STEP = SLICE_STEP,
+    cum = [0]; // STEP = slice length in pixels: very thin slices so bends look like one smooth stretched body
+  for (let i = 1; i < p.length; i++)
+    cum.push(
+      cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]),
+    ); // distance along the snake at every point
+  const L = cum[cum.length - 1],
+    sy = BODY_W / art.h,
+    H = art.h * sy; // L = length, H = drawn thickness at the head
   let i = 0;
-  const at = s => { while (i < p.length - 2 && cum[i + 1] < s) i++; const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 2)], t = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1);
-    return { x: p[i][0] + (p[i + 1][0] - p[i][0]) * t, y: p[i][1] + (p[i + 1][1] - p[i][1]) * t, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) }; };   // position + direction at distance s
-  const flip = Math.cos(at(0).ang) < 0;   // neck going left: mirror the picture so the belly is still underneath
+  const at = (s) => {
+    while (i < p.length - 2 && cum[i + 1] < s) i++;
+    const a = p[Math.max(0, i - 1)],
+      b = p[Math.min(p.length - 1, i + 2)],
+      t = (s - cum[i]) / (cum[i + 1] - cum[i] || 1);
+    return {
+      x: p[i][0] + (p[i + 1][0] - p[i][0]) * t,
+      y: p[i][1] + (p[i + 1][1] - p[i][1]) * t,
+      ang: Math.atan2(b[1] - a[1], b[0] - a[0]),
+    };
+  }; // position + direction at distance s
+  const flip = Math.cos(at(0).ang) < 0; // neck going left: mirror the picture so the belly is still underneath
   ctx.imageSmoothingQuality = "high";
   for (let s = 0; s < L; s += STEP) {
-    const m = at(Math.min(L, s + STEP / 2)), w = Math.min(STEP + SLICE_OVERLAP, L - s + SLICE_OVERLAP), u0 = s / L * art.w, uw = w / L * art.w;   // w = slice length drawn, u0/uw = which part of the picture
-    ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.ang); if (flip) ctx.scale(1, -1);
-    ctx.drawImage(art.img, u0 * art.R, 0, Math.min(uw, art.w - u0) * art.R, art.h * art.R, -STEP / 2, -H / 2, w, H);
+    const m = at(Math.min(L, s + STEP / 2)),
+      w = Math.min(STEP + SLICE_OVERLAP, L - s + SLICE_OVERLAP),
+      u0 = (s / L) * art.w,
+      uw = (w / L) * art.w; // w = slice length drawn, u0/uw = which part of the picture
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(m.ang);
+    if (flip) ctx.scale(1, -1);
+    ctx.drawImage(
+      art.img,
+      u0 * art.R,
+      0,
+      Math.min(uw, art.w - u0) * art.R,
+      art.h * art.R,
+      -STEP / 2,
+      -H / 2,
+      w,
+      H,
+    );
     ctx.restore();
   }
 }
@@ -165,7 +348,8 @@ let SNK_CV = null;
 function snakeCanvas() {
   if (!SNK_CV) {
     SNK_CV = document.createElement("canvas");
-    SNK_CV.width = BOARD_BOX.w * 2; SNK_CV.height = BOARD_BOX.h * 2;   // 2 = twice the pixels, for sharpness
+    SNK_CV.width = BOARD_BOX.w * 2;
+    SNK_CV.height = BOARD_BOX.h * 2; // 2 = twice the pixels, for sharpness
     SNK_CV.style.cssText = `width:${BOARD_BOX.w}px;height:${BOARD_BOX.h}px;display:block;pointer-events:none`;
   }
   return SNK_CV;
@@ -174,25 +358,59 @@ function snakeCanvas() {
 function snakeLayer() {
   const key = ART.v + JSON.stringify(G.S);
   if (SNK.key === key) return SNK.svg;
-  const cv = snakeCanvas(), Q = 2, ctx = cv.getContext("2d");   // Q = canvas sharpness (2 = twice the pixels)
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);   // wipe the old snakes
-  ctx.setTransform(Q, 0, 0, Q, -BOARD_BOX.x * Q, -BOARD_BOX.y * Q);               // canvas uses stage coordinates
+  const cv = snakeCanvas(),
+    Q = 2,
+    ctx = cv.getContext("2d"); // Q = canvas sharpness (2 = twice the pixels)
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height); // wipe the old snakes
+  ctx.setTransform(Q, 0, 0, Q, -BOARD_BOX.x * Q, -BOARD_BOX.y * Q); // canvas uses stage coordinates
   let heads = "";
-  const pts = [], headTf = {};   // pts = centre-line points of each snake (keeps square numbers clear of bodies); headTf[square] = how each head is drawn (reused for the Charmer's glowing heads)
+  const pts = [],
+    headTf = {}; // pts = centre-line points of each snake (keeps square numbers clear of bodies); headTf[square] = how each head is drawn (reused for the Charmer's glowing heads)
   // What a snake body should steer around, in grid coordinates [column, visual row]: every ladder, every other snake's head and tail, and the bodies of snakes already routed.
-  const avoidBase = [], ends = n => { const [r, c] = rc(+n); return [c, LAST_ROW - r, c, LAST_ROW - r]; }, placed = [];
-  for (const [a, b] of Object.entries(G.L)) { const [r1, c1] = rc(+a), [r2, c2] = rc(+b); avoidBase.push([c1, LAST_ROW - r1, c2, LAST_ROW - r2]); }
-  Object.keys(G.S).map(Number).sort((a, b) => G.S[a] - G.S[b]).forEach(h => {
-    const t = G.S[h], kd = ART.kinds[G.kind[t] % ART.kinds.length];
-    const avoid = [...avoidBase, ...placed, ...Object.keys(G.S).filter(x => +x !== h).map(ends), ...Object.values(G.S).filter(x => x !== t).map(ends)];
-    const g = snakeGeom(h, t, avoid);
-    for (let i = 1; i < g.R.length; i++) placed.push([...g.R[i - 1], ...g.R[i]]);
-    pts.push(g.p);
-    if (kd.body) drawArtBody(ctx, g, kd); else drawFlatBody(ctx, g, kd);
-    headTf[h] = headTransform(h, t, kd, g);
-    heads += `<use href="#${kd.head.p}all" transform="${headTf[h]}"/>`;
-  });
-  SNK = { key, svg: heads, pts, headTf, headSq: new Set(Object.keys(G.S).map(Number)) };   // the heads go on top of the bodies canvas
+  const avoidBase = [],
+    ends = (n) => {
+      const [r, c] = rc(+n);
+      return [c, LAST_ROW - r, c, LAST_ROW - r];
+    },
+    placed = [];
+  for (const [a, b] of Object.entries(G.L)) {
+    const [r1, c1] = rc(+a),
+      [r2, c2] = rc(+b);
+    avoidBase.push([c1, LAST_ROW - r1, c2, LAST_ROW - r2]);
+  }
+  Object.keys(G.S)
+    .map(Number)
+    .sort((a, b) => G.S[a] - G.S[b])
+    .forEach((h) => {
+      const t = G.S[h],
+        kd = ART.kinds[G.kind[t] % ART.kinds.length];
+      const avoid = [
+        ...avoidBase,
+        ...placed,
+        ...Object.keys(G.S)
+          .filter((x) => +x !== h)
+          .map(ends),
+        ...Object.values(G.S)
+          .filter((x) => x !== t)
+          .map(ends),
+      ];
+      const g = snakeGeom(h, t, avoid);
+      for (let i = 1; i < g.R.length; i++)
+        placed.push([...g.R[i - 1], ...g.R[i]]);
+      pts.push(g.p);
+      if (kd.body) drawArtBody(ctx, g, kd);
+      else drawFlatBody(ctx, g, kd);
+      headTf[h] = headTransform(h, t, kd, g);
+      heads += `<use href="#${kd.head.p}all" transform="${headTf[h]}"/>`;
+    });
+  SNK = {
+    key,
+    svg: heads,
+    pts,
+    headTf,
+    headSq: new Set(Object.keys(G.S).map(Number)),
+  }; // the heads go on top of the bodies canvas
   return SNK.svg;
 }
 
@@ -200,55 +418,114 @@ function snakeLayer() {
 // Ladders are built from the ladder pictures: straight ladders from ladder_straight.svg, diagonal ones from ladder_slanted.svg. The picture is
 // STACKED (pieces overlap a little so the rungs keep an even gap) to cover the distance between the two squares; slanted pieces are ROTATED (never
 // sheared) to point from one square to the other. Each ladder gets a 3px brown (BROWN) border. All ladders are painted once, on their own canvas.
-const LADDER_PERIOD = { straight: 85.7, slanted: 84.2 };   // picture units from one stacked piece to the next (pieces overlap by ~14 so the rungs stay evenly spaced)
-const LADDER_LEAN = .182;                                  // how far the slanted picture's rails drift sideways for every unit of height
-let LAD_CV = null;   // the ladder canvas (lives inside the board SVG, like the snake canvas)
+const LADDER_PERIOD = { straight: 85.7, slanted: 84.2 }; // picture units from one stacked piece to the next (pieces overlap by ~14 so the rungs stay evenly spaced)
+const LADDER_LEAN = 0.182; // how far the slanted picture's rails drift sideways for every unit of height
+let LAD_CV = null; // the ladder canvas (lives inside the board SVG, like the snake canvas)
 function ladderCanvas() {
   if (!LAD_CV) {
     LAD_CV = document.createElement("canvas");
-    LAD_CV.width = BOARD_BOX.w * 2; LAD_CV.height = BOARD_BOX.h * 2;
+    LAD_CV.width = BOARD_BOX.w * 2;
+    LAD_CV.height = BOARD_BOX.h * 2;
     LAD_CV.style.cssText = `width:${BOARD_BOX.w}px;height:${BOARD_BOX.h}px;display:block;pointer-events:none`;
   }
   return LAD_CV;
 }
 // stackLadder(ctx, a, b): draw one ladder from square a (bottom) to square b (top) onto ctx (which already uses stage coordinates).
 function stackLadder(ctx, a, b) {
-  const [x1, y1] = xy(a), [x2, y2] = xy(b), dx = x2 - x1, dy = y2 - y1, Ln = Math.hypot(dx, dy);
-  const straight = Math.abs(dx) < LADDER_STRAIGHT_DX, art = straight ? ART.ladder.straight : ART.ladder.slanted, P = LADDER_PERIOD[straight ? "straight" : "slanted"], lean = straight ? 0 : LADDER_LEAN;
-  const total = Ln + LADDER_EXTRA_LENGTH * BS, k = Math.hypot(1, lean), s0 = LADDER_SCALE * BS;                         // total = how long the ladder is drawn (a little past the two square centres)
-  const n = Math.max(1, Math.round((total - LADDER_PIECE_HEIGHT * s0 * k) / (P * s0 * k) + 1));                // n = number of stacked pieces
-  const s = total / (((n - 1) * P + LADDER_PIECE_HEIGHT) * k);                                                 // s = scale so the stack is exactly 'total' long
-  const angD = Math.atan2(dy, dx), norm = r => { while (r > Math.PI) r -= 2 * Math.PI; while (r <= -Math.PI) r += 2 * Math.PI; return r; };
-  let best = null;                                                                              // choose mirror + direction needing the smallest rotation
+  const [x1, y1] = xy(a),
+    [x2, y2] = xy(b),
+    dx = x2 - x1,
+    dy = y2 - y1,
+    Ln = Math.hypot(dx, dy);
+  const straight = Math.abs(dx) < LADDER_STRAIGHT_DX,
+    art = straight ? ART.ladder.straight : ART.ladder.slanted,
+    P = LADDER_PERIOD[straight ? "straight" : "slanted"],
+    lean = straight ? 0 : LADDER_LEAN;
+  const total = Ln + LADDER_EXTRA_LENGTH * BS,
+    k = Math.hypot(1, lean),
+    s0 = LADDER_SCALE * BS; // total = how long the ladder is drawn (a little past the two square centres)
+  const n = Math.max(
+    1,
+    Math.round((total - LADDER_PIECE_HEIGHT * s0 * k) / (P * s0 * k) + 1),
+  ); // n = number of stacked pieces
+  const s = total / (((n - 1) * P + LADDER_PIECE_HEIGHT) * k); // s = scale so the stack is exactly 'total' long
+  const angD = Math.atan2(dy, dx),
+    norm = (r) => {
+      while (r > Math.PI) r -= 2 * Math.PI;
+      while (r <= -Math.PI) r += 2 * Math.PI;
+      return r;
+    };
+  let best = null; // choose mirror + direction needing the smallest rotation
   for (const m of [1, -1]) {
     if (straight && m === -1) continue;
     const angV = Math.atan2(1, m * lean);
-    for (const flip of [0, Math.PI]) { const rot = norm(angD - angV + flip); if (!best || Math.abs(rot) < Math.abs(best.rot)) best = { rot, m }; }
+    for (const flip of [0, Math.PI]) {
+      const rot = norm(angD - angV + flip);
+      if (!best || Math.abs(rot) < Math.abs(best.rot)) best = { rot, m };
+    }
   }
-  const cx = art.w / 2 + (n - 1) * lean * P / 2, cy = ((n - 1) * P + LADDER_PIECE_HEIGHT) / 2;               // centre of the stack in picture units
+  const cx = art.w / 2 + ((n - 1) * lean * P) / 2,
+    cy = ((n - 1) * P + LADDER_PIECE_HEIGHT) / 2; // centre of the stack in picture units
   ctx.save();
-  ctx.translate((x1 + x2) / 2, (y1 + y2) / 2); ctx.rotate(best.rot); ctx.scale(best.m * s, s); ctx.translate(-cx, -cy);
+  ctx.translate((x1 + x2) / 2, (y1 + y2) / 2);
+  ctx.rotate(best.rot);
+  ctx.scale(best.m * s, s);
+  ctx.translate(-cx, -cy);
   ctx.imageSmoothingQuality = "high";
-  for (let i = 0; i < n; i++) ctx.drawImage(art.img, i * lean * P, i * P, art.w, art.h);
+  for (let i = 0; i < n; i++)
+    ctx.drawImage(art.img, i * lean * P, i * P, art.w, art.h);
   ctx.restore();
 }
 // drawLadders(): paint every ladder with its brown outline (the outline = the ladder's silhouette stamped around it in a 3px circle).
 function drawLadders() {
-  const cv = ladderCanvas(), ctx = cv.getContext("2d"), Q = 2, W = cv.width, H = cv.height;
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
-  const M = Math.max(ART.ladder.straight.w, ART.ladder.slanted.w) * 1.1 + LADDER_BORDER_ROOM;                  // room around a ladder for its width + the 3px border
-  const tmp = document.createElement("canvas"), sil = document.createElement("canvas"), tx = tmp.getContext("2d"), sx = sil.getContext("2d");
+  const cv = ladderCanvas(),
+    ctx = cv.getContext("2d"),
+    Q = 2,
+    W = cv.width,
+    H = cv.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const M =
+    Math.max(ART.ladder.straight.w, ART.ladder.slanted.w) * 1.1 +
+    LADDER_BORDER_ROOM; // room around a ladder for its width + the 3px border
+  const tmp = document.createElement("canvas"),
+    sil = document.createElement("canvas"),
+    tx = tmp.getContext("2d"),
+    sx = sil.getContext("2d");
   for (const [a, b] of Object.entries(G.L)) {
     // SPEED: only the rectangle around this ladder is processed. (The first version cleared and stamped the WHOLE board canvas ~25 times per ladder = about 2 seconds.)
-    const [x1, y1] = xy(+a), [x2, y2] = xy(b);
-    const px0 = Math.max(0, Math.floor((Math.min(x1, x2) - M - BOARD_BOX.x) * Q)), py0 = Math.max(0, Math.floor((Math.min(y1, y2) - M - BOARD_BOX.y) * Q));
-    const px1 = Math.min(W, Math.ceil((Math.max(x1, x2) + M - BOARD_BOX.x) * Q)), py1 = Math.min(H, Math.ceil((Math.max(y1, y2) + M - BOARD_BOX.y) * Q)), w = px1 - px0, h = py1 - py0;
-    tmp.width = sil.width = w; tmp.height = sil.height = h;                                    // (setting the size also clears them)
+    const [x1, y1] = xy(+a),
+      [x2, y2] = xy(b);
+    const px0 = Math.max(
+        0,
+        Math.floor((Math.min(x1, x2) - M - BOARD_BOX.x) * Q),
+      ),
+      py0 = Math.max(0, Math.floor((Math.min(y1, y2) - M - BOARD_BOX.y) * Q));
+    const px1 = Math.min(
+        W,
+        Math.ceil((Math.max(x1, x2) + M - BOARD_BOX.x) * Q),
+      ),
+      py1 = Math.min(H, Math.ceil((Math.max(y1, y2) + M - BOARD_BOX.y) * Q)),
+      w = px1 - px0,
+      h = py1 - py0;
+    tmp.width = sil.width = w;
+    tmp.height = sil.height = h; // (setting the size also clears them)
     tx.setTransform(Q, 0, 0, Q, -BOARD_BOX.x * Q - px0, -BOARD_BOX.y * Q - py0);
-    stackLadder(tx, +a, b);                                                                    // 1. this ladder on its own
-    sx.drawImage(tmp, 0, 0); sx.globalCompositeOperation = "source-in"; sx.fillStyle = BROWN; sx.fillRect(0, 0, w, h); sx.globalCompositeOperation = "source-over";   // 2. its brown silhouette
-    for (let i = 0; i < OUTLINE_STEPS; i++) { const an = i / OUTLINE_STEPS * 2 * Math.PI; ctx.drawImage(sil, px0 + Math.cos(an) * OUTLINE_PX * Q, py0 + Math.sin(an) * OUTLINE_PX * Q); }                       // 3. the 3px border
-    ctx.drawImage(tmp, px0, py0);                                                              // 4. the ladder on top of its border
+    stackLadder(tx, +a, b); // 1. this ladder on its own
+    sx.drawImage(tmp, 0, 0);
+    sx.globalCompositeOperation = "source-in";
+    sx.fillStyle = BROWN;
+    sx.fillRect(0, 0, w, h);
+    sx.globalCompositeOperation = "source-over"; // 2. its brown silhouette
+    for (let i = 0; i < OUTLINE_STEPS; i++) {
+      const an = (i / OUTLINE_STEPS) * 2 * Math.PI;
+      ctx.drawImage(
+        sil,
+        px0 + Math.cos(an) * OUTLINE_PX * Q,
+        py0 + Math.sin(an) * OUTLINE_PX * Q,
+      );
+    } // 3. the 3px border
+    ctx.drawImage(tmp, px0, py0); // 4. the ladder on top of its border
   }
 }
 
@@ -256,15 +533,21 @@ function drawLadders() {
 // G.items = items lying on squares: { type: "stick"|"brick"|"drink"|"stone", sq: square, trap: true if it is a toy brick someone PLACED }.
 // They are drawn above ladders and snakes so they are never hidden. Placed bricks glow red (they are traps).
 // itemFit(type, maxW, maxH): size to draw an item so it fits inside a box, keeping its shape.
-function itemFit(type, maxW, maxH) { const a = ITEMS[type], k = Math.min(maxW / a.w, maxH / a.h); return { w: a.w * k, h: a.h * k }; }
+function itemFit(type, maxW, maxH) {
+  const a = ITEMS[type],
+    k = Math.min(maxW / a.w, maxH / a.h);
+  return { w: a.w * k, h: a.h * k };
+}
 // renderItems(): redraw the items layer if the list changed.
 function renderItems() {
-  const key = JSON.stringify(G.items.map(i => [i.type, i.sq, !!i.trap]));
+  const key = JSON.stringify(G.items.map((i) => [i.type, i.sq, !!i.trap]));
   if (G.itemKey === key) return;
   G.itemKey = key;
   let s = "";
   for (const it of G.items) {
-    const [x, y] = xy(it.sq), k = ITEM_BOARD_SCALE[it.type] || 1, f = itemFit(it.type, ITEM_BOARD_W * BS * k, ITEM_BOARD_H * BS * k);
+    const [x, y] = xy(it.sq),
+      k = ITEM_BOARD_SCALE[it.type] || 1,
+      f = itemFit(it.type, ITEM_BOARD_W * BS * k, ITEM_BOARD_H * BS * k);
     s += `<image class="gitem${it.trap ? " trap" : ""}" data-tip="item:${it.type}" href="${A(ITEMS[it.type].file)}" x="${f1(x - f.w / 2)}" y="${f1(y - f.h / 2 - 2)}" width="${f1(f.w)}" height="${f1(f.h)}"/>`;
   }
   $("gItems").innerHTML = s;
@@ -276,43 +559,95 @@ function renderItems() {
 // The numbers are TEXT in the Blustrue font (assets/Blustrue.otf, loaded by loadNumberFont in art.js): white with a brown outline that sits a little lower than the letters.
 // (The old number pictures no_0_B.svg ... no_9_B.svg are no longer used by any code.)
 // Numbers sit in a corner of their tile; placeNumbers() picks a corner no snake or ladder covers.
-const NUM_FS = 32;                                                              // font size of the numbers in pixels (bigger = more readable)
-const NUM_ADV = [.6985, .3735, .699, .6885, .6295, .686, .703, .6395, .687, .702];   // width of digits 0-9 as a fraction of the font size (measured from Blustrue.otf, so no measuring is needed at run time)
-const NUM_H = NUM_FS * .94;                                                     // height of a digit in pixels (from the top of the digit to the bottom of its lowest curve)
-const NUM_TOP = NUM_FS * .725;                                                  // how far a digit's top is above the text baseline
-const NUM_OUT = 2.5;                                                            // the brown outline is shifted this many pixels DOWN
+const NUM_FS = 32; // font size of the numbers in pixels (bigger = more readable)
+const NUM_ADV = [
+  0.6985, 0.3735, 0.699, 0.6885, 0.6295, 0.686, 0.703, 0.6395, 0.687, 0.702,
+]; // width of digits 0-9 as a fraction of the font size (measured from Blustrue.otf, so no measuring is needed at run time)
+const NUM_H = NUM_FS * 0.94; // height of a digit in pixels (from the top of the digit to the bottom of its lowest curve)
+const NUM_TOP = NUM_FS * 0.725; // how far a digit's top is above the text baseline
+const NUM_OUT = 2.5; // the brown outline is shifted this many pixels DOWN
 // numWidth(n): how wide the number n is in pixels.
-function numWidth(n) { return [...String(n)].reduce((a, c) => a + NUM_ADV[+c] * NUM_FS, 0) - NUM_FS * .05; }
+function numWidth(n) {
+  return (
+    [...String(n)].reduce((a, c) => a + NUM_ADV[+c] * NUM_FS, 0) - NUM_FS * 0.05
+  );
+}
 // numSvg(n,x,y): SVG text that draws number n with the top-left corner of its digits at (x,y): first a thick brown copy shifted down (the offset outline),
 // then the white digits on top with a thinner brown outline all round.
 function numSvg(n, x, y) {
-  const bx = x - NUM_FS * .02, by = y + NUM_TOP;                                // text start and baseline
-  const t = (dy, attrs) => `<text x="${f1(bx)}" y="${f1(by + dy)}" ${attrs}>${n}</text>`;
-  return `<g font-family="Blustrue, Impact, sans-serif" font-size="${NUM_FS}" stroke-linejoin="round">` +
-    t(NUM_OUT, `fill="${BROWN}" stroke="${BROWN}" stroke-width="6"`) + t(0, `fill="#fff" stroke="${BROWN}" stroke-width="3" paint-order="stroke"`) + `</g>`;
+  const bx = x - NUM_FS * 0.02,
+    by = y + NUM_TOP; // text start and baseline
+  const t = (dy, attrs) =>
+    `<text x="${f1(bx)}" y="${f1(by + dy)}" ${attrs}>${n}</text>`;
+  return (
+    `<g font-family="Blustrue, Impact, sans-serif" font-size="${NUM_FS}" stroke-linejoin="round">` +
+    t(NUM_OUT, `fill="${BROWN}" stroke="${BROWN}" stroke-width="6"`) +
+    t(
+      0,
+      `fill="#fff" stroke="${BROWN}" stroke-width="3" paint-order="stroke"`,
+    ) +
+    `</g>`
+  );
 }
 // segDist(px,py, ax,ay, bx,by): shortest distance from point (px,py) to the line segment a-b.
 function segDist(px, py, ax, ay, bx, by) {
-  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, t = cl(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1);
+  const dx = bx - ax,
+    dy = by - ay,
+    l2 = dx * dx + dy * dy || 1,
+    t = cl(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1);
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 // placeNumbers(): for every tile choose the corner for its number: top-right first, then top-left, bottom-right, bottom-left - the first one
 // that no snake body, snake head or ladder passes over. If every corner is covered, use top-right. Called whenever the snakes change (see render()).
 function placeNumbers() {
-  const ladders = Object.entries(G.L).map(([a, b]) => {   // ladder centre lines, trimmed where the rails end
-    const [x1, y1] = xy(+a), [x2, y2] = xy(b), [ux, uy] = unit(x2 - x1, y2 - y1);
-    return [x1 + ux * LADDER_END_TRIM, y1 + uy * LADDER_END_TRIM, x2 - ux * LADDER_END_TRIM, y2 - uy * LADDER_END_TRIM];
+  const ladders = Object.entries(G.L).map(([a, b]) => {
+    // ladder centre lines, trimmed where the rails end
+    const [x1, y1] = xy(+a),
+      [x2, y2] = xy(b),
+      [ux, uy] = unit(x2 - x1, y2 - y1);
+    return [
+      x1 + ux * LADDER_END_TRIM,
+      y1 + uy * LADDER_END_TRIM,
+      x2 - ux * LADDER_END_TRIM,
+      y2 - uy * LADDER_END_TRIM,
+    ];
   });
   for (let n = 1; n <= SQUARES; n++) {
-    const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (LAST_ROW - r0) * CY, w = numWidth(n), pad = NUM_PAD;
-    const corners = [[x + TW - pad - w, y + pad], [x + pad, y + pad], [x + TW - pad - w, y + TH - pad - NUM_H], [x + pad, y + TH - pad - NUM_H]];   // TR, TL, BR, BL
+    const [r0, c0] = rc(n),
+      x = BX0 + c0 * CX,
+      y = BY0 + (LAST_ROW - r0) * CY,
+      w = numWidth(n),
+      pad = NUM_PAD;
+    const corners = [
+      [x + TW - pad - w, y + pad],
+      [x + pad, y + pad],
+      [x + TW - pad - w, y + TH - pad - NUM_H],
+      [x + pad, y + TH - pad - NUM_H],
+    ]; // TR, TL, BR, BL
     let chosen = corners[0];
     if (!SNK.headSq.has(n)) {
       for (const c of corners) {
-        const cx = c[0] + w / 2, cy = c[1] + NUM_H / 2, reach = Math.hypot(w / 2, NUM_H / 2) * .8;   // reach = how far the number sticks out from its centre
-        const hitSnake = SNK.pts.some(p => p.some(q => Math.abs(q[0] - cx) < NUM_NEAR && Math.abs(q[1] - cy) < NUM_NEAR && Math.hypot(q[0] - cx, q[1] - cy) < BODY_W / 2 + NUM_CLEARANCE + reach));
-        const hitLadder = ladders.some(l => segDist(cx, cy, l[0], l[1], l[2], l[3]) < LADDER_EXTRA_LENGTH * BS + reach);
-        if (!hitSnake && !hitLadder) { chosen = c; break; }
+        const cx = c[0] + w / 2,
+          cy = c[1] + NUM_H / 2,
+          reach = Math.hypot(w / 2, NUM_H / 2) * 0.8; // reach = how far the number sticks out from its centre
+        const hitSnake = SNK.pts.some((p) =>
+          p.some(
+            (q) =>
+              Math.abs(q[0] - cx) < NUM_NEAR &&
+              Math.abs(q[1] - cy) < NUM_NEAR &&
+              Math.hypot(q[0] - cx, q[1] - cy) <
+                BODY_W / 2 + NUM_CLEARANCE + reach,
+          ),
+        );
+        const hitLadder = ladders.some(
+          (l) =>
+            segDist(cx, cy, l[0], l[1], l[2], l[3]) <
+            LADDER_EXTRA_LENGTH * BS + reach,
+        );
+        if (!hitSnake && !hitLadder) {
+          chosen = c;
+          break;
+        }
       }
     }
     $("nm" + n).innerHTML = numSvg(n, chosen[0], chosen[1]);
@@ -324,50 +659,81 @@ const catHref = () => A(ART.cats[G.catSkin % ART.cats.length].f);
 // buildBoard(): builds the whole board SVG once at game start. Layers, bottom to top: tile shadows, tiles (with numbers), ladders, snake bodies,
 // snake heads, items, highlight outlines, the Charmer's glowing heads, drag ghost, pawns.
 function buildBoard() {
-  let sh = "", tl = "", hl = "";
+  let sh = "",
+    tl = "",
+    hl = "";
   for (let n = 1; n <= SQUARES; n++) {
-    const [r0, c0] = rc(n), x = BX0 + c0 * CX, y = BY0 + (LAST_ROW - r0) * CY;
-    const L = ART.tiles[(r0 + c0) % 2 === 0 ? "dark" : "light"], T = L[(n * TILE_PICK_MUL % TILE_PICK_MOD) % L.length];   // checkerboard colours
-    sh += `<rect x="${f1(x - 2)}" y="${f1(y + 4)}" width="${TW + 4}" height="${f1(TTH)}" rx="9" fill="#2f2504"/>`;   // a dark shadow under the tile: it shows when the tile hovers (empty) and is hidden when the tile sinks (someone stands on it)
+    const [r0, c0] = rc(n),
+      x = BX0 + c0 * CX,
+      y = BY0 + (LAST_ROW - r0) * CY;
+    const L = ART.tiles[(r0 + c0) % 2 === 0 ? "dark" : "light"],
+      T = L[((n * TILE_PICK_MUL) % TILE_PICK_MOD) % L.length]; // checkerboard colours
+    sh += `<rect x="${f1(x - 2)}" y="${f1(y + 4)}" width="${TW + 4}" height="${f1(TTH)}" rx="9" fill="#2f2504"/>`; // a dark shadow under the tile: it shows when the tile hovers (empty) and is hidden when the tile sinks (someone stands on it)
     tl += `<g class="tile" id="tl${n}"><use href="#${T.p}all" transform="translate(${f1(x)} ${f1(y)}) scale(${TK})"/><g class="nm" id="nm${n}"></g></g>`;
-    hl += `<rect class="hl" id="hl${n}" x="${f1(x)}" y="${f1(y)}" width="${TW}" height="${f1(TH)}" rx="8"/>`;   // the pulsing lime outline (hidden until needed)
+    hl += `<rect class="hl" id="hl${n}" x="${f1(x)}" y="${f1(y)}" width="${TW}" height="${f1(TH)}" rx="8"/>`; // the pulsing lime outline (hidden until needed)
   }
   // pawns: one group per player, plus one for the cat. Their position/size is set by placePawns().
   let pw = "";
   G.players.forEach((p, i) => {
-    pw += `<g class="pw" id="pw${i}" data-k="${i}"><g class="bob"><g class="ring"><circle r="58" fill="none" stroke="${LIME}" stroke-width="7"/></g>` +
+    pw +=
+      `<g class="pw" id="pw${i}" data-k="${i}"><g class="bob"><g class="ring"><circle r="58" fill="none" stroke="${LIME}" stroke-width="7"/></g>` +
       `<circle r="50" fill="${p.color}" stroke="#000" stroke-width="4"/><image href="${A(PORT[p.character] + ".svg")}" x="-54" y="-56" width="108" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
   });
-  if (G.cat) pw += `<g class="pw cat" id="pwc"><g class="bob"><g class="ring"><circle r="62" fill="none" stroke="${LIME}" stroke-width="7"/></g><image id="catimg" href="${catHref()}" x="-64" y="-54" width="128" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
-  const fo = id => `<g id="${id}"><foreignObject x="${BOARD_BOX.x}" y="${BOARD_BOX.y}" width="${BOARD_BOX.w}" height="${BOARD_BOX.h}" style="pointer-events:none"></foreignObject></g>`;
-  $("board").innerHTML = `<svg viewBox="${BOARD_BOX.x} ${BOARD_BOX.y} ${BOARD_BOX.w} ${BOARD_BOX.h}"><defs>${artDefs()}</defs><g>${sh}</g><g>${tl}</g>${fo("gLadBody")}${fo("gSnkBody")}<g id="gSnk"></g><g id="gItems"></g><g>${hl}</g><g id="gHandle"></g><g id="gGhost"></g><g id="gPawn">${pw}</g></svg>`;
-  $("gLadBody").firstChild.appendChild(ladderCanvas());   // the ladder canvas sits above the tiles...
-  $("gSnkBody").firstChild.appendChild(snakeCanvas());    // ...and the snake-body canvas above the ladders
+  if (G.cat)
+    pw += `<g class="pw cat" id="pwc"><g class="bob"><g class="ring"><circle r="62" fill="none" stroke="${LIME}" stroke-width="7"/></g><image id="catimg" href="${catHref()}" x="-64" y="-54" width="128" height="108" preserveAspectRatio="xMidYMid meet"/></g></g>`;
+  const fo = (id) =>
+    `<g id="${id}"><foreignObject x="${BOARD_BOX.x}" y="${BOARD_BOX.y}" width="${BOARD_BOX.w}" height="${BOARD_BOX.h}" style="pointer-events:none"></foreignObject></g>`;
+  $("board").innerHTML =
+    `<svg viewBox="${BOARD_BOX.x} ${BOARD_BOX.y} ${BOARD_BOX.w} ${BOARD_BOX.h}"><defs>${artDefs()}</defs><g>${sh}</g><g>${tl}</g>${fo("gLadBody")}${fo("gSnkBody")}<g id="gSnk"></g><g id="gItems"></g><g>${hl}</g><g id="gHandle"></g><g id="gGhost"></g><g id="gPawn">${pw}</g></svg>`;
+  $("gLadBody").firstChild.appendChild(ladderCanvas()); // the ladder canvas sits above the tiles...
+  $("gSnkBody").firstChild.appendChild(snakeCanvas()); // ...and the snake-body canvas above the ladders
   drawLadders();
-  G.snkKey = ""; G.numKey = ""; G.itemKey = "";
+  G.snkKey = "";
+  G.numKey = "";
+  G.itemKey = "";
 }
 
 // ------------------------------------------------------------------ HIGHLIGHTS
 // setHL([squares]): show the pulsing lime outline on exactly these squares (empty list = hide all). Used while a piece is being dragged.
-function setHL(list) { for (let n = 1; n <= SQUARES; n++) $("hl" + n).classList.toggle("on", list.includes(n)); }
+function setHL(list) {
+  for (let n = 1; n <= SQUARES; n++)
+    $("hl" + n).classList.toggle("on", list.includes(n));
+}
 
 // ------------------------------------------------------------------ PAWNS
 // placePawns(): put every pawn (and the cat) on its square. Pawns on the same square share it: the more there are, the smaller each gets.
 // A pawn whose player drank an energy drink this turn (p.big) is drawn a little bigger.
 function placePawns() {
-  G.players.forEach((p, i) => { const e = $("pw" + i); if (e) e.style.display = p.abandoned ? "none" : ""; });   // a player who quit has no pawn
-  const tokens = G.players.map((p, i) => ({ el: $("pw" + i), sq: p.pos, big: p.big })).filter((t, i) => !G.players[i].abandoned);
+  G.players.forEach((p, i) => {
+    const e = $("pw" + i);
+    if (e) e.style.display = p.abandoned ? "none" : "";
+  }); // a player who quit has no pawn
+  const tokens = G.players
+    .map((p, i) => ({ el: $("pw" + i), sq: p.pos, big: p.big }))
+    .filter((t, i) => !G.players[i].abandoned);
   if (G.cat) tokens.push({ el: $("pwc"), sq: G.cat.pos });
-  const by = {};   // by[square] = list of tokens standing there
-  tokens.forEach(t => (by[t.sq] = by[t.sq] || []).push(t));
+  const by = {}; // by[square] = list of tokens standing there
+  tokens.forEach((t) => (by[t.sq] = by[t.sq] || []).push(t));
   for (const sq in by) {
-    const list = by[sq], m = list.length, cols = Math.ceil(Math.sqrt(m)), rows = Math.ceil(m / cols);   // arrange in a grid
-    const cell = PAWN_CELL * BS / Math.max(cols, rows), size = Math.min(PAWN_SIZE * BS, cell * PAWN_CROWD), [cx, cy] = xy(+sq);   // cell = room per pawn, size = drawn pawn size
+    const list = by[sq],
+      m = list.length,
+      cols = Math.ceil(Math.sqrt(m)),
+      rows = Math.ceil(m / cols); // arrange in a grid
+    const cell = (PAWN_CELL * BS) / Math.max(cols, rows),
+      size = Math.min(PAWN_SIZE * BS, cell * PAWN_CROWD),
+      [cx, cy] = xy(+sq); // cell = room per pawn, size = drawn pawn size
     list.forEach((t, i) => {
-      const row = Math.floor(i / cols), inRow = row < rows - 1 ? cols : m - cols * (rows - 1);          // last row may be shorter: centre it
-      const x = cx + (i % cols - (inRow - 1) / 2) * cell, y = cy - 2 + (row - (rows - 1) / 2) * cell;
-      if (!t.el || t.el.classList.contains("drag") || t.el.classList.contains("rdrag")) return;         // don't fight local or live remote dragging
-      t.el.style.transform = `translate(${f1(x)}px,${f1(y)}px) scale(${(size / 100 * (t.big ? 1.18 : 1)).toFixed(3)})`;   // CSS transition animates growing/shrinking/moving
+      const row = Math.floor(i / cols),
+        inRow = row < rows - 1 ? cols : m - cols * (rows - 1); // last row may be shorter: centre it
+      const x = cx + ((i % cols) - (inRow - 1) / 2) * cell,
+        y = cy - 2 + (row - (rows - 1) / 2) * cell;
+      if (
+        !t.el ||
+        t.el.classList.contains("drag") ||
+        t.el.classList.contains("rdrag")
+      )
+        return; // don't fight local or live remote dragging
+      t.el.style.transform = `translate(${f1(x)}px,${f1(y)}px) scale(${((size / 100) * (t.big ? 1.18 : 1)).toFixed(3)})`; // CSS transition animates growing/shrinking/moving
     });
   }
 }
@@ -377,14 +743,23 @@ function placePawns() {
 // and a 4th square with the buff/debuff number. The ACTIVE player's panel is big on top; the others are small and sit in a ring below it.
 // When the turn changes every panel glides one place round the ring (counter-clockwise) and grows / shrinks on the way (CSS transition on .pp in css/style.css).
 // fitPx(text, width, max): font size that makes the text fit inside a field.
-const fitPx = (t, w, mx) => Math.max(FIT_MIN_FONT, Math.min(mx, w / (Math.max(1, t.length) * FIT_CHAR_WIDTH)));
+const fitPx = (t, w, mx) =>
+  Math.max(
+    FIT_MIN_FONT,
+    Math.min(mx, w / (Math.max(1, t.length) * FIT_CHAR_WIDTH)),
+  );
 // turnOrder(): the players in TURN order (Snake Charmer first, cat owner last, everyone else as set up). Same rule as play() in rules.js.
-function turnOrder() { const rk = p => p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0; return G.players.filter(p => !p.abandoned).sort((a, b) => rk(a) - rk(b)); }   // (a player who quit has no turn and no panel)
+function turnOrder() {
+  const rk = (p) =>
+    p.character === "charmer" ? -1 : p.character === "cat" ? 1 : 0;
+  return G.players.filter((p) => !p.abandoned).sort((a, b) => rk(a) - rk(b));
+} // (a player who quit has no turn and no panel)
 // ringSlots(m): where the m small panels sit, in the order the turns come, starting right after the big panel and going CLOCKWISE round the ring
 // (so each panel moves up into the next place counter-clockwise). Each entry is [column, row]: "R" right column, "L" left column, "M" centred; row 1 is the top row.
 // An ODD number of small panels makes a circle like the mockup (right side down, centre bottom, left side up). An EVEN number makes a triangle with the big panel (pairs of panels).
 function ringSlots(m) {
-  const out = [], k = Math.floor(m / 2);
+  const out = [],
+    k = Math.floor(m / 2);
   for (let r = 1; r <= k; r++) out.push(["R", r]);
   if (m % 2) out.push(["M", k + 1]);
   for (let r = k; r >= 1; r--) out.push(["L", r]);
@@ -393,37 +768,62 @@ function ringSlots(m) {
 // panelSlot(rank, n): position and size of the panel that is `rank` turns away from the active player (0 = the active player) when n players are in the game.
 function panelSlot(rank, n) {
   const Z = PANEL_ZONE;
-  if (rank === 0) return { x: Z.bigX, y: Z.bigY, s: Z.bigScale, z: PANEL_Z_ACTIVE };
+  if (rank === 0)
+    return { x: Z.bigX, y: Z.bigY, s: Z.bigScale, z: PANEL_Z_ACTIVE };
   const [col, row] = ringSlots(n - 1)[rank - 1];
-  return { x: col === "R" ? Z.colR : col === "L" ? Z.colL : Z.midX, y: Z.rowY + (row - 1) * Z.rowPitch, s: Z.smallScale, z: PANEL_Z_OTHER };
+  return {
+    x: col === "R" ? Z.colR : col === "L" ? Z.colL : Z.midX,
+    y: Z.rowY + (row - 1) * Z.rowPitch,
+    s: Z.smallScale,
+    z: PANEL_Z_OTHER,
+  };
 }
 // slotCenter(i, j): stage coordinates of the centre of item slot j on player i's panel, wherever that panel is right now (used to launch thrown items from the slot).
-function slotCenter(i, j) { const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`); return el ? elCenter(el) : SLOT_FALLBACK; }
+function slotCenter(i, j) {
+  const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`);
+  return el ? elCenter(el) : SLOT_FALLBACK;
+}
 // buildPanels(): one panel per player (made once at game start; placePanels() moves them).
 function buildPanels() {
-  const f = PANEL.field, pt = PANEL.portrait, c = PANEL.counter;
-  $("panels").innerHTML = G.players.map((p, i) => {
-    const slots = PANEL.slots.map((s, j) => `<div class="slot" title="" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`).join("");
-    return `<div class="pp" id="pp${i}" title="${esc(CHARACTERS.find(ch => ch.id === p.character).name)}"><div class="pbody">` +
-      `<img class="pbg" src="${A("player_panel.svg")}" alt="">` +
-      `<div class="pcol" style="left:${pt.cx - PANEL.disc}px;top:${pt.cy - PANEL.disc}px;width:${PANEL.disc * 2}px;height:${PANEL.disc * 2}px;background:${p.color}"></div>` +   // a disc in the player's pawn colour, behind the head and on top of the panel's dark circle
-      `<img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size}px">` +
-      `<img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">` +
-      `<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - NAME_PAD, NAME_MAX_FONT)}px">${esc(p.name)}</div>${slots}` +
-      `<div class="cnt" id="cn${i}" title="" data-tip="net:${i}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px"></div></div></div>`;
-  }).join("");
+  const f = PANEL.field,
+    pt = PANEL.portrait,
+    c = PANEL.counter;
+  $("panels").innerHTML = G.players
+    .map((p, i) => {
+      const slots = PANEL.slots
+        .map(
+          (s, j) =>
+            `<div class="slot" title="" data-p="${i}" data-i="${j}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px"></div>`,
+        )
+        .join("");
+      return (
+        `<div class="pp" id="pp${i}" title="${esc(CHARACTERS.find((ch) => ch.id === p.character).name)}"><div class="pbody">` +
+        `<img class="pbg" src="${A("player_panel.svg")}" alt="">` +
+        `<div class="pcol" style="left:${pt.cx - PANEL.disc}px;top:${pt.cy - PANEL.disc}px;width:${PANEL.disc * 2}px;height:${PANEL.disc * 2}px;background:${p.color}"></div>` + // a disc in the player's pawn colour, behind the head and on top of the panel's dark circle
+        `<img class="port" src="${A(PORT[p.character] + ".svg")}" alt="" style="left:${pt.cx}px;top:${pt.cy}px;height:${pt.size}px">` +
+        `<img class="dcicon" id="dc${i}" src="${A("disconnected.svg")}" alt="Disconnected" title="Disconnected" style="left:${pt.cx}px;top:${pt.cy}px">` +
+        `<div class="fld" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fitPx(p.name, f.w - NAME_PAD, NAME_MAX_FONT)}px">${esc(p.name)}</div>${slots}` +
+        `<div class="cnt" id="cn${i}" title="" data-tip="net:${i}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px"></div></div></div>`
+      );
+    })
+    .join("");
   placePanels();
-  requestAnimationFrame(() => requestAnimationFrame(() => $("panels").classList.add("anim")));   // switch the glide animation on only AFTER the first placement, so panels don't fly in from the corner
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => $("panels").classList.add("anim")),
+  ); // switch the glide animation on only AFTER the first placement, so panels don't fly in from the corner
 }
 // placePanels(): move every panel to the place that matches its distance (in turn order) from the active player.
 function placePanels() {
-  const order = turnOrder(), n = order.length, cur = Math.max(0, order.indexOf(G.cur));   // (before the first turn the first player in turn order is shown on top)
+  const order = turnOrder(),
+    n = order.length,
+    cur = Math.max(0, order.indexOf(G.cur)); // (before the first turn the first player in turn order is shown on top)
   G.players.forEach((p, i) => {
     const el = $("pp" + i);
     if (!el) return;
-    el.style.display = p.abandoned ? "none" : "";      // a player who quit: the panel is gone
+    el.style.display = p.abandoned ? "none" : ""; // a player who quit: the panel is gone
     if (p.abandoned) return;
-    const rank = (order.indexOf(p) - cur + n) % n, sl = panelSlot(rank, n);
+    const rank = (order.indexOf(p) - cur + n) % n,
+      sl = panelSlot(rank, n);
     el.style.transform = `translate(${f1(sl.x)}px,${f1(sl.y)}px) scale(${sl.s})`;
     el.style.zIndex = sl.z;
     el.classList.toggle("big", rank === 0);
@@ -433,12 +833,17 @@ function placePanels() {
 function updateSlots() {
   G.players.forEach((p, i) => {
     PANEL.slots.forEach((s, j) => {
-      const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`), t = p.items[j] || "";
+      const el = document.querySelector(`.slot[data-p="${i}"][data-i="${j}"]`),
+        t = p.items[j] || "";
       if (el.dataset.t === t) return;
       el.dataset.t = t;
-      if (!t) { el.innerHTML = ""; el.removeAttribute("data-tip"); return; }
+      if (!t) {
+        el.innerHTML = "";
+        el.removeAttribute("data-tip");
+        return;
+      }
       const f = itemFit(t, SLOT_ITEM_W, SLOT_ITEM_H);
-      el.dataset.tip = "item:" + t;                                  // the hover bubble reads this (see HOVER BUBBLES below)
+      el.dataset.tip = "item:" + t; // the hover bubble reads this (see HOVER BUBBLES below)
       el.innerHTML = `<img src="${A(ITEMS[t].file)}" alt="${ITEMS[t].name}" style="width:${f.w}px;height:${f.h}px">`;
     });
   });
@@ -447,13 +852,17 @@ function updateSlots() {
 // The number is shown without a + or - sign. When it CHANGES the square sinks, comes back up with a lime glow (CSS class "pop") and plays a small click.
 // G.ctrPrev remembers the last value of every square; the first call for a square never animates.
 function setNet(i, net) {
-  const el = $("cn" + i), prev = G.ctrPrev || (G.ctrPrev = {});
+  const el = $("cn" + i),
+    prev = G.ctrPrev || (G.ctrPrev = {});
   if (!el) return;
   el.textContent = Math.abs(net);
-  el.style.background = net > 0 ? COUNTER_ORANGE : net < 0 ? COUNTER_BLUE : COUNTER_BROWN;
-  el.classList.toggle("two", Math.abs(net) >= COUNTER_TWO_DIGITS);       // two digits: a slightly smaller font so they fit
+  el.style.background =
+    net > 0 ? COUNTER_ORANGE : net < 0 ? COUNTER_BLUE : COUNTER_BROWN;
+  el.classList.toggle("two", Math.abs(net) >= COUNTER_TWO_DIGITS); // two digits: a slightly smaller font so they fit
   if (prev[i] !== undefined && prev[i] !== net) {
-    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");   // (reading offsetWidth lets the animation restart if it is already running)
+    el.classList.remove("pop");
+    void el.offsetWidth;
+    el.classList.add("pop"); // (reading offsetWidth lets the animation restart if it is already running)
     sfx("small");
   }
   prev[i] = net;
@@ -463,42 +872,67 @@ function setNet(i, net) {
 // render(): bring the screen up to date with G. Called after every change. Cheap enough to call often.
 function render() {
   if (!G) return;
-  if (!G.built || !$("tl1")) { buildBoard(); buildPanels(); G.built = 1; }                       // first call: build everything
+  if (!G.built || !$("tl1")) {
+    buildBoard();
+    buildPanels();
+    G.built = 1;
+  } // first call: build everything
   const sv = snakeLayer();
-  if (G.snkKey !== SNK.key) { $("gSnk").innerHTML = sv; G.snkKey = SNK.key; }       // redraw snakes only if they changed
-  if (G.numKey !== SNK.key) { placeNumbers(); G.numKey = SNK.key; }               // move square numbers out from under snakes/ladders
+  if (G.snkKey !== SNK.key) {
+    $("gSnk").innerHTML = sv;
+    G.snkKey = SNK.key;
+  } // redraw snakes only if they changed
+  if (G.numKey !== SNK.key) {
+    placeNumbers();
+    G.numKey = SNK.key;
+  } // move square numbers out from under snakes/ladders
   renderItems();
-  const occ = new Set(G.players.map(p => p.pos));
+  const occ = new Set(G.players.map((p) => p.pos));
   for (let n = 1; n <= SQUARES; n++) {
     const el = $("tl" + n);
-    if (el) el.classList.toggle("occ", occ.has(n));   // occupied tiles sink
+    if (el) el.classList.toggle("occ", occ.has(n)); // occupied tiles sink
   }
-  placePawns(); updateSlots(); placePanels();                                      // panels glide to their place for the current turn
+  placePawns();
+  updateSlots();
+  placePanels(); // panels glide to their place for the current turn
   G.players.forEach((p, i) => {
-    const act = G.cur === p && !G.winner && !G.catNow;                               // is it this player's own turn?
+    const act = G.cur === p && !G.winner && !G.catNow; // is it this player's own turn?
     const pw = $("pw" + i);
     if (pw) {
-      pw.classList.toggle("act", act);                                        // lime ring + gentle pulse on the pawn
-      if (act && $("gPawn").lastChild !== pw) $("gPawn").appendChild(pw);   // bring the active pawn to the front
+      pw.classList.toggle("act", act); // lime ring + gentle pulse on the pawn
+      if (act && $("gPawn").lastChild !== pw) $("gPawn").appendChild(pw); // bring the active pawn to the front
     }
     const pp = $("pp" + i);
-    updateDisconnectLook(p, i, pp, pw);                                              // red "disconnected" icon on the head, faded pawn, glow when it changes
-    setNet(i, (p.cb || 0) - (p.pen || 0));                                           // buff minus debuff in the 4th square
+    updateDisconnectLook(p, i, pp, pw); // red "disconnected" icon on the head, faded pawn, glow when it changes
+    setNet(i, (p.cb || 0) - (p.pen || 0)); // buff minus debuff in the 4th square
   });
-  if (G.cat && $("pwc")) $("pwc").classList.toggle("act", !!G.catNow && !G.winner);
-  refreshTip();                                                                    // a bubble that is open follows the change (item used, buff gone...)
+  if (G.cat && $("pwc"))
+    $("pwc").classList.toggle("act", !!G.catNow && !G.winner);
+  refreshTip(); // a bubble that is open follows the change (item used, buff gone...)
 }
 
 // updateDisconnectLook(p, i, pp, pw): show / hide the disconnected icon on player i's panel and fade their pawn.
 // When the state CHANGES (not on the first draw) the panel glows: slowly in red when they drop, quickly in lime when they come back.
 function updateDisconnectLook(p, i, pp, pw) {
-  const now = !!p.disconnected, seen = G.dcShown || (G.dcShown = {});
+  const now = !!p.disconnected,
+    seen = G.dcShown || (G.dcShown = {});
   if (pp) pp.classList.toggle("dc", now);
   if (pw) pw.classList.toggle("dc", now);
   if (seen[i] !== undefined && seen[i] !== now && pp) {
-    const body = pp.querySelector(".pbody"), icon = $("dc" + i), cls = now ? "flashdc" : "flashback";
-    [body, icon].forEach(el => { if (el) { el.classList.remove("flashdc", "flashback"); void el.offsetWidth; el.classList.add(cls); } });   // (offsetWidth lets the animation restart)
-    setTimeout(() => [body, icon].forEach(el => el && el.classList.remove(cls)), now ? FLASH_MS.long : FLASH_MS.short);
+    const body = pp.querySelector(".pbody"),
+      icon = $("dc" + i),
+      cls = now ? "flashdc" : "flashback";
+    [body, icon].forEach((el) => {
+      if (el) {
+        el.classList.remove("flashdc", "flashback");
+        void el.offsetWidth;
+        el.classList.add(cls);
+      }
+    }); // (offsetWidth lets the animation restart)
+    setTimeout(
+      () => [body, icon].forEach((el) => el && el.classList.remove(cls)),
+      now ? FLASH_MS.long : FLASH_MS.short,
+    );
   }
   seen[i] = now;
 }
@@ -506,10 +940,19 @@ function updateDisconnectLook(p, i, pp, pw) {
 // switchCat(): change the cat to a different random picture (never the same as now). Called when the cat is clicked or moves squares.
 function switchCat() {
   if (!G || !G.cat || ART.cats.length < 2) return;
-  let n; do { n = rnd(0, ART.cats.length - 1); } while (n === G.catSkin % ART.cats.length);
+  let n;
+  do {
+    n = rnd(0, ART.cats.length - 1);
+  } while (n === G.catSkin % ART.cats.length);
   G.catSkin = n;
   if ($("catimg")) $("catimg").setAttribute("href", catHref());
-  if (typeof NET !== "undefined" && NET.active && NET.isHost && typeof syncGameState === "function") syncGameState();
+  if (
+    typeof NET !== "undefined" &&
+    NET.active &&
+    NET.isHost &&
+    typeof syncGameState === "function"
+  )
+    syncGameState();
 }
 
 // ------------------------------------------------------------------ HOVER BUBBLES
@@ -517,43 +960,76 @@ function switchCat() {
 //   data-tip="item:<type>"  - an item (on the board or in a player's slot): shows its ITEM_TIPS line (config.js)
 //   data-tip="net:<i>"      - player i's Buff / Debuff square: one line per source that affects them right now (player.fx, kept by addBuff / addDebuff in rules.js)
 // To give another element a bubble: put data-tip on it and add a case to tipLines().
-let TIP_EL = null;   // the element the bubble is currently attached to (null = no bubble)
+let TIP_EL = null; // the element the bubble is currently attached to (null = no bubble)
 // tipLines(key): the lines of text for a data-tip value (each line is shown on its own row).
 function tipLines(key) {
   const [kind, id] = String(key).split(":");
   if (kind === "item") return ITEM_TIPS[id] ? [ITEM_TIPS[id]] : [];
   if (kind === "net") {
-    const p = G && G.players[+id], fx = (p && p.fx) || {};
-    const lines = Object.keys(FX_LABELS).filter(src => fx[src]).map(src => `${fx[src] > 0 ? "+" : "-"}${Math.abs(fx[src])} from ${FX_LABELS[src]}`);   // e.g. "-2 from Stones"
+    const p = G && G.players[+id],
+      fx = (p && p.fx) || {};
+    const lines = Object.keys(FX_LABELS)
+      .filter((src) => fx[src])
+      .map(
+        (src) =>
+          `${fx[src] > 0 ? "+" : "-"}${Math.abs(fx[src])} from ${FX_LABELS[src]}`,
+      ); // e.g. "-2 from Stones"
     return lines.length ? lines : [TIP_NO_EFFECTS];
   }
   return [];
 }
 // hideTip(): close the bubble.
-function hideTip() { TIP_EL = null; const t = $("tip"); if (t) t.style.display = "none"; }
+function hideTip() {
+  TIP_EL = null;
+  const t = $("tip");
+  if (t) t.style.display = "none";
+}
 // showTip(el): fill the bubble for element el and put it just above it (below it if there is no room above), kept inside the screen.
 function showTip(el) {
-  const t = $("tip"), key = el && el.getAttribute("data-tip"), lines = key ? tipLines(key) : [];
-  if (!t || !lines.length) { hideTip(); return; }
+  const t = $("tip"),
+    key = el && el.getAttribute("data-tip"),
+    lines = key ? tipLines(key) : [];
+  if (!t || !lines.length) {
+    hideTip();
+    return;
+  }
   TIP_EL = el;
-  t.innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join("");   // one row per line
+  t.innerHTML = lines.map((l) => `<div>${esc(l)}</div>`).join(""); // one row per line
   t.style.display = "block";
-  const r = el.getBoundingClientRect(), s = $("stage").getBoundingClientRect(), k = STAGE_W / s.width;   // (k converts window pixels to stage pixels)
-  const cx = (r.left + r.width / 2 - s.left) * k, top = (r.top - s.top) * k, bottom = (r.bottom - s.top) * k;
-  const w = t.offsetWidth, h = t.offsetHeight;
+  const r = el.getBoundingClientRect(),
+    s = $("stage").getBoundingClientRect(),
+    k = STAGE_W / s.width; // (k converts window pixels to stage pixels)
+  const cx = (r.left + r.width / 2 - s.left) * k,
+    top = (r.top - s.top) * k,
+    bottom = (r.bottom - s.top) * k;
+  const w = t.offsetWidth,
+    h = t.offsetHeight;
   const left = cl(cx - w / 2, TIP_EDGE_PX, STAGE_W - w - TIP_EDGE_PX);
   const above = top - TIP_GAP_PX - h >= TIP_EDGE_PX;
   t.style.left = f1(left) + "px";
   t.style.top = f1(above ? top - TIP_GAP_PX - h : bottom + TIP_GAP_PX) + "px";
-  t.style.setProperty("--tail", f1(cl(cx - left, TIP_TAIL_MARGIN_PX, w - TIP_TAIL_MARGIN_PX)) + "px");   // the little pointer aims at the middle of the hovered thing
+  t.style.setProperty(
+    "--tail",
+    f1(cl(cx - left, TIP_TAIL_MARGIN_PX, w - TIP_TAIL_MARGIN_PX)) + "px",
+  ); // the little pointer aims at the middle of the hovered thing
   t.classList.toggle("below", !above);
 }
 // refreshTip(): called after every render(): re-read the text of an open bubble, or close it if its element is gone.
-function refreshTip() { if (TIP_EL) { if (document.contains(TIP_EL) && TIP_EL.hasAttribute("data-tip")) showTip(TIP_EL); else hideTip(); } }
+function refreshTip() {
+  if (TIP_EL) {
+    if (document.contains(TIP_EL) && TIP_EL.hasAttribute("data-tip"))
+      showTip(TIP_EL);
+    else hideTip();
+  }
+}
 // The mouse moved onto something: open the bubble if it (or a parent) has a data-tip, otherwise close it.
-document.addEventListener("pointerover", e => {
-  const el = e.target && e.target.closest ? e.target.closest("[data-tip]") : null;
+document.addEventListener("pointerover", (e) => {
+  const el =
+    e.target && e.target.closest ? e.target.closest("[data-tip]") : null;
   if (el === TIP_EL) return;
-  if (el) showTip(el); else hideTip();
+  if (el) showTip(el);
+  else hideTip();
 });
-document.addEventListener("pointerout", e => { if (!e.relatedTarget) hideTip(); });   // the mouse left the window
+document.addEventListener("pointerout", (e) => {
+  if (!e.relatedTarget) hideTip();
+}); // the mouse left the window

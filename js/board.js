@@ -24,7 +24,9 @@ function xy(n) {
 function squareAt(x, y) {
   const c = Math.floor((x - BX0) / CX),
     vr = Math.floor((y - BY0) / CY);
-  return c < 0 || c > LAST_COL || vr < 0 || vr > LAST_ROW ? 0 : toN(LAST_ROW - vr, c);
+  return c < 0 || c > LAST_COL || vr < 0 || vr > LAST_ROW
+    ? 0
+    : toN(LAST_ROW - vr, c);
 }
 
 // tryBoard(): one attempt at a random board following the layout rules. Returns null if the attempt breaks a rule.
@@ -60,13 +62,23 @@ function tryBoard() {
   let s = 0; // the ladder that ends at e: find a bottom square 20-50 below, no more than 4 columns away
   for (let k = 0; k < TOP_LADDER_TRIES && !L[s]; k++) {
     s = e - rnd(...TOP_LADDER_RISE);
-    if (s > 1 && Math.abs(rc(s)[1] - rc(e)[1]) <= TOP_LADDER_MAX_COLS && add(MIN_GAP_STRICT, s)) L[s] = e;
+    if (
+      s > 1 &&
+      Math.abs(rc(s)[1] - rc(e)[1]) <= TOP_LADDER_MAX_COLS &&
+      add(MIN_GAP_STRICT, s)
+    )
+      L[s] = e;
   }
   if (!L[s]) return null;
   const wr = []; // weighted list of head rows: higher rows appear more often (SNAKE_ROW_BIAS_POWER controls how strongly)
-  for (let r = 1; r <= SNAKE_HEAD_ROWS; r++) for (let k = 0; k < Math.round(Math.pow(r, SNAKE_ROW_BIAS_POWER)); k++) wr.push(r);
+  for (let r = 1; r <= SNAKE_HEAD_ROWS; r++)
+    for (let k = 0; k < Math.round(Math.pow(r, SNAKE_ROW_BIAS_POWER)); k++)
+      wr.push(r);
   const rowCount = {}; // how many snake heads are already on each row, so later ones don't all pile onto the same row (see MAX_SNAKES_PER_ROW)
-  [h1, h2].forEach((h) => { const r = rc(h)[0]; rowCount[r] = (rowCount[r] || 0) + 1; });
+  [h1, h2].forEach((h) => {
+    const r = rc(h)[0];
+    rowCount[r] = (rowCount[r] || 0) + 1;
+  });
   for (let i = 2; i < CONFIG.SNAKES; i++) {
     // the remaining snakes
     let done = false;
@@ -75,10 +87,14 @@ function tryBoard() {
         tr = Math.max(0, hr - rnd(...SNAKE_DROP_ROWS)),
         hc = rnd(0, LAST_COL),
         tc = cl(hc + rnd(-SNAKE_TAIL_SHIFT, SNAKE_TAIL_SHIFT), 0, LAST_COL);
-      if ((rowCount[hr] || 0) >= MAX_SNAKES_PER_ROW + (k < RELAX_AFTER ? 0 : 1)) continue;   // that row already has enough heads (briefly allow one more if we're struggling to finish the board)
+      if ((rowCount[hr] || 0) >= MAX_SNAKES_PER_ROW + (k < RELAX_AFTER ? 0 : 1))
+        continue; // that row already has enough heads (briefly allow one more if we're struggling to finish the board)
       const h = toN(hr, hc),
         t = toN(tr, tc);
-      if (h - t >= SNAKE_MIN_DROP && add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, h, t)) {
+      if (
+        h - t >= SNAKE_MIN_DROP &&
+        add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, h, t)
+      ) {
         Sn[h] = t;
         rowCount[hr] = (rowCount[hr] || 0) + 1;
         done = true;
@@ -94,14 +110,21 @@ function tryBoard() {
       const horiz = !wide && Math.random() < WIDE_LADDER_CHANCE,
         sr = rnd(0, LADDER_START_ROW_MAX),
         sc = rnd(0, LAST_COL);
-      const er = sr + (horiz ? rnd(...WIDE_LADDER_RISE) : rnd(...TALL_LADDER_RISE)),
+      const er =
+          sr + (horiz ? rnd(...WIDE_LADDER_RISE) : rnd(...TALL_LADDER_RISE)),
         ec = cl(
           sc +
-            (horiz ? (Math.random() < 0.5 ? -1 : 1) * rnd(...WIDE_LADDER_SHIFT) : rnd(...TALL_LADDER_SHIFT)),
+            (horiz
+              ? (Math.random() < 0.5 ? -1 : 1) * rnd(...WIDE_LADDER_SHIFT)
+              : rnd(...TALL_LADDER_SHIFT)),
           0,
           LAST_COL,
         );
-      if (er > LADDER_TOP_ROW_MAX || (horiz && Math.abs(ec - sc) < WIDE_LADDER_MIN_SHIFT)) continue;
+      if (
+        er > LADDER_TOP_ROW_MAX ||
+        (horiz && Math.abs(ec - sc) < WIDE_LADDER_MIN_SHIFT)
+      )
+        continue;
       const a = toN(sr, sc),
         b = toN(er, ec);
       if (add(k < RELAX_AFTER ? MIN_GAP_STRICT : MIN_GAP_RELAXED, a, b)) {
@@ -122,7 +145,12 @@ function tryBoard() {
     rows = new Set(pts.map((n) => rc(n)[0]));
   for (let r = 1; r < BOARD_ROWS; r++) if (!rows.has(r)) return null;
   const cb = [0, 0, 0];
-  pts.forEach((n) => cb[rc(n)[1] < COLUMN_THIRDS[0] ? 0 : rc(n)[1] < COLUMN_THIRDS[1] ? 1 : 2]++);
+  pts.forEach(
+    (n) =>
+      cb[
+        rc(n)[1] < COLUMN_THIRDS[0] ? 0 : rc(n)[1] < COLUMN_THIRDS[1] ? 1 : 2
+      ]++,
+  );
   if (cb.some((x) => x < MIN_PER_THIRD)) return null;
   if (
     Object.keys(Sn)

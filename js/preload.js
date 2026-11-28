@@ -3,12 +3,12 @@
 //  (#tLoad, bottom-left of the title / play / local / host / join screens). New art files: add their names to PRELOAD_SVGS.
 // =====================================================================================
 // ---- Loading numbers (all in one place) ----
-const PRELOAD_FONTS = ["20px MC", "20px LM", "40px Blustrue"];   // fonts loaded up front (the 20px / 40px is only a size to make the browser fetch the font)
-const PRELOAD_SOUNDS = 5;               // how many sounds loadSounds() in audio.js decodes at start; the bar waits for this many
-const PRELOAD_SOUND_POLL_MS = 150;      // how often the bar checks how many sounds are ready
-const PRELOAD_DONE_HOLD_MS = 1000;      // "Assets loaded" stays on screen this long before the bar slides away
-const PRELOAD_GIVEUP_MS = 30000;        // safety: after this long the bar finishes anyway, whatever is still loading
-const PERCENT = 100;                    // (for the bar's width)
+const PRELOAD_FONTS = ["20px MC", "20px LM", "40px Blustrue"]; // fonts loaded up front (the 20px / 40px is only a size to make the browser fetch the font)
+const PRELOAD_SOUNDS = 5; // how many sounds loadSounds() in audio.js decodes at start; the bar waits for this many
+const PRELOAD_SOUND_POLL_MS = 150; // how often the bar checks how many sounds are ready
+const PRELOAD_DONE_HOLD_MS = 1000; // "Assets loaded" stays on screen this long before the bar slides away
+const PRELOAD_GIVEUP_MS = 30000; // safety: after this long the bar finishes anyway, whatever is still loading
+const PERCENT = 100; // (for the bar's width)
 const PRELOAD_SVGS = [
   "button_about.svg",
   "button_back.svg",
@@ -121,7 +121,9 @@ const PRELOAD_HOLD = []; // keeps the decoded pictures in memory so they show in
   let snd = 0;
   const hasAudio = window.AudioContext || window.webkitAudioContext; // sounds are decoded by loadSounds() in audio.js; we just watch BUF
   const iv = setInterval(() => {
-    const n = hasAudio ? Math.min(PRELOAD_SOUNDS, Object.keys(BUF).length) : PRELOAD_SOUNDS;
+    const n = hasAudio
+      ? Math.min(PRELOAD_SOUNDS, Object.keys(BUF).length)
+      : PRELOAD_SOUNDS;
     while (snd < n) {
       snd++;
       tick();
