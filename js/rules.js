@@ -82,8 +82,8 @@ const FLAVOR = {
     ]),
   stone: (p, v) =>
     pick([
-      `${p} hurls a stone at ${v}: thunk! -1 on their next roll.`,
-      `${p} lobs a stone and hits ${v}. -1 on their next roll.`,
+      `${p} hurls a stone at ${v}: thunk! -${STONE_PENALTY} on their next roll.`,
+      `${p} lobs a stone and hits ${v}. -${STONE_PENALTY} on their next roll.`,
     ]),
   brick: (p, sq) =>
     pick([

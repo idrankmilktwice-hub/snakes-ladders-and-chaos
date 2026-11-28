@@ -155,6 +155,7 @@ const SOUNDS = {
   boo: { file: "sounds/sound_boo.mp3", skip: 0.02, volume: 0.7 },
 };
 const BOO_SOUND = "boo"; // the name of the BOO button's sound in SOUNDS above (endgame.js plays it, network.js lets it through to the other players)
+const STONE_PENALTY = 1; // a stone that hits a player takes this off their next roll (used by rules.js: the stone item and its log text)
 const STONE_BAD_DELAY = 450; // milliseconds between a stone hitting a pawn and the victim's "bad" reaction sound (so the reaction comes after the impact sound)
 const ROLL_MS = 930; // how long a dice roll animation lasts (milliseconds). Matches the dice sound so the dice stop with the last rattle.
 
